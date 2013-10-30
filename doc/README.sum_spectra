@@ -1,0 +1,113 @@
+Some sources are faint, and the spectra (limited to ~1500s per exposure) 
+are too noisy. To reduce the noise, several spectra can be summed together. 
+
+I outline here a method that works for me. 
+
+Required: version uvotpy.0.9.4.3 or later (after 2011-11-19)
+
+METHOD:
+(1) apply uvotgraspcorr to the sw*ugu_dt.img file:
+
+uvotgraspcorr catspec=/Volumes/users/Users/kuin/specfiles/usnob1.spec\
+ distfile=/sciencesoft/CALDB/data/swift/uvota/bcf/grism/swugrdist20041120v001.fits \
+ sw00032150001ugu_dt.img
+ 
+(2) check that the aspect correction worked:
+
+ftlist sw00032150001ugu_dt.img hk include='exposure,date-obs,aspcorr' 
+
+        Name               Type       Dimensions
+        ----               ----       ----------
+HDU 1   Primary Array      Null Array                               
+
+DATE-OBS= '2011-11-02T06:45:20'
+-----------------------------------------------------------------------
+
+HDU 2   gu341909127I       Image      Real4(1987x2046)              
+
+DATE-OBS= '2011-11-02T06:45:26'
+EXPOSURE=     1062.67452066351 / Total exposure, with all known correction
+ASPCORR = 'GRASPCORR'
+-----------------------------------------------------------------------
+
+HDU 3   gu341949264I       Image      Real4(1987x2046)              
+
+DATE-OBS= '2011-11-02T17:54:23'
+EXPOSURE=     1062.73971593783 / Total exposure, with all known correction
+ASPCORR = 'GRASPCORR'
+
+
+if the printout shows ASPCORR = 'GRASPCORR' for all extension, then you 
+are fine.
+ 
+(3) check the aspect correction was done for the lenticular image file:
+
+ftlist sw00032150001uw2_sk.img hk include='exposure,date-obs,aspcorr'                                                   
+
+        Name               Type       Dimensions
+        ----               ----       ----------
+HDU 1   Primary Array      Null Array                               
+
+DATE-OBS= '2011-11-02T07:03:26'
+-----------------------------------------------------------------------
+
+HDU 2   w2341910214I       Image      Real4(1396x1365)              
+
+DATE-OBS= '2011-11-02T07:03:33'
+EXPOSURE=      85.492188576819 / Total exposure, with all known correction
+ASPCORR = 'DIRECT  '
+-----------------------------------------------------------------------
+
+HDU 3   w2341950351I       Image      Real4(1396x1365)              
+
+DATE-OBS= '2011-11-02T18:12:30'
+EXPOSURE=      88.565263302118 / Total exposure, with all known correction
+ASPCORR = 'DIRECT  '
+-----------------------------------------------------------------------
+
+HDU 4   w2341956530I       Image      Real4(1396x1365)              
+
+DATE-OBS= '2011-11-02T19:55:29'
+EXPOSURE=     89.0973566063901 / Total exposure, with all known correction
+ASPCORR = 'DIRECT  '
+-----------------------------------------------------------------------
+
+if ASPCORR = 'DIRECT  ' then it was successful, although no roll angle correction 
+is included. (For that, the attitude file needs to be corrected and a new 
+sky file made from the raw image file.)
+
+(4) extract the data with the uvotgrism program, and create output files. 
+There should then be an output file for each extension:
+
+ls -ltr *_pha.fits
+-rw-r--r--  1 kuin  staff  4700160 Nov 19 19:59 sw00032150001ugu_1_pha.fits
+-rw-r--r--  1 kuin  staff  4682880 Nov 19 20:00 sw00032150001ugu_2_pha.fits
+-rw-r--r--  1 kuin  staff  4654080 Nov 19 20:01 sw00032150001ugu_3_pha.fits
+-rw-r--r--  1 kuin  staff  4878720 Nov 19 20:03 sw00032150001ugu_4_pha.fits
+
+(5) Create a list in ipython with the filenames of the main phs files:
+
+phafile1 = list(['sw00032150001ugu_1_pha.fits', 'sw00032150001ugu_2_pha.fits',\ 'sw00032150001ugu_3_pha.fits','sw00032150001ugu_4_pha.fits'])
+
+(6) run the program to create the sum file:
+
+uvotgrism.sum_Extimage( phafile1, mode='create',chatter=3,clobber=True)
+
+(7) define the summed file name:
+
+ sumomg = 'extracted_image_sum.fit'
+
+(8) extract the spectrum from the summed image:
+
+ Z = uvotgrism.getSpec(ra,dec,obsid,1,fit_second=True, curved='update', optimal_extraction=False, wr_outfile=True,chatter=1,clobber=True, background_upper=[25,10],background_lower=[10,10],sumimage=sumomg)
+ 
+A new PHA file is created for the sum spectrum:
+
+ ls -ltr *_pha.fits
+-rw-r--r--  1 kuin  staff  4700160 Nov 19 19:59 sw00032150001ugu_1_pha.fits
+-rw-r--r--  1 kuin  staff  4682880 Nov 19 20:00 sw00032150001ugu_2_pha.fits
+-rw-r--r--  1 kuin  staff  4654080 Nov 19 20:01 sw00032150001ugu_3_pha.fits
+-rw-r--r--  1 kuin  staff  4878720 Nov 19 20:03 sw00032150001ugu_4_pha.fits
+-rw-r--r--  1 kuin  staff  3291840 Nov 19 20:14 sum_image_phaugu_1_pha.fits
+
+Done.
