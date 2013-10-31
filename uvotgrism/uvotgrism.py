@@ -1,8 +1,8 @@
-#!/usr/stsci/pyssg/Python-2.7.3/bin/python
+#!/usr/local/eureka/Ureka/variants/common/bin/python
 
 # Developed by N.P.M. Kuin (MSSL/UCL)
 
-__version__ = '1.0.pre 20130523' 
+__version__ = '1.0 20131101' 
 
 '''
 .. _uvotpy:
@@ -19,51 +19,40 @@ General
 
 **This code is designed for processing Swift UVOT Grism images**
   
-  The ultimate goal is to process the spectra in the image, to do 
+  The goal is to process the spectra in the image, to do 
   quality control and source identification. Because the UVOT is 
   a photon counting detector, the error handling must keep track 
   of the errors which require in principle the total exposure, 
   the background exposure, and the exposure time. The data quality
-  for each pixel needs to be flagged also (e.g., data dropouts, 
-  scattered light rings, halo around bright features). In summed 
-  images, bad data needs to be removed, and the background is also
-  affected. Therefore an exposure map is needed for summing. Summing
-  the extracted spectra requires a careful check for the correct 
-  alignment of wavelengths.  The coincidence loss is managed in 
-  a rather ad-doc manner, while the count rate errors follow
-  from the observed binomial nature of the detector, e.g., Kuin 
-  & Rosen (2008,MNRAS, 383,383) - though that prescription was 
-  for point sources. Modifications appropriate for spectra are not 
-  yet in place.    
-
-  ONLY PART OF THE REQUIRED ANALYSIS IS CURRENTLY DONE 
-  (version 0.9.7, March 2013).
+  for each pixel should be flagged also (e.g., data dropouts, 
+  scattered light rings, halo around bright features), but flagging 
+  is only done for nearby zeroth orders. While the count rate errors 
+  follow from the observed binomial nature of the detector, e.g., 
+  Kuin & Rosen (2008,MNRAS, 383,383) - though that prescription was 
+  for point sources. A heuristic method was used to develop a 
+  correction for coincidence loss used in this program. 
+  
+  Details of the accuracy and reliability of the calibration and 
+  software are soon to be submitted to the Monthly Notices of the 
+  RAS. 
   
   This program extracts the spectra, applies the wavelength 
   calibration file to find anchor position and wavelength 
-  dispersion. The flux calibration has been done at the default 
-  position for both v and uv grisms. In the *uv grism* the flux 
-  calibration (effective area) was determined at a handful of 
-  selected offset anchor positions with extensions to nearby 
-  positions on the detector using a model calculation adjusted to
-  fit the calibration observations best. The accuracy of the 
-  flux, neglecting coincidence loss, is of order 5% in the centre 
-  and with 10% at other locations on the detector. Coincidence 
-  loss corrections for bright sources can be in error by 10% 
-  or more, but look to be within 5% for most sources.  
-  
-  For the *V grism*, the spectrum is flux calibrated using the 
-  Swift UVOT CALDB flux calibration which was made for 
-  observations at the default position (accurate to about 20%).
-  No coincidence-loss correction was made for that calibration.
-   
+  dispersion. The flux calibration is valid over the whole 
+  detector and depends on the effective area and coincidence
+  loss correction.  In *both grisms* the effective area was 
+  determined at several offset positions  The accuracy of the 
+  flux in the *uv grism* is of order 5% in the centre and 
+  about 10% at other locations on the detector. In the 
+  *visible grism* the accuracy of the flux is 20%, which error 
+  is dominated by that in the coincidence loss correction.  
+     
   In the nominal grism mode (wheelpos = 200, 1000) the 
   response varies by about 5% from centre to about  200 pixels 
   from the edge. In the clocked grism modes (wheelpos = 
   160, and 955) the response has a strong drop when the spectrum 
   falls in the upper left corner. For the rest of the image 
   the response varies less than ~20% in the clocked modes. 
-  Further calibration is ongoing for the v grism.
   
   Before using this code, it is recommended to reprocess the raw 
   image using the *mod-8 correction*. Use a CALDB later than May 2010 
@@ -78,14 +67,14 @@ General
   derived. 
   
   You need to set the environment variable UVOTPY to point to the 
-  directory with the UVOTPY code and new calibration files. 
+  directory with the UVOTPY code and spectral calibration files. 
   
-  The input data files must be decompressed before running the program.
-  The program tries to do this itself, but does not recompress the files
-  again. 
+  The input data files may have to be decompressed before running 
+  the program, although it will try to do that itself, but does 
+  not recompress the files again. 
   
   The program was developed running in iPython, and it is suggested to 
-  run interactively in iPython rather then run as it a script. 
+  run interactively in iPython rather then run as it this script. 
   
   Second order extraction and calibration are only treated very roughly at 
   this time. Zeroth orders are only minimally identified. Third order 
@@ -113,22 +102,33 @@ Specialized functions are in modules
   uvotplot : plot routines
   uvotmisc : miscellaneous routines
   
-The program assumes all data files are available in either the working 
-directory, or the directory structure complies with the Swift project 
-standard and is run from the <obsid>/uvot/images directory, while 
-the attitude file is available in the <obsid>/aux directory.  
+Files  
+------  
+  The program assumes all data files are available in either the working 
+  directory, or the directory structure complies with the Swift project 
+  standard and is run from the <obsid>/uvot/images directory, while 
+  the attitude file is available in the <obsid>/aux directory.  
+  There is rudimentary support for running from a remote directory on the 
+  same device, but the program will write some files to both the current and
+  the data directories.
 
-The flux-calibrated 1st order spectrum is available in the second extension of the 
-output file.
+  The flux-calibrated 1st order spectrum is available in the second extension of the 
+  output file.
+
+  From version 1.0 onwards, the file name includes a flag "_f" for when lenticular
+  filter image(s), or "_g" when "uvotgraspcorr" aspect corrections were used 
+  to derive the anchor position. Both methods give similar uncertainties, but
+  for the same field uvotgraspcorr will give more consistent results, while 
+  the lenticular filter method works when uvotgraspcorr cannot find an aspect 
+  correction (in that case the uncorrected pointing position from the star trackers 
+  will be used).  
             
 History
 -------
-  2013-Oct-16 Paul Kuin
-  automation of the wave cal tests is nearly done. The routines _test_wavecal* 
-  can be used with the cal3.py database to produce statistics on the anchor 
-  accuracy. Tests can be done for the lenticular filter and uvotgraspcorr 
-  situations. An overall test_wavecals routine that makes the calls and compares to 
-  the current results is in the plan. 
+
+  2013-Oct-31 Paul Kuin
+  Rewritten uvotwcs to fix a bug in the calculation of the pointing. Small fixes
+  all throughout. Output file names will have a flag for the anchor point method used.
 
   2013-May-23 Paul Kuin
   revised the uv grism clocked mode wavecal for first and second order. Missing 
@@ -177,13 +177,13 @@ try:
 except:   
    import pyfits
 try:
-  import imagestats
+  import imagestats, convolve
 except: 
-  import stsci.imagestats as imagestats  
+  import stsci.imagestats as imagestats
+  import stsci.convolve as convolve  
+from convolve import boxcar
 import scipy
 from scipy import interpolate
-from scipy.ndimage import convolve
-from stsci.convolve import boxcar
 from scipy.optimize import leastsq
 from numpy import polyfit, polyval
 import datetime
@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
       epilog = '''Required input: 
 The object_name or its coordinates in decimal degrees and the obsid.  
-For details on the uvot grism see http://www.mssl.ucl.ac.uk/~npmk/Grism/ and 
+For details on the uvot grism see http://www.mssl.ucl.ac.uk/www_astro/uvot/ and 
 http://swift.gsfc.nasa.gov/ ''' 
 
       anchor_preset = list([None,None])
@@ -430,6 +430,7 @@ http://swift.gsfc.nasa.gov/ '''
      fluxcalfile=options.fluxcalfile,
      coicalfile=options.coicalfile,
      offsetlimit=offsetlimit, 
+     write_RMF = False,
      anchor_offset=options.anchor_offset,
      anchor_position=options.anchor_position, 
      background_lower=options.background_lower_,

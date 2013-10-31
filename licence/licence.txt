@@ -2,7 +2,7 @@ UVOTPY License
 
 This Swift UVOT grism software is licensed under a 3-clause BSD style license:
 
-Copyright (c) 2008-2013, N.P.M. Kuin 
+Copyright (c) 2008-2013, N.P.M. Kuin. 
 
 All rights reserved.
 
@@ -16,12 +16,14 @@ Redistributions in binary form must reproduce the above copyright notice,
 this list of conditions and the following disclaimer in the documentation 
 and/or other materials provided with the distribution.
 
-Neither the name of N.P.M. Kuin, the Swift UVOT satellite and related
-institutions,  nor the names of other code contributors may be used 
+Neither the name of the author N.P.M. Kuin, the Swift UVOT satellite 
+and any of the institutions operating or calibrating Swift or 
+using Swift data, nor the names of any contributors to the UVOTPY code
+or documentation as identified in such code or documents may be used 
 to endorse or promote products derived from this software without 
 specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER "AS IS" 
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
 THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
 PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 

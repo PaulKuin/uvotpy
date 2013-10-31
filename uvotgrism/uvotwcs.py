@@ -77,7 +77,7 @@ def makewcshdr(filestub, ext, attfile,
    
    msg = ""   
    if chatter > 0:
-     print "makewcshdr(",filestub,',',ext,',',attfile,')'
+     print "makewcshdr(",filestub,',',ext,',',attfile,',indir=',indir,')'
 
    try:
       caldb = getenv('CALDB')

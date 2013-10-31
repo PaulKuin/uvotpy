@@ -379,6 +379,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       # set some flags and variables
       lfiltinput = (lfilt1 != None) ^ (lfilt2 != None) 
       lfiltpresent = lfiltinput | (lfilt1_ != None) | (lfilt2_ != None) 
+      if (lfilt1_ == None) & (lfilt2_ == None): 
+         # ensure the output is consistent with no lenticular filter solution
+         use_lenticular_image = False
     
       lfiltflag = False    
       if ((lfilt1 == None)&(lfilt1_ != None)): 
@@ -4968,10 +4971,11 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    from uvotwcs import makewcshdr 
    import os
    
-   __version__ = '1.03 NPMK 20131023 NPMK(MSSL)'
+   __version__ = '1.04 NPMK 20131031 NPMK(MSSL)'
 
    # 2010-07-11 added code to move existing uvw1 raw and sky files out of the way and cleanup afterwards.
    # npkuin@gmail.com
+   msg = ""
    
    if (chatter > 0):
       print "uvotspec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
