@@ -1,6 +1,129 @@
-The uvot grism python software. 
-==============================
+The uvot grism python software release notes
+============================================
 
+Version 1.0 2013-11-01
+
+General
+-------
+
+**This code is designed for processing Swift UVOT Grism images**
+  
+  The goal is to process the spectra in the image, to do 
+  quality control and source identification. Because the UVOT is 
+  a photon counting detector, the error handling must keep track 
+  of the errors which require in principle the total exposure, 
+  the background exposure, and the exposure time. The data quality
+  for each pixel should be flagged also (e.g., data dropouts, 
+  scattered light rings, halo around bright features), but flagging 
+  is only done for nearby zeroth orders. While the count rate errors 
+  follow from the observed binomial nature of the detector, e.g., 
+  Kuin & Rosen (2008,MNRAS, 383,383) - though that prescription was 
+  for point sources. A heuristic method was used to develop a 
+  correction for coincidence loss used in this program. 
+  
+  Details of the accuracy and reliability of the calibration and 
+  software are soon to be submitted to the Monthly Notices of the 
+  RAS. 
+  
+  This program extracts the spectra, applies the wavelength 
+  calibration file to find anchor position and wavelength 
+  dispersion. The flux calibration is valid over the whole 
+  detector and depends on the effective area and coincidence
+  loss correction.  In *both grisms* the effective area was 
+  determined at several offset positions  The accuracy of the 
+  flux in the *uv grism* is of order 5% in the centre and 
+  about 10% at other locations on the detector. In the 
+  *visible grism* the accuracy of the flux is 20%, which error 
+  is dominated by that in the coincidence loss correction.  
+     
+  In the nominal grism mode (wheelpos = 200, 1000) the 
+  response varies by about 5% from centre to about  200 pixels 
+  from the edge. In the clocked grism modes (wheelpos = 
+  160, and 955) the response has a strong drop when the spectrum 
+  falls in the upper left corner. For the rest of the image 
+  the response varies less than ~20% in the clocked modes. 
+  
+  Before using this code, it is recommended to reprocess the raw 
+  image using the *mod-8 correction*. Use a CALDB later than May 2010 
+  for an improved distortion correction. The grism detector image 
+  should be attitude corrected using uvotgraspcorr. Check the header
+  keyword ASPCORR='GRASPCORR'. 
+  
+  Find out the RA and DEC position in decimal degrees from the 
+  USNO-B1 catalog for your object  since the UVOT aspect corrections 
+  also use the USNO-B1 positions, so you will avoid a systematic error 
+  in positions which will translate to a shift in the wavelengths 
+  derived. 
+  
+  You need to set the environment variable UVOTPY to point to the 
+  directory with the UVOTPY code and spectral calibration files. 
+  
+  The input data files may have to be decompressed before running 
+  the program, although it will try to do that itself, but does 
+  not recompress the files again. 
+  
+  The program was developed running in iPython, and it is suggested to 
+  run interactively in iPython rather then run as it this script. 
+  
+  Second order extraction and calibration are only treated very roughly at 
+  this time. Zeroth orders are only minimally identified. Third order 
+  location is approximate. 
+   
+Main functions
+--------------
+  getSpec : main call for spectral data extraction  
+  
+Other uvotpy functions
+-------------------------
+  curved_extraction: set curvature of orders, set quality flags, get spectral data 
+  extractSpecImg : get sub image 
+  findBackground : get background
+  get_components : extract first, second, third order components
+  getCal : get the (wave) calibration files
+  predict_second_order : use first order to predict second order (very rough)
+  coi_func : return an interpolating function(wave) for the coincidence loss of a spectrum [experimental]
+
+Specialized functions are in modules
+------------------------------------
+  uvotgetspec: repository of main functions  
+  uvotio:    writes file output
+  uvotio.rate2flux : convert count rate to flux 
+  uvotplot : plot routines
+  uvotmisc : miscellaneous routines
+  
+Files  
+------  
+  The program assumes all data files are available in either the working 
+  directory, or the directory structure complies with the Swift project 
+  standard and is run from the <obsid>/uvot/images directory, while 
+  the attitude file is available in the <obsid>/aux directory.  
+  There is rudimentary support for running from a remote directory on the 
+  same device, but the program will write some files to both the current and
+  the data directories.
+
+  The flux-calibrated 1st order spectrum is available in the second extension of the 
+  output file.
+
+  From version 1.0 onwards, the file name includes a flag "_f" for when lenticular
+  filter image(s), or "_g" when "uvotgraspcorr" aspect corrections were used 
+  to derive the anchor position. Both methods give similar uncertainties, but
+  for the same field uvotgraspcorr will give more consistent results, while 
+  the lenticular filter method works when uvotgraspcorr cannot find an aspect 
+  correction (in that case the uncorrected pointing position from the star trackers 
+  will be used).  
+            
+History
+-------
+
+2013-Oct-31 Paul Kuin
+--------------------------
+Rewritten uvotwcs to fix a bug in the calculation of the pointing. Small fixes
+all throughout. Output file names will have a flag for the anchor point method used.
+
+2013-May-23 Paul Kuin
+-------------------------
+revised the uv grism clocked mode wavecal for first and second order. Missing 
+still is second order effective area. 
 
 March 2013: Flux calibration for the uv-grism 
 ---------------------------------------------
