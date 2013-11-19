@@ -178,10 +178,11 @@ except:
    import pyfits
 try:
   import imagestats, convolve
+  from convolve import boxcar
 except: 
   import stsci.imagestats as imagestats
   import stsci.convolve as convolve  
-from convolve import boxcar
+  from stsci.convolve import boxcar
 import scipy
 from scipy import interpolate
 from scipy.optimize import leastsq
@@ -272,9 +273,9 @@ http://swift.gsfc.nasa.gov/ '''
                   help = "flux calibration file (placeholder) [default: %default]",
                   default = None)
 		  
-      parser.add_option("", "--coicalfile", dest = "coicalfile",
-                  help = "coincidence loss correction calibration file (placeholder) [default: %default]",
-                  default = None)
+      parser.add_option("", "--RMF", dest = "RMF",
+                  help = "produce an RMF file [default: %default]",
+                  default = False)
 
       # control spectral extraction parameters		  
 		  
@@ -428,9 +429,8 @@ http://swift.gsfc.nasa.gov/ '''
      outfile=options.outfile,
      calfile=options.wavecalfile,
      fluxcalfile=options.fluxcalfile,
-     coicalfile=options.coicalfile,
      offsetlimit=offsetlimit, 
-     write_RMF = False,
+     write_RMF = options.RMF,
      anchor_offset=options.anchor_offset,
      anchor_position=options.anchor_position, 
      background_lower=options.background_lower_,

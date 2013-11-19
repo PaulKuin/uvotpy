@@ -359,7 +359,7 @@ def correct_image_distortion(x,y,header):
        input header must be from the grism image (position) to be corrected '''  
    import numpy as N
    
-   good = header.has_key('AP_ORDER') & header.has_key('BP_ORDER')
+   good = ('AP_ORDER' in header) & ('BP_ORDER' in header)
    if not good :
       #print "WARNING uvotwcs.correct_image_distortion found no distortion keywords in header"
       return x,y
@@ -413,7 +413,10 @@ def correct_image_distortion(x,y,header):
    return x,y 
 
 def get_pointing_from_attfile(tstart,tstop,attfile):
-   from astropy.io import fits
+   try:
+      from astropy.io import fits
+   except:
+      import pyfits as fits   
    from numpy import abs
    
    status = 0 # success
@@ -442,7 +445,10 @@ def get_pointing_from_attfile(tstart,tstop,attfile):
 def get_distortion_keywords(wheelpos):
    '''provide the grism header with distortion keywords '''
    import os
-   from astropy.io import fits
+   try:
+      from astropy.io import fits
+   except:
+      import pyfits as fits
    
    if wheelpos < 500:
        command="quzcif swift uvota - VGRISM GRISMDISTORTION 2009-10-30 12:00:00 - > quzcif.out"

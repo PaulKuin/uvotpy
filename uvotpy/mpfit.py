@@ -26,7 +26,11 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 	Updated versions can be found at http://code.google.com/p/astrolibpy/source/browse/trunk/
 	
  Bug Fixes: 
-    2011-08-26 NPMKuin (MSSL/UCL) some clarification in the documentation.	
+    2011-08-26 NPMKuin (MSSL/UCL) some clarification in the documentation.
+    2013-11-19 NPMKuin (MSSL/UCL) changed import scipy.lib.blas[deprecated] to scipy.linalg.blas 
+    
+ Known bugs:   
+    2013-11-19 Problem with Ureka_1.0beta6 	
 
 		DESCRIPTION
 
@@ -126,7 +130,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  To call the user function, you will need something like:
  
    import mpfit
-   import numpy.oldnumeric as Numeric
+   #import numpy.oldnumeric as Numeric
    #
    #... define your parameters
    par = (p1,p2,p3,...)
@@ -308,7 +312,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 								   EXAMPLE
 
    import mpfit
-   import numpy.oldnumeric as Numeric
+   #import numpy.oldnumeric as Numeric
    x = arange(100, float)
    p0 = [5.7, 2.2, 500., 1.5, 2000.]
    y = ( p[0] + p[1]*[x] + p[2]*[x**2] + p[3]*sqrt(x) +
@@ -440,7 +444,7 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
 
 import numpy
 import types
-import scipy.lib.blas
+import scipy.linalg.blas
 
 #	 Original FORTRAN documentation
 #	 **********
@@ -626,8 +630,8 @@ import scipy.lib.blas
 
 class mpfit:
 
-	blas_enorm32, = scipy.lib.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float32))
-	blas_enorm64, = scipy.lib.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float64))
+	blas_enorm32, = scipy.linalg.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float32))
+	blas_enorm64, = scipy.linalg.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float64))
 
 
 	def __init__(self, fcn, xall=None, functkw={}, parinfo=None,
@@ -1193,8 +1197,7 @@ class mpfit:
 
 				# Determine the levenberg-marquardt parameter
 				catch_msg = 'calculating LM parameter (MPFIT_)'
-				[fjac, par, wa1, wa2] = self.lmpar(fjac, ipvt, diag, qtf,
-													 delta, wa1, wa2, par=par)
+				[fjac, par, wa1, wa2] = self.lmpar(fjac, ipvt, diag, qtf, delta, wa1, wa2, par=par)
 				# Store the direction p and x+p. Calculate the norm of p
 				wa1 = -wa1
 
@@ -1933,7 +1936,7 @@ class mpfit:
 
 		for j in range(n):
 			r[j:n,j] = r[j,j:n]
-		x = numpy.diagonal(r)
+		x = numpy.diagonal(r).copy()
 		wa = qtb.copy()
 
 		# Eliminate the diagonal matrix d using a givens rotation
