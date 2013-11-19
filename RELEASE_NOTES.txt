@@ -1,6 +1,11 @@
 The uvot grism python software release notes
 ============================================
 
+Version 1.0.1 2013-11-19
+
+Bug fixes to make code compatible with Numpy 1.9, Scipy 0.14.0.
+
+
 Version 1.0 2013-11-01
 
 General
