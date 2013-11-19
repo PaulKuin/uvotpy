@@ -37,4 +37,5 @@ Sergey Koposov converted the Mark's Python version from Numeric to numpy
         koposov@ast.cam.ac.uk
         Updated versions can be found at http://code.google.com/p/astrolibpy/source/browse/trunk/
 
-
+N Paul M Kuin provided some fixes to keep the code alive for 
+       Numpy 1.9 and Scipy-0.14.0
