@@ -13,6 +13,8 @@ def readout_streak(obsid,
        radec=None,
        interactive=True,
        magfile='magnitudes.txt',
+       do_only_band=None,
+       rerun_readout_streak=False,
        chatter=1):
    '''
    do the readout streak extraction in Swift UVOT images 
@@ -33,6 +35,10 @@ def readout_streak(obsid,
    ***radec*** : list , optional
       give the sky position ra,dec (J2000/ICRS) in units of 
       decimal degrees, e.g., [305.87791,+20.767536]
+   ***do_only_band*** : string
+      one of ['uvw2','uvm2','uvw1','u','b','v']
+      select only this filter (multiple values not allowed) 
+      The white filter cannot be done.
          
    output
    ======
@@ -120,8 +126,12 @@ def readout_streak(obsid,
       "  -e_u- -e_b- -e_v- --tstart-- --date-obs------ ---obsid+ext\n")   
    # run through all bands and locate the available raw image files 
    bands =['uwh','uw2','um2','uw1','uuu','ubb','uvv']
+   filts = ['wh','uvw2','uvm2','uvw1','u','b','v']
    rawfiles = []
    result = []
+   if do_only_band != None: 
+       k_band = np.where( np.array(filts) == do_only_band )[0][0]
+       bands = [bands[k_band]]
    for b in bands:
      filename = 'sw'+obsid+b+'_rw.img'
      print "looking for "+filename
@@ -224,8 +234,10 @@ def readout_streak(obsid,
      # run Mat's readout_streak c program on the mod8 corrected file
      resfile = "results."+b+".1234.txt"
      command = 'readout_streak infile='+md+' > '+resfile
-     print command
-     os.system(command)
+     if (not os.access(resfile, os.F_OK)) & rerun_readout_streak: 
+        # if already present only rerun if parameter is set
+        print command
+        os.system(command)
      # process the output from readout_streak 
      hdu = fits.open(md)
      datesobs = []
@@ -233,7 +245,7 @@ def readout_streak(obsid,
      for m in range(1,len(hdu)): 
          datesobs.append(hdu[m].header['date-obs'])
 	 tstart_.append( hdu[m].header['tstart'] )   
-     # convert the output to an obs dict
+     # convert the output to an obs dict (unless already done)
      obses, details = _read_readout_streak_output(
          obses,
 	 inp=resfile,
@@ -279,9 +291,14 @@ def readout_streak(obsid,
                "-1    -1    -1    -1    %6.3f -1        -1    -1    -1    -1    %5.3f -1    %10i %16s %10s+%i\n",
                "-1    -1    -1    -1    -1    %6.3f     -1    -1    -1    -1    -1    %5.3f %10i %16s %10s+%i\n",
 	       ]
+   if (do_only_band != None):
+      fmt = [formatstr[k_band-1]]
+      formatstr=6*fmt 	       	       
    filts = ['uvw2','uvm2','uvw1','u','b','v']
    for (fmt,fi) in zip(formatstr,filts):
        for obj in result:
+           if (do_only_band != None) & (fi != do_only_band): 
+	       break
            print "obj band=",obj['band']," searching band =",fi
            if obj['band'] == fi:
 	       try:
@@ -414,10 +431,11 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
 	        '-',color='k',alpha=0.7,lw=1)
 	    #plot(rawx-hdr['windowx0'],rawy-hdr['windowy0'],'o',markersize=25,color='w',alpha=0.3)
          ans = raw_input("happy (yes,skip,no): ")
-         if ans.upper()[0] == 'Y': 
-	     happy = True
-	 if ans.upper()[0] == 'S': 
-	     return 0.0, coord[0], (yloc+104,xloc+78) 
+	 if len(ans) > 0:
+            if ans.upper()[0] == 'Y': 
+	        happy = True
+	    if ans.upper()[0] == 'S': 
+	        return 0.0, coord[0], (yloc+104,xloc+78) 
       else:
          print "no position found"	 
       if count > 10:
