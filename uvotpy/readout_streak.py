@@ -67,10 +67,41 @@ def readout_streak(obsid,
    
    Sources which are too faint can be reduced using the "uvotsource" "ftool". 
    
+   How to use:
+     - unpack the uvot data (auxil, uvot/hk, uvot/image)
+     - unzip the uvot/image files
+     - run the code like:
+       > obsid = '00032911090'
+       > ra,dec=305.87791,20.767536
+       > indir = '../00033024012/uvot/image/' 
+       
+       I like to run from a "results" directory, which explains the indir parameter.
+       > Z = readout_streak.readout_streak(obsid,radec=[ra,dec],target='V339 Del',
+           magfile='/projects/V339_del/readout_photometry.txt')
+       First the program will crop small-frame images that are in a large frame.	   
+       The program will reprocess the data to apply the MOD8 correction to the 
+       raw image. Then run the c-program readout_streak written by Mat Page 
+       which should have been installed. This program extracts the readout 
+       streak positions and count rate.
+       Then the program will pop up a window with the raw image, readout streaks 
+       overlaid, The location of the source is indicated by a purple circle 
+       but gives two possible locations [this is a bug that still needs investigation].
+       Select the correct location. If the locations do not have a readout streak 
+       (when the source has gotten too weak,) then click anywhere but type "S[kip]"
+       and this image will not be used. Otherwise, type "Y[es]", to approve, 
+       or anything else to have another go (the image does not update though). 
+       
+       If there are many images, this may take a while. 
+       
+       At the end, the results are written to the file specified in the input 
+       parameter.
+         
    Bugs/desired upgrades:
-    - Problem with small frames: some are still not positioned correctly.
     - want to use sky file header to convert ra,dec -> raw image position
-      currently, converts to det position only
+      currently, converts to det position only, and there is a bug in the 
+      processing, so that the position in small frame windows has sometimes 
+      x and y exchanged. Currently, both possibilities are marked with a 
+      magneta circle.  
     - include the readout_streak code in the distribution (requires fitsio and
       wcstools.)  
    	
@@ -134,10 +165,10 @@ def readout_streak(obsid,
                # 
 	       xx = np.array(tstart - hk[1].data['expid'],dtype=int)
 	       nnn= np.where( np.abs (xx) == np.min(np.abs(xx)))[0][0]
-	       DW_X0 = hk[1].data['DW_X0'][nnn]
-	       DW_Y0 = hk[1].data['DW_Y0'][nnn]
-	       DW_XSIZ = hk[1].data['dw_xsiz'][nnn]
-	       DW_YSIZ = hk[1].data['dw_ysiz'][nnn]
+	       DW_Y0 = hk[1].data['DW_X0'][nnn]
+	       DW_X0 = hk[1].data['DW_Y0'][nnn]
+	       DW_YSIZ = hk[1].data['dw_xsiz'][nnn]
+	       DW_XSIZ = hk[1].data['dw_ysiz'][nnn]
 	       x0=DW_X0*16
 	       x1=(DW_X0+DW_XSIZ)*16
 	       y0=DW_Y0*16
@@ -229,20 +260,24 @@ def readout_streak(obsid,
 	       else:
 	          rawxy = None   	  	    
 	lss,img_coord, det_coord  = _lss_corr(obs, interactive=interactive,rawxy=rawxy) 
-        data = _readout_streak_mag(obs, target=target,lss=lss,
-	       subimg_coord=img_coord,det_coord=det_coord )
-	obs.update( {'magnitudes': data})
-	obs.update( {'img_coord':img_coord})       
-	obs.update( {'det_coord':det_coord})       
-	result.append(obs)
+	if lss != 0.0:
+            data = _readout_streak_mag(obs, target=target,lss=lss,
+	        subimg_coord=img_coord,det_coord=det_coord )
+	    obs.update( {'magnitudes': data})
+	    obs.update( {'img_coord':img_coord})       
+	    obs.update( {'det_coord':det_coord})       
+	    result.append(obs)
+	else:
+	    print "\nskipping this image\nconsider running uvotsource\n"  
+	    #   
 
    # mag output : cycle through filters
-   formatstr =["%5.3f -1    -1    -1    -1    -1        %4.3f -1    -1    -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    %5.3f -1    -1    -1    -1        -1    %4.3f -1    -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    %5.3f -1    -1    -1        -1    -1    %4.3f -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    %5.3f -1    -1        -1    -1    -1    %4.3f -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    -1    %5.3f -1        -1    -1    -1    -1    %4.3f -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    -1    -1    %5.3f     -1    -1    -1    -1    -1    %4.3f %10i %16s %10s+%i\n",
+   formatstr =["%6.3f -1    -1    -1    -1    -1        %5.3f -1    -1    -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1    %6.3f -1    -1    -1    -1        -1    %5.3f -1    -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1    -1    %6.3f -1    -1    -1        -1    -1    %5.3f -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1    -1    -1    %6.3f -1    -1        -1    -1    -1    %5.3f -1    -1    %10i %16s %10s+%i\n",
+               "-1    -1    -1    -1    %6.3f -1        -1    -1    -1    -1    %5.3f -1    %10i %16s %10s+%i\n",
+               "-1    -1    -1    -1    -1    %6.3f     -1    -1    -1    -1    -1    %5.3f %10i %16s %10s+%i\n",
 	       ]
    filts = ['uvw2','uvm2','uvw1','u','b','v']
    for (fmt,fi) in zip(formatstr,filts):
@@ -316,6 +351,7 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
    cols = obs['streak_col_SN_CR_ERR']
    kol = []
    countrates=[]
+   circle=[np.sin(np.arange(0,2*np.pi,0.05)),np.cos(np.arange(0,2*np.pi,0.05))]
    for k in cols:
       kol.append(k[1]) # S/N
       countrates.append(k[2])
@@ -334,7 +370,7 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
       return 1.0, (0,0), (1100.5,1100.5)
    im=fits.getdata(file, ext=ext)   
    hdr=fits.getheader(file, ext=ext)
-   binx = hdr['binx']
+   #binx = hdr['binx']
    mn = im.mean()
    sig = im.std()
    #   plot
@@ -344,7 +380,9 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
    imshow(im,vmin=mn-0.2*sig,vmax=mn+2*sig)
    if rawxy != None:
 	 rawx,rawy = rawxy
-	 plot(rawx/binx,rawy/binx,'o',markersize=25,color='w',alpha=0.3)
+	 R = hdr['windowdx']/15.
+	 plot(R*circle[0]+rawx-hdr['windowy0'],R*circle[1]+rawy-hdr['windowx0'],
+	     '-',color='m',alpha=0.7,lw=2)
    title(u"PUT CURSOR on your OBJECT",fontsize=16)
    if not maxcr:
        count = 0
@@ -355,6 +393,7 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
        k = k_sn_max[0][0]    
        axvspan(k-10,k+10,0.01,0.99, facecolor='k',alpha=0.2)
    happy = False
+   skip = False
    count = 0
    while not happy :  
       print "put the cursor on the location of your source"
@@ -370,9 +409,15 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
 	 axhspan(coord[0][1]-6,coord[0][1]+6,0,1,facecolor='k',alpha=0.3)
 	 if rawxy != None:
 	    rawx,rawy = rawxy
-	    plot(rawx/binx,rawy/binx,'o',markersize=25,color='w',alpha=0.3)
-         ans = raw_input("happy (yes,no): ")
-         if ans.upper()[0] == 'Y': happy = True
+	    R = hdr['windowdx']/15.
+	    plot(R*circle[0]+rawx-hdr['windowx0'],R*circle[1]+rawy-hdr['windowy0'],
+	        '-',color='k',alpha=0.7,lw=1)
+	    #plot(rawx-hdr['windowx0'],rawy-hdr['windowy0'],'o',markersize=25,color='w',alpha=0.3)
+         ans = raw_input("happy (yes,skip,no): ")
+         if ans.upper()[0] == 'Y': 
+	     happy = True
+	 if ans.upper()[0] == 'S': 
+	     return 0.0, coord[0], (yloc+104,xloc+78) 
       else:
          print "no position found"	 
       if count > 10:
@@ -598,6 +643,9 @@ def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
    '''
    use the header of the skyfile to determine the position on the raw image
    
+   current version only provides the position in the 
+   detector image (the distortion-corrected raw image)
+   
    input parameters
    ================
    ra,dec : float
@@ -657,10 +705,13 @@ def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
    phys = W.wcs_world2pix(radec,0)
    det = Wd.wcs_pix2world(phys,0) # now this is position on det in mm
    scl = 0.009075
+   binx = sky[ext].header['binx']
    detx,dety = det[0][0],det[0][1] # mm
    x = detx/scl+1100.5 -104  # img pixels undistorted
    y = dety/scl+1100.5 -78   # img pixels undistorted
-   
+   x = x/binx
+   y = y/binx
+   if chatter > 0 : print "detector image position should be [%i,%i]"%(x,y)
    # convert xdet,ydet -> x,y (raw)
    #os.system("cat "+str(detx)+","+str(dety)+" > detxy.txt")
    #command = HEADAS+'/bin/uvotapplywcs infile=detxy.txt'\
