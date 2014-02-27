@@ -2,13 +2,14 @@
 
 # Developed by N.P.M. Kuin (MSSL/UCL)
 
-__version__ = '1.0.0 20131023' 
+__version__ = '1.0.2 20140101'
+ 
 import sys
 import optparse
 import numpy as np
 import pylab as plt
 try: 
-   from astropy import fits as pyfits
+   from astropy.io import fits as pyfits
 except:   
    import pyfits
 import re
@@ -51,6 +52,7 @@ if __name__ != '__main__':
       update_curve = True
       contour_on_img = False
       give_result = False # with this set, a call to getSpec returns all data 
+      give_new_result = False
       use_rectext = False
       background_method = 'boxcar'  # alternatives 'splinefit' 'boxcar'
       background_smoothing = [50,7]   # 'boxcar' default smoothing in dispersion and across dispersion in pix
@@ -62,7 +64,7 @@ if __name__ != '__main__':
 
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
-
+fileversion=2
 
 def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       outfile=None, calfile=None, fluxcalfile=None, \
@@ -268,6 +270,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
      Version 2011-09-22 NPMK(MSSL)  : handle case with no lenticular filter observation
      Version 2012-01-15 NPMK(MSSL)  : optimal extraction is no longer actively supported until further notice
      Version 2013-10-23 NPMK(MSSL)  : fixed bug so uvotgraspcorr gives same accuracy as lenticular filter 
+     Version 2014-01-01 NPMK(MSSL)  : aperture correction for background added; output dictionary
 
    Example
    -------
@@ -336,9 +339,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       print 'WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n'
       
    SESAME_PRESENT = os.system('which sesame > /dev/null')
-   if SESAME_PRESENT != 0:
-      print 'WARNING: cannot locate the sesame program \nDid you install the cdsclient tools?\n'   
-
+   #if SESAME_PRESENT != 0:
+   #   print 'WARNING: cannot locate the sesame program \nDid you install the cdsclient tools?\n'   
 
    # fix some parameters 
    framtime = 0.0110322
@@ -363,10 +365,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    Y2 = None
    Y3 = None
    Y4 = None
+   Yfit = {}
+   Yout = {"coi_level":None}   # output dictionary (2014-01-01; replace Y0,Y1,Y2,Y3)
    lfilt1_aspcorr = "not initialized"
    lfilt2_aspcorr = "not initialized"
+   qflag = quality_flags()
+   
+   # parameters getSpec()
+   Yout.update({'indir':indir,'obsid':obsid,'ext':ext})
+   Yout.update({'ra':RA,'dec':DEC,'wheelpos':wheelpos})
    
    if sumimage == None:
+   
       try:
         ext = int(ext)
       except:
@@ -382,31 +392,33 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       if (lfilt1_ == None) & (lfilt2_ == None): 
          # ensure the output is consistent with no lenticular filter solution
          use_lenticular_image = False
-    
+      
+      # translate
+      filt_id = {"wh":"wh","v":"vv","b":"bb","u":"uu","uvw1":"w1","uvm2":"m2","uvw2":"w2"}
       lfiltflag = False    
       if ((lfilt1 == None)&(lfilt1_ != None)): 
          lfilt1 = lfilt1_   
          lfilt1_ext = lfilt1_ext_
-         if chatter > 0: print "lenticular filter 1 from search lenticular images"
+         if chatter > 0: print "lenticular filter 1 from search lenticular images"+lfilt1+"+"+str(lfilt1_ext)
          lfiltflag = True
 	 lfilt1_aspcorr = None
 	 try: 
-	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+lfilt1[-2:]+"_sk.img",lfilt1_ext)
+	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img",lfilt1_ext)
 	   lfilt1_aspcorr = hdu_1["ASPCORR"]  
 	 except:
-	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+lfilt1[-2:]+"_sk.img.gz",lfilt1_ext)
+	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img.gz",lfilt1_ext)
 	   lfilt1_aspcorr = hdu_1["ASPCORR"]  
       if ((lfilt2 == None)&(lfilt2_ != None)):
          lfilt2 = lfilt2_
          lfilt2_ext = lfilt2_ext_    
-         if chatter > 0: print "lenticular filter 2 from search lenticular images"
+         if chatter > 0: print "lenticular filter 2 from search lenticular images"+lfilt2+"+"+str(lfilt2_ext)
          lfiltflag = True
 	 lfilt2_aspcorr = None
 	 try: 
-	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+lfilt2[-2:]+"_sk.img",lfilt2_ext)
+	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img",lfilt2_ext)
 	   lfilt2_aspcorr = hdu_2["ASPCORR"]  
 	 except:
-	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+lfilt2[-2:]+"_sk.img.gz",lfilt2_ext)
+	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img.gz",lfilt2_ext)
 	   lfilt2_aspcorr = hdu_2["ASPCORR"]  
 
       # report       
@@ -441,12 +453,15 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 	      msg += "anchor position derived without lenticular filter\n"	 
 
       hdr = pyfits.getheader(specfile,int(ext))
+      Yout.update({'hdr':hdr})
 
       tstart = hdr['TSTART']
       tstop  = hdr['TSTOP'] 
       wheelpos = hdr['WHEELPOS']
       expo     = hdr['EXPOSURE']
       expmap   = [hdr['EXPOSURE']]
+      Yout.update({'wheelpos':wheelpos})
+      
       try:
         framtime = hdr['framtime']
       except: 
@@ -456,7 +471,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
         framtime = deadtime/(1.0-deadc)
         hdr.update('framtime',framtime,comment='frame time computed from deadc ')
         pass
-      #if not hdr.has_key('detnam'):
+
       if not 'detnam' in hdr:
         hdr.update('detnam',str(hdr['wheelpos']))    
      
@@ -508,9 +523,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          method = None   
 	 
       # retrieve the input angle relative to the boresight	 
-      Xphi, Yphi, date1 = findInputAngle( RA, DEC, filestub, ext, \
+      Xphi, Yphi, date1, msg_ = findInputAngle( RA, DEC, filestub, ext, \
            wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
 	   method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
+      Yout.update({"Xphi":Xphi,"Yphi":Yphi}) 
 
       # read the anchor and dispersion out of the wavecal file  	      
       anker, anker2, C_1, C_2, angle, calibdat = getCalData(Xphi,Yphi,wheelpos, date1, \
@@ -533,7 +549,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       print "second order dispersion = %s"%(str(C_2))
       # override angle
       if fixed_angle != None:
-         msg += "WARNING: overriding calibration file angle for extracting \n\tspectrum cal: "+str(angle)+'->'+str(fixed_angle)+" \n" 
+         msg += "WARNING: overriding calibration file angle for extracting \n\t"\
+             "spectrum cal: "+str(angle)+'->'+str(fixed_angle)+" \n" 
          angle = fixed_angle  
    
       # override anchor position in det pixel coordinates   
@@ -556,7 +573,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       dist12 = np.sqrt( (anker[0]-anker2[0])**2 + (anker[1]-anker2[1])**2 )
       msg += "order distance 1st-2nd anchors :\n"
       msg += "DIST12=%7.1f\n" % (dist12)
-   
+      Yout.update({"anker":anker,"anker2":anker2,"C_1":C_1,"C_2":C_2,"theta":angle,"dist12":dist12})
+      
+      
       # determine x,y locations of certain wavelengths on the image
       # TBD: add curvature
       if wheelpos < 500: 
@@ -603,6 +622,19 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       Y6 = sum_Extimage (None, sum_file_name=sumimage, mode='read')
       extimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, \
       (coef0, coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr = Y6
+      
+      msg += "order distance 1st-2nd anchors :\n"
+      msg += "DIST12=%7.1f\n" % (dist12)
+      for k in range(len(C_1)):
+         msg += "DISP1_"+str(k)+"=%12.4e\n" % (C_1[k])     
+      msg += "second order dispersion polynomial (distance anchor2,\n"
+      msg += "   highest term first)\n"
+      for k in range(len(C_2)):
+         msg += "DISP2_"+str(k)+"=%12.4e\n" % (C_2[k])
+      print "first order anchor = ",anker
+      print "first order dispersion = %s"%(str(C_1))
+      print "second order dispersion = %s"%(str(C_2))
+      
       tstart = hdr['tstart']
       ank_c = [100,500,0,2000]
       if offsetlimit == None:
@@ -625,27 +657,36 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       m1,m2,aa,wav1 = None,None,None,None
       if outfile == None: 
          outfile='sum_image_'
-      	 	
+      Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
+      "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef} )
+      Yout.update({"anker":anker,"anker2":None,
+      "C_1":C_1,"C_2":C_2,
+      "Xphi":0.0,"Yphi":0.0,
+      "wheelpos":wheelpos,"dist12":dist12,
+      "hdr":hdr,"offset":offset})    	 	
+      Yout.update({"background_1":bg1,"background_2":bg2})
        
-   else:	
+   else:
+      # default extraction 
+      
+      # start with a quick straight slit extraction	
       (dis, spnet, bg, bg1, (bg2, bgsig, bgimg, bg_limits_used, bgextra), \
            extimg, spimg, spnetimg, offset, ank_c) = \
            extractSpecImg(specfile,ext,ankerimg,angle,spwid=spextwidth,\
 	      background_lower=background_lower, background_upper=background_upper,
               offsetlimit=offsetlimit,  chatter=chatter)
 
+      Yout.update({"background_1":bg1,"background_2":bg2})
       #msg += "1st order anchor offset from spectrum = %7.1f\n"%(offset)
       #msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],ank_c[0])
 
-      # curved == "straight"
-   
       calibdat = None # should free the memory properly here. 	
    
       if chatter > 2: print "============ straight slit extraction complete ================="
 		
       if np.max(spnet) < maxcounts: maxcounts = 2.0*np.max(spnet) 		
 
-      # initial limits spectrum 
+      # initial limits spectrum (pixels)
       m1 = ank_c[1]-400 
       if wheelpos > 500:     m1 = ank_c[1]-370 
       if m1 < 0: m1 = 0
@@ -664,6 +705,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          offset = np.asscalar(offset)
       except:
          pass
+      Yout.update({"offset":offset})
       
       Zbg  = bg, bg1, bg2, bgsig, bgimg, bg_limits_used, bgextra
    net  = extimg-bgextra[-1]
@@ -679,11 +721,15 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    
    if (not skip_field_src) & (sumimage == None):
       if chatter > 2: print "================== locate zeroth orders due to field sources ============="
+      if wheelpos > 500: zeroth_blim_offset = 2.5 
       ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", )
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
       pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
+      Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,"matched":matched,"ondetector":ondetector}
+      Yout.update({"ZOpos":Y_ZOpos})
    else:
-      ZOpos = None   
+      ZOpos = None 
+      Yout.update({"ZOpos":None})       
 
    #    collect some results:
    if sumimage == None:
@@ -712,7 +758,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
-       =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, predict_second_order=predict2nd,
+          =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, 
+	     predict_second_order=predict2nd,
              angle=angle,offset=offset,  poly_1=poly_1,poly_2=poly_2,poly_3=poly_3,
 	     msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
 	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, chatter=chatter) 
@@ -725,7 +772,19 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 	      
       # update the anchor y-coordinate	      
       ank_c[0] = y1[ank_c[1]]	      
-	      
+      
+      Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
+      "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
+      "present0":present0,"present1":present1,"present2":present2,"present3":present3,
+      "q0":q0,"q1":q1,"q2":q2,"q3":q3,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,
+      "apercorr":apercorr,"expospec":expospec})
+       
+      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	 	      
 		
    # curvature from calibration
    
@@ -745,6 +804,19 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
           (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
 	  (x,xstart,xend,sp_all,quality)  = fitorder
 	
+      Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
+      "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
+      "present0":present0,"present1":present1,"present2":present2,"present3":present3,
+      "q0":q0,"q1":q1,"q2":q2,"q3":q3,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,
+      "apercorr":apercorr,"expospec":expospec})  
+        	 	
+      ank_c[0] = y1[ank_c[1]]	      
+      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	
       # 2012-02-20 moved to curved_extraction so that updated track is used for spectrum 		 
       #if curved == "update":
       #  # the hope is, that with more data the calibration can be improved to eliminate this step
@@ -802,6 +874,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    offset = ank_c[0]-100.0	      		
    msg += "best fit 1st order anchor offset from spectrum = %7.1f\n"%(offset)
    msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],ank_c[0])
+   Yout.update({"offset":offset})
    
    #2012-02-20 moved updateFitorder to curved_extraction
    #if curved == "update": 
@@ -811,7 +884,12 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    fit = fitorder
     
    if optimal_extraction:
-      print "Starting optimal extraction:  This can take a few minutes ......\n\t ........\n\t\t ............."
+      # development dropped, since mod8 causes slit width oscillations
+      # also requires a good second order flux and coi calibration for 
+      # possible further development of order splitting. 
+      # result in not consistent now.
+      print "Starting optimal extraction:  This can take a few minutes ......\n\t "\
+            "........\n\t\t ............."
       Y3 = get_initspectrum(net,var,fit,160,ankerimg,C_1=C_1,C_2=C_2,dist12=dist12,
            predict2nd=predict2nd,
            chatter=1)
@@ -838,12 +916,16 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          #  plot yellow wavelength marker 
 	 #  TBD : add curvature 
          plt.plot(xpnt,ypnt,'+k',markersize=14)
+	 if not skip_field_src:   
+            uvotplot.plot_ellipsoid_regions(Xim,Yim,
+	               Xa,Yb,Thet,b2mag,matched,ondetector,
+		       pivot_ori,pivot_ori,dims,17.,)
          if zoom:
             plt.xlim(np.max(np.array([0.,0.])),np.min(np.array([hdr['NAXIS1'],ankerimg[0]+400])))
 	    plt.ylim(np.max(np.array([0.,ankerimg[1]-400 ])),   hdr['NAXIS2'])
-	 if not skip_field_src:   
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,pivot_ori,pivot_ori,dims,17.,)
-
+         else:
+	    plt.xlim(0,2000)
+	    plt.ylim(0,2000)
 
       if (plot_raw):
          plt.winter()
@@ -869,7 +951,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          if not skip_field_src:
             pivot= np.array([ank_c[1],ank_c[0]-offset])
             #pivot_ori=ankerimg
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,pivot,pivot_ori,dims2,17.,img_angle=angle-180.0,ax=ax21)
+	    mlim = 17.
+	    if wheelpos > 500: mlim = 15.5
+            uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
+	             matched,ondetector,
+		     pivot,pivot_ori,
+		     dims2,mlim,
+		     img_angle=angle-180.0,ax=ax21)
          # plot line on anchor location 
          plt.plot([ac+ank_c[1],ac+ank_c[1]],[0,200],'k',lw=2) 
 	 # plot position centre of orders  
@@ -923,8 +1011,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 	 ax22 = plt.subplot(nsubplots,1,2) 
 	 plt.rcParams['legend.fontsize'] = 'small'
 	 if curved == 'straight':
-            p1, = plt.plot( dis[ank_c[2]:ank_c[3]], spnet[ank_c[2]:ank_c[3]],'k',ls='steps',lw=0.5,alpha=0.5,label='straight')
-            p2, = plt.plot( dis[ank_c[2]:ank_c[3]], spextwidth*(bg1[ank_c[2]:ank_c[3]]+bg2[ank_c[2]:ank_c[3]])*0.5, 'b',alpha=0.5,label='background')
+            p1, = plt.plot( dis[ank_c[2]:ank_c[3]], spnet[ank_c[2]:ank_c[3]],'k',
+	              ls='steps',lw=0.5,alpha=0.5,label='straight')
+            p2, = plt.plot( dis[ank_c[2]:ank_c[3]], 
+	              spextwidth*(bg1[ank_c[2]:ank_c[3]]+bg2[ank_c[2]:ank_c[3]])*0.5, 
+		      'b',alpha=0.5,label='background')
 	    plt.legend([p1,p2],['straight','background'],loc=0,)
 	 
 	 if curved != "straight":
@@ -1034,11 +1125,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
          wav1 = polyval(C_1,x[q1[0]])
 	 ax31 = plt.subplot(nsubplots,1,1) 
 	 if curved != "xxx":
-	    rate1 = ((sp_first[q1[0]]* apercorr[1,[q1[0]]]-bg_first[q1[0]] ) 
+	    # PSF aperture correction applies on net rate, but background 
+	    # needs to be corrected to default trackwidth linearly 
+	    rate1 = ((sp_first[q1[0]]-bg_first[q1[0]] ) * apercorr[1,[q1[0]]]
 	            /expospec[1,[q1[0]]]).flatten()
-	    #bkgrate1 = ((bg_first)[q1[0]] * apercorr[1,[q1[0]]] 
-	    #       /expospec[1,[q1[0]]]).flatten()
-	    bkgrate1 = ((bg_first)[q1[0]] 
+	    bkgrate1 = ((bg_first)[q1[0]] * (2.5/trackwidth)
 	            /expospec[1,[q1[0]]]).flatten()
             flux1 = rate2flux(wav1,rate1, wheelpos, bkgrate=bkgrate1, 
 	                pixno=x[q1[0]], sig1coef=sig1coef, 
@@ -1049,17 +1140,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 			option=2, fudgespec=1.0,
 			frametime=framtime, 
 	                debug=False,chatter=1)
-            #flux1_err = rate2flux(wave,rate_err, wheelpos, spectralorder=1,)
+            #flux1_err = 0.5*(rate2flux(,,rate+err,,) - rate2flux(,,rate-err,,))
 	    p1, = plt.plot(wav1[np.isfinite(flux1)],flux1[np.isfinite(flux1)],
 	                   color='darkred',label=u'curved') 	    
 	    	    
 	    #  PROBLEM quality flags !!!
 	    qbad1 = np.where((quality[x[q1[0]]] > 0) & (quality[x[q1[0]]] < 16))
+	    qbad2 = np.where((quality[x[q1[0]]] > 0) & (quality[x[q1[0]]] == qflag.get("bad")))
 	    plt.legend([p1],[u'curved'])
-	    if len(qbad1[0]) > 0:      
-               p2, = plt.plot(wav1[qbad1],flux1[qbad1],
-	             '+k',markersize=4,label=u'suspect')
-	       plt.legend([p1,p2],[u'curved',u'suspect'])
+	    if len(qbad2[0]) > 0:      
+               p2, = plt.plot(wav1[qbad2],flux1[qbad2],
+	             '+k',markersize=4,label=u'bad data')
+	       plt.legend([p1,p2],[u'curved',u'bad data'])
 	    plt.ylabel(u'1st order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
 	    # find reasonable limits flux 
 	    qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
@@ -1091,17 +1183,17 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 	    plt.text(2000,0.4,'NO SECOND ORDER DATA',fontsize=16)	 	    
 	    if curved != 'xxx':
 	       wav2 = polyval(C_2,x[q2[0]]-dist12)
-	       rate2 = ((sp_second[q2[0]]* apercorr[2,[q2[0]]]-bg_second[q2[0]]) /expospec[2,[q2[0]]]).flatten()
+	       rate2 = ((sp_second[q2[0]]-bg_second[q2[0]])* 
+	           apercorr[2,[q2[0]]].flatten()/expospec[2,[q2[0]]].flatten() )
                flux2 = rate2flux(wav2, rate2, wheelpos, spectralorder=2,swifttime=tstart)
                #flux1_err = rate2flux(wave,rate_err, wheelpos, spectralorder=1,)
 	       plt.cla()
 	       p1, = plt.plot(wav2,flux2,'r',label='curved') 	    
 	       plt.plot(wav2,flux2,'k',alpha=0.2,label='_nolegend_') 	    
-	       qbad = np.where((quality > 0) & (quality < 32))
 	       qbad1 = np.where((quality[x[q2[0]]] > 0) & (quality[x[q2[0]]] < 16))
-	       p2, = plt.plot(wav2[qbad1],flux2[qbad1],'+k',markersize=4,label='suspect')
-	       plt.legend(['curved','suspect'])
-	       plt.ylabel(u'2nd order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
+	       p2, = plt.plot(wav2[qbad1],flux2[qbad1],'+k',markersize=4,label='suspect data')
+	       plt.legend(['uncalibrated','suspect data'])
+	       plt.ylabel(u'estimated 2nd order flux')
             plt.xlim(1600,3200)
 
 	    qf = (flux1 > 0.) & (flux1 < 1.0e-11)
@@ -1127,8 +1219,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
            (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )	 
 	     
    # output parameter 
-   Y2 = fit, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,bg_second,bg_third), (borderup,borderdown), apercorr, expospec	
-	       
+   Y2 = fit, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,
+        bg_second,bg_third), (borderup,borderdown), apercorr, expospec	
+   Yout.update({"Yfit":Yfit})	       
+
    # writing output to a file 
    #try:
    if wr_outfile:      # write output file
@@ -1138,17 +1232,26 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       
       if (curved == 'straight') & (not optimal_extraction): 
          ank_c2 = np.copy(ank_c) ; ank_c2[1] -= m1
-         F = uvotio.wr_spec(RA,DEC,filestub,ext,hdr,anker,anker_field[0],anker_field[1],dis[aa],wav1  \
-                 ,spnet[aa]/expo,bg[aa]/expo,bg1[aa]/expo,bg2[aa]/expo,offset,ank_c2,extimg, C_1, \
-                  history=None,chatter=1,clobber=clobber, interactive=interactive)  
+         F = uvotio.wr_spec(RA,DEC,filestub,ext,
+	         hdr,anker,anker_field[0],anker_field[1],
+		 dis[aa],wav1,
+		 spnet[aa]/expo,bg[aa]/expo,
+		 bg1[aa]/expo,bg2[aa]/expo,
+		 offset,ank_c2,extimg, C_1, 
+                 history=None,chatter=1,
+		 clobber=clobber, 
+		 interactive=interactive)  
 		  
       elif not optimal_extraction:
-         Y = (Y0,Y1,Y2,Y4)
+         if fileversion == 2:
+            Y = Yout
+	 elif fileversion == 1:
+            Y = (Y0,Y1,Y2,Y4)
          F = uvotio.writeSpectrum(RA,DEC,filestub,ext, Y,  
 	      fileoutstub=outfile, 
 	      arf1=fluxcalfile, arf2=None, 
 	      fit_second=fit_second, 
-	      write_rmffile=write_RMF,
+	      write_rmffile=write_RMF, fileversion=2,
 	      used_lenticular=use_lenticular_image,
 	      history=msg, 
 	      chatter=chatter, 
@@ -1186,6 +1289,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    flog.close()
        
    if give_result: return Y0, Y1, Y2, Y3, Y4   
+   if give_new_result: return Yout
 
 
 
@@ -1224,7 +1328,10 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    ''' 
    import numpy as np
    import os
-   import pyfits
+   try: 
+      from astropy.io import fits as pyfits
+   except:   
+      import pyfits
    import scipy.ndimage as ndimage
    
    #out_of_img_val = -1.0123456789 now a global 
@@ -1422,6 +1529,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       mean background 
    bg1, bg2 : 1D arrays
       bg1 = lower background; bg2 = upper background
+      inherits size from extimg.shape x-xoordinate
    bgsig : float
       standard deviation of background  
    bgimg : 2D array
@@ -1734,15 +1842,31 @@ def hydrogen(n,l):
   lam = 1./inv_lam * 1e10
   return lam
 
-
-def boresight(filter='uvw1',order=1,wave=260,r2d=77.0,date=000,chatter=0):
-   ''' These values should come out of the TELDEF file, but 
-       the grism boresight positions of the grisms at 2600 in first order 
-       have not been implemented therein. So I used this routine as a shortcut. 
+def boresight(filter='uvw1',order=1,wave=260,
+              r2d=77.0,date=0,chatter=0):
+   ''' provide reference positions on the 
+       UVOT filters for mapping and as function of 
+       time for grisms. 
        
-       returns the boresight for a filter (in DET pixels)
-       by adding (77,77) to the lenticular filter RAW coordinate.(see TELDEF file)
-       the grism boresight was measured in DET (offset correction should be 104,78)
+       This function name is for historical reasons, 
+       and provides a key mapping function for the 
+       spectral extraction.  
+   
+       The correct boresight of the (lenticular) filters 
+       should be gotten from the Swift UVOT CALDB 
+       as maintained by HEASARC. The positions here 
+       are in some cases substantially different from
+       the boresight in the CALDB. They are reference 
+       positions for the spectral extraction algorithms 
+       rather than boresight. 
+       
+       The grism boresight positions at 260nm (uv grism)
+       and 420nm (visible grism) in first order are served
+       in an uncommon format (in DET pixels) 
+       by adding (77,77) to the lenticular filter 
+       RAW coordinate.(see TELDEF file) the grism 
+       boresight was measured in DET coordinates, 
+       not RAW. (offset correction should be 104,78)
 
        Parameters
        ----------
@@ -1750,161 +1874,163 @@ def boresight(filter='uvw1',order=1,wave=260,r2d=77.0,date=000,chatter=0):
           one of {'ug200','uc160','vg1000','vc955',
 	  'wh','v','b','u','uvw1','uvm2','uvw2'}
        
+       order : {0,1,2}
+          order for which the anchor is needed
+
+       wave : float
+          anchor wavelength in nm
+
+       r2d : float 
+          additive factor in x,y to anchor position 
+
+       date: long
+          format in swift time (s)
+          if 0 then provide the first order anchor 
+          coordinates of the boresight for mapping 
+          from the lenticular filter position 
+
+       chatter : int 
+          verbosity 
+
        Returns
        ------- 
-       the boresight for a filter (in DET pixels)
-       by adding (77,77) to the lenticular filter RAW coordinate.(see TELDEF file)
+       When *date* = 0:
+       
+       For translation: The boresight for a filter 
+       (in DET pixels) by adding (77,77) to the 
+       lenticular filter RAW coordinate (see TELDEF file)
        the grism boresight was measured in DET 
-       (The default r2d=77 returns the correct boresight for the grisms in 
-       detector coordinates. To get the grism boresight in image coordinates, 
-       subtract (104,78) typically.)
+       (The default r2d=77 returns the correct 
+       boresight for the grisms in detector 
+       coordinates. To get the grism boresight in 
+       detector image coordinates, subtract (104,78) 
+       typically. The difference is due to the distortion
+       correction from RAW to DET)
+       
+       When *date* is non-zero, and *order*=0:
+       The zeroth order boresight  
+      
        	  
        NOTE: 
        -----
        THE TRANSLATION OF LENTICULAR IMAGE TO GRISM 
-       IMAGE IS ALWAYS THE SAME, INDEPENDENT OF THE BORESIGHT.
-       THEREFORE THE BORESIGHT DRIFT DOES NOT AFFECT THE 
-       GRISM ANCHOR POSITIONS AS LONG AS THE DEFAULT 
-       BORESIGHT POSITIONS ARE USED. [Becase those were used
-       for the calibration].
+       IMAGE IS ALWAYS THE SAME, INDEPENDENT OF THE 
+       BORESIGHT.
+       THEREFORE THE BORESIGHT DRIFT DOES NOT AFFECT 
+       THE GRISM ANCHOR POSITIONS AS LONG AS THE DEFAULT 
+       BORESIGHT POSITIONS ARE USED. 
+       [Becase those were used for the calibration].
+
+       However, the zeroth order "reference" position 
+       drift affects the "uvotgraspcorr" - derived 
+       WCS-S. The positions used 
+
+       History: 
+         2014-01-04 NPMK : rewrite to inter/extrapolate 
+	 the boresight positions
        
    '''
-   filterlist = 'ug200','uc160','vg1000','vc955','wh','v','b','u','uvw1','uvm2','uvw2'
-       
-   if date > 209952000:
-      if chatter > 0: print 'date > 209952000'
-      if   filter == 'uvw1': return 951.204+r2d, 1049.365+r2d
-      elif filter == 'wh'  : return 949.902+r2d, 1048.837+r2d
-      elif filter == 'v'   : return 951.741+r2d, 1049.890+r2d 
-      elif filter == 'b'   : return 951.877+r2d, 1049.672+r2d 
-      elif filter == 'u'   : return 956.984+r2d, 1047.841+r2d
-      elif filter == 'uvm2': return 949.753+r2d, 1049.306+r2d 
-      elif filter == 'uvw2': return 951.113+r2d, 1050.187+r2d
-      elif filter == 'w1'  : return 951.204+r2d, 1049.365+r2d
-      elif filter == 'm2'  : return 949.753+r2d, 1049.306+r2d 
-      elif filter == 'w2'  : return 951.113+r2d, 1050.187+r2d
-      elif filter == 'ug200':       
-          if order == 1:
-             if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+r2d, 707.7+r2d   
-      elif filter == 'uc160':       
-          if order == 1:
-             if wave == 260: return 1025.1+r2d,945.3+r2d
-          elif order == 0: return 1494.9+r2d, 605.8+r2d   
-      elif filter == 'vg1000': 
-          if order == 0: return 1506.8+r2d,664.3+r2d 
-      elif filter == 'vc955':
-          if order == 0: return 1542.5+r2d, 556.4+r2d
-      else: 
-          return filterlist
-	  
-   elif date > 179971200:
-      if chatter > 0: print 'date > 179971200'
-      if   filter == 'uvw1': return 953.496+r2d, 1047.929+r2d
-      elif filter == 'wh'  : return 953.315+r2d, 1048.014+r2d
-      elif filter == 'v'   : return 954.036+r2d, 1048.229+r2d 
-      elif filter == 'b'   : return 953.795+r2d, 1048.180+r2d 
-      elif filter == 'u'   : return 959.086+r2d, 1046.331+r2d
-      elif filter == 'uvm2': return 952.024+r2d, 1048.025+r2d 
-      elif filter == 'uvw2': return 953.675+r2d, 1048.962+r2d
-      elif filter == 'w1'  : return 953.496+r2d, 1047.929+r2d
-      elif filter == 'm2'  : return 952.024+r2d, 1048.025+r2d 
-      elif filter == 'w2'  : return 953.675+r2d, 1048.962+r2d
-      elif filter == 'ug200':       
-          if order == 1:
-             if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+2.4+r2d, 707.7-2.0+r2d   
-      elif filter == 'uc160':       
-          if order == 1:
-             if wave == 260: return 1025.1+r2d,945.3+r2d
-          elif order == 0: return 1501.4+2.4+r2d, 593.7-2.0+r2d   
-      elif filter == 'vg1000': 
-          if order == 0: return 1506.8+2.4+r2d,664.3-2.0+r2d 
-      elif filter == 'vc955':
-          if order == 0: return 1542.5+2.4+r2d, 556.4-2.0+r2d
-      elif filter == 'list': 
-          return filterlist
-         
-   elif date > 154483349:
-      if chatter > 0: print 'date > 154483349'
-      if   filter == 'uvw1': return 954.606+r2d, 1044.662+r2d
-      elif filter == 'wh'  : return 954.506+r2d, 1043.486+r2d
-      elif filter == 'v'   : return 955.064+r2d, 1045.976+r2d 
-      elif filter == 'b'   : return 955.283+r2d, 1045.080+r2d 
-      elif filter == 'u'   : return 960.064+r2d, 1043.327+r2d
-      elif filter == 'uvm2': return 953.231+r2d, 1044.900+r2d 
-      elif filter == 'uvw2': return 953.231+r2d, 1044.900+r2d
-      elif filter == 'w1'  : return 954.606+r2d, 1044.662+r2d
-      elif filter == 'm2'  : return 953.231+r2d, 1044.900+r2d
-      elif filter == 'w2'  : return 953.231+r2d, 1044.900+r2d
-      elif filter == 'ug200':       
-          if order == 1:
-             if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+3.4+r2d, 707.7-3.0+r2d   
-      elif filter == 'uc160':       
-          if order == 1:
-             if wave == 260: return 1025.1+r2d,945.3+r2d
-          elif order == 0: return 1501.4+3.4+r2d, 593.7-3.0+r2d   
-      elif filter == 'vg1000': 
-          if order == 0: return 1506.8+3.4+r2d,664.3-3.0+r2d 
-      elif filter == 'vc955':
-          if order == 0: return 1542.5+3.4+r2d, 556.4-3.0+r2d
-      elif filter == 'list': 
-          return filterlist
-           
-   elif date > 139968000:
-      if chatter > 0: print 'date > 139968000'
-      if   filter == 'uvw1': return 957.691+r2d, 1039.086+r2d
-      elif filter == 'wh'  : return 956.000+r2d, 1039.775+r2d
-      elif filter == 'v'   : return 957.390+r2d, 1042.647+r2d 
-      elif filter == 'b'   : return 957.747+r2d, 1042.333+r2d 
-      elif filter == 'u'   : return 961.675+r2d, 1041.594+r2d
-      elif filter == 'uvm2': return 956.388+r2d, 1039.235+r2d
-      elif filter == 'uvw2': return 957.717+r2d, 1040.371+r2d
-      elif filter == 'w1'  : return 957.691+r2d, 1039.086+r2d
-      elif filter == 'm2'  : return 956.388+r2d, 1039.235+r2d 
-      elif filter == 'w2'  : return 957.717+r2d, 1040.371+r2d
-      elif filter == 'ug200':       
-          if order == 1:
-             if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+6.4+r2d, 707.7-10+r2d   
-      elif filter == 'uc160':       
-          if order == 1:
-             if wave == 260: return 1025.1+r2d,945.3+r2d
-          elif order == 0: return 1501.4+6.4+r2d, 593.7-10+r2d   
-      elif filter == 'vg1000': 
-          if order == 0: return 1506.8+6.4+r2d,664.3-10+r2d 
-      elif filter == 'vc955':
-          if order == 0: return 1542.5+6.4+r2d, 556.4-10+r2d
-      elif filter == 'list': 
-          return filterlist
-       
-   elif   date > 121838400:
-      if chatter > 0: print 'date > 121838400'
-      if   filter == 'uvw1': return 957.691+r2d, 1039.086+r2d
-      elif filter == 'wh'  : return 956.000+r2d, 1039.775+r2d
-      elif filter == 'v'   : return 958.918+r2d, 1039.994+r2d 
-      elif filter == 'b'   : return 958.273+r2d, 1040.032+r2d 
-      elif filter == 'u'   : return 963.189+r2d, 1038.426+r2d
-      elif filter == 'uvm2': return 956.388+r2d, 1039.235+r2d 
-      elif filter == 'uvw2': return 957.717+r2d, 1040.371+r2d
-      elif filter == 'w1'  : return 957.691+r2d, 1039.086+r2d
-      elif filter == 'm2'  : return 956.388+r2d, 1039.235+r2d 
-      elif filter == 'w2'  : return 957.717+r2d, 1040.371+r2d
-      elif filter == 'ug200':       
-          if order == 1:
-             if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+6.4+r2d, 707.7-10+r2d   
-      elif filter == 'uc160':       
-          if order == 1:
-             if wave == 260: return 1025.1+r2d,945.3+r2d
-          elif order == 0: return 1501.4+6.4+r2d, 593.7-10+r2d   
-      elif filter == 'vg1000': 
-          if order == 0: return 1506.8+6.4+r2d,664.3-10+r2d 
-      elif filter == 'vc955':
-          if order == 0: return 1542.5+6.4+r2d, 556.4-10+r2d
-      else: return filterlist
+   from scipy.interpolate import interp1d
+   import numpy as np
+   
+   filterlist = ['ug200','uc160','vg1000','vc955',
+           'wh','v','b','u','uvw1','uvm2','uvw2']
+   if filter == 'list': return filterlist
+   grismfilters = ['ug200','uc160','vg1000','vc955']
+   lenticular = ['v','b','u','uvw1','uvm2','uvw2']
+   
+   #old pixel offset anchor based on pre-2010 data
+   # dates in swift time, drift [x.y] in pixels 
+   #dates=[209952000,179971200,154483349,139968000,121838400]
+   #drift=[ [0,0], [+2.4,-2.0], [+3.4,-3.0], [+6.4,-10], [+6.4,-10]]
+   
+   # data from Frank's plot (email 2 dec 2013, uvw1 filter)
+   # original plot was in arcsec, but the drift converted 
+   # to pixels. uvw1 seems representative (except for white)
+   swtime = np.array([  
+         1.25000000e+08,   1.39985684e+08,   1.60529672e+08,
+         1.89248438e+08,   2.23489068e+08,   2.46907209e+08,
+         2.66126366e+08,   2.79601770e+08,   2.89763794e+08,
+         3.01251301e+08,   3.13180634e+08,   3.28423998e+08,
+         3.43445470e+08,   3.59351249e+08,   3.75257678e+08,
+         4.50000000e+08])
+   boredx = (np.array([-1.6, -0.870,0.546,1.174,2.328,2.47,
+        2.813,3.076,3.400,3.805,4.149,4.656,
+        5.081,5.607,6.072,8.56 ])-1.9)/0.502
+   boredy = (np.array([ -0.75,-2.197,-4.857,-6.527,
+        -7.098,-7.252,-7.142,-7.560,
+        -7.670,-8.000,-8.043,-8.395,
+        -8.637,-9.142,-9.670,-11.9])+6.8)/0.502
+   # I assume the same overall drift for the grism 
+   # boresight (in pixels). Perhaps a scale factor for the 
+   # grism would be closer to 0.56 pix/arcsec 
+   # the range has been extrapolated for better interpolation
+   # and also to support the near future. The early
+   # time extrapolation is different from the nearly constant
+   # boresight in the teldef but within about a pixel.
+   # I think the extrapolation is more accurate.
+   fx = interp1d(swtime,boredx,)
+   fy = interp1d(swtime,boredy,)
+   
+   # reference anchor positions 	 
+   reference0 = {'ug200': [1449.22, 707.7],
+                 'uc160': [1494.9 , 605.8], #[1501.4 , 593.7], # ?[1494.9, 605.8],
+		 'vg1000':[1506.8 , 664.3],
+		 'vc955': [1542.5 , 556.4]} 
+		  
+   # DO NOT CHANGE THE FOLLOWING VALUES AS THE WAVECAL DEPENDS ON THEM !!!
+   reference1 = {'ug200': [ 928.53,1002.69],
+                 'uc160': [1025.1 , 945.3 ], 
+		 'vg1000':[ 969.3 ,1021.3 ],
+		 'vc955': [1063.7 , 952.6 ]}		
+		 	  
+   if (filter in grismfilters):
+      if (date > 125000000) and (order == 0):
+          anchor = reference0[filter]
+          anchor[0] += r2d-fx(date)
+	  anchor[1] += r2d-fy(date)
+	  return anchor
+      elif (date > 125000000) and (order == 1):	  
+          anchor = reference1[filter]
+          anchor[0] += r2d-fx(date)
+	  anchor[1] += r2d-fy(date)
+	  return anchor
+      elif order == 1:	  
+          anchor = reference1[filter]
+          anchor[0] += r2d
+	  anchor[1] += r2d
+	  return anchor
+      elif order == 0:	
+          raise RuntimeError(
+	  "The zeroth order reference position needs a date")  
+      else:
+          return reference1[filter]	  
+	  	  
+   elif (date > 125000000) and (filter in lenticular):
+      ref_lent = {'v':[951.74,1049.89],
+                  'b':[951.87,1049.67],
+		  'u':[956.98,1047.84],
+		  'uvw1':[951.20,1049.36],
+		  'uvm2':[949.75,1049.30],
+		  'uvw2':[951.11,1050.18]}
+      anchor = ref_lent[filter]
+      anchor[0] += r2d-fx(date)
+      anchor[1] += r2d-fy(date)
+      return anchor
       
+   elif (date > 122000000) and (filter == 'wh'):
+      print "approximate static white filter boresight"
+      if date > 209952000:
+         return 949.902+r2d, 1048.837+r2d	  
+      elif date > 179971200:
+         return 953.315+r2d, 1048.014+r2d        
+      elif date > 154483349:
+         return 954.506+r2d, 1043.486+r2d
+      elif date > 139968000:
+         return 956.000+r2d, 1039.775+r2d
+      elif date >  121838400:
+         return 956.000+r2d, 1039.775+r2d      
+      else: return filterlist
 
    else:
       # this is the version used initially *(changed 2 june 2009)
@@ -1922,23 +2048,18 @@ def boresight(filter='uvw1',order=1,wave=260,r2d=77.0,date=000,chatter=0):
       elif filter == 'ug200':       
           if order == 1:
              if wave == 260: return 928.53+r2d,1002.69+r2d
-          elif order == 0: return 1449.22+r2d, 707.7+r2d   
       elif filter == 'uc160':       
           if order == 1:
              if wave == 260: return 1025.1+27+r2d,945.3+r2d
-          elif order == 0: return 1501.4+r2d, 593.7+r2d   
       elif filter == 'vg1000': 
-          if order == 0: return 1506.8+r2d,664.3+r2d 
 	  #elif order == 1: return 948.4+r2d, 1025.9+r2d
-	  elif order == 1: return 969.3+r2d, 1021.3+r2d
+	  if order == 1: return 969.3+r2d, 1021.3+r2d
       elif filter == 'vc955':
-          if order == 0: return 1567+r2d, 543+r2d
-	  elif order == 1: return 1063.7+r2d, 952.6+r2d
-      elif filter == 'list': return filterlist
+	  if order == 1: return 1063.7+r2d, 952.6+r2d
          
-   return ('wh','v','b','u','uvw1','uvm2',
-       'uvw2','ug200','uc160','vg1000','vc955')    
-   print 'uvotgetspec.boresight error in input '
+   raise IOError("valid filter values are 'wh','v',"\
+        "'b','u','uvw1','uvm2','uvw2','ug200',"\
+	"'uc160','vg1000','vc955'\n")    
 
 
 def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
@@ -2045,7 +2166,10 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_magl
        
    '''
    import os
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:   
+      import pyfits
    from numpy import array, zeros, log10, where
    import datetime
    import uvotwcs
@@ -2610,13 +2734,12 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    expospec = zeros(5*nx,dtype=int).reshape(5,nx)  
    qflag = quality_flags()
    
-   # get mask for zeroth orders in the way 
-   if ((not skip_field_sources) & (ZOpos != None) & (angle != None)):
+   # get the mask for zeroth orders in the way 
+   # set bad done while extracting spectra below
+   set_qual = ((not skip_field_sources) & (ZOpos != None) & (angle != None))
+   if set_qual:
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
-      
-   # screen out zeroth orders in clocked grism outside the aperture
-      # TBD    
-      
+            
    # find_zeroth_orders(filestub, ext, wheelpos,clobber="yes", )
       dims = asarray( extimg.shape )
       dims = array([dims[1],dims[0]])
@@ -2642,14 +2765,15 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       if ny > 20: 
          # weak and strong sources within 
 	 at1 = where(map_all[:,ny/2-10:ny/2+10].mean(1) != 1.)[0]
-         quality[at1] = qflag.get('weakzeroth')
+         quality[at1] = qflag['weakzeroth']
       if ny > 40:
          # strong sources
 	 at2 = where(map_strong[:,ny/2-20:ny/2+20].mean(1) != 1.)[0]
-         quality[at2] = qflag.get('zeroth')		 
+         quality[at2] = qflag['zeroth']	 
    else:
       map = None
-      print "no zeroth order contamination quality information available "	     
+      print "no zeroth order contamination quality information available "
+      quality[:] = qflag['unknown']     
 
 
    # tracks   
@@ -2718,6 +2842,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       y2 -= yof
       y3 -= yof
 
+
+
 # OUTPUT PARAMETER  spectra, background, slit init - full dimension retained 
    # initialize
    
@@ -2758,7 +2884,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
           fitorder2, fval, fvalerr = updateFitorder(extimg, fitorder, wheelpos, full=True,
             predict2nd=predict_second_order, fit_second=fit_second, fit_third=fit_second,
 	    C_1=C_1, C_2=C_2, d12=dist12, chatter=chatter)	      
-          msg += "updated fitorder\n"
+          msg += "updated the curvature and width fit parameters\n"
    
           (present0,present1,present2,present3),(q0,q1,q2,q3), \
               (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
@@ -2818,6 +2944,9 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	       apercorr[1,i] = x_aperture_correction(k1,k2,sig1coef,x[i],norder=1)
                if len(expmap) == 1: expospec[1,i] = expmap[0]
 	       else:  expospec[1,i] = expmap[k1:k2,i].mean()
+	       if set_qual:
+	           if (map_all[i,k1:k2].mean() != 1.):
+                       quality[i] = qflag['bad']	       
 	       
       if present2:
          for i in range(nx): 
@@ -2992,7 +3121,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	       	      
       return fitorder, gfit, (bgimg,)
 
-def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None):
+def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wheelpos=None):
    '''Give the aperture correction factor for given sigcoef and position x 
       
       Using the measured cumulative profile normal to the dispersion 
@@ -3001,25 +3130,96 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None):
    
    2012-10-06  Dependence on coi-factor identified as a likely parameter 
                changing the PSF (no further action)
-   
+	       
+   2013-12-15  revised aperture functions, one for each grism (low coi)
    '''
    import uvotmisc
    import scipy
+   from scipy.interpolate import interp1d, splev
    import numpy as np
+   
    
    apercorr = 1.0
    
    if norder == 0:       
       apercorr = 1.0/uvotmisc.GaussianHalfIntegralFraction( 0.5*(k2-k1)/np.polyval(sigcoef,x) )
    if norder == 1:  
-     sig = np.polyval(sigcoef,x)
-     xx = 0.5*(k2-k1)/sig
-     if (mode == 'gaussian') | (xx > 4.5):     
-        apercorr = 1.0/uvotmisc.GaussianHalfIntegralFraction( xx )
-     else: 
+   # low coi apertures (normalised to 1 at aperture with half-width 2.5 sigma
+
+      # low coi apertures (normalised to 1 at aperture with half-width 2.5 sigma
+      # fitted polynomials to the aperture (low-coi) 
+      #for 0<aperture<6 sig
+      polycoef160 = np.array([  1.32112392e-03,  -2.69269447e-02,   2.10636905e-01,
+        -7.89493710e-01,   1.43691688e+00,  -2.43239325e-02])   
+      
+      polycoef200 = np.array([  1.29297314e-03,  -2.66018405e-02,   2.10241179e-01,
+        -7.93941262e-01,   1.44678036e+00,  -2.51078365e-02])	
+      #y200 = polyval(polycoef200,x)	
+       
+      polycoef1000a = np.array([ 0.00260494, -0.04792046,  0.33581242, -1.11237223,  1.74086898,
+       -0.04026319]) # for aperture  <= 2.2 sig, and for larger:
+      polycoef1000b = np.array([ 0.00128903,  0.00107042,  0.98446801])
+
+      polycoef955 = np.array([ 0.00213156, -0.03953134,  0.28146284, -0.96044626,  1.58429093,
+       -0.02412411]) # for aperture < 4 sig
+ 
+   # best curves for the apertures (using aperture.py plots WD1657+343)   
+      aper_160_low = { 
+   # half-width in units of sig
+   "sig": [0.00,0.30,0.51,0.700,0.90,1.000,1.100,1.200,1.400,
+           1.600,1.800,2.000,2.20,2.5,2.900,3.31,4.11,6.00], 
+   # aperture correction, normalised 
+   "ape": [0.00,0.30,0.52,0.667,0.77,0.818,0.849,0.872,0.921,
+           0.947,0.968,0.980,0.99,1.0,1.008,1.01,1.01,1.01]
+      }   
+      aper_200_low = {
+   "sig": [0.0,0.300,0.510,0.700,0.800,0.900,1.000,1.10,1.20,
+           1.40, 1.60, 1.80, 2.0,  2.2,  2.5, 2.7, 3.0,4.0,6.0],
+   "ape": [0.0,0.308,0.533,0.674,0.742,0.780,0.830,0.86,0.89,
+           0.929,0.959,0.977,0.986,0.991,1.0,1.002,1.003,1.004,1.005 ]
+      }
+      aper_1000_low = {
+   "sig": [0.0, 0.3, 0.5, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6,  2.0,2.2,2.5,3.0  ,4.0 ,6.0 ],
+   "ape": [0.0,0.37,0.55,0.68,0.74,0.80,0.85,0.91,0.96,0.98,0.995,1. ,1. ,1.004,1.01,1.01]	   
+      }
+      aper_955_med = {
+   "sig": [0.0,0.30,0.60,0.80,1.00,1.30,1.60,1.80,2.00,2.50,3.00, 4.00,6.00],
+   "ape": [0.0,0.28,0.47,0.64,0.75,0.86,0.93,0.96,0.97,1.00,1.013,1.02,1.02]
+      }
+      aper_1000_med = {
+   "sig": [0.0,0.30,0.50,0.70,0.80,0.90,1.00,1.20,1.40,1.60,
+           1.80,2.00,2.20,2.50,3.00,4.00,6.00],
+   "ape": [0.0,0.34,0.46,0.63,0.68,0.73,0.76,0.87,0.90,0.94,
+           0.96,0.98,0.99,1.00,1.015,1.027,1.036]
+      }
+      renormal = 1.0430 # calibration done with aperture correction 1.043 (sig=2.5)
+      sig = np.polyval(sigcoef,x)  # half width parameter sig in pixels
+      xx = 0.5*(k2-k1)/sig         # half track width in units of sig 
+
+      if (mode == 'gaussian') | (xx > 4.5):     
+         apercorr = 1.0/uvotmisc.GaussianHalfIntegralFraction( xx )
+      elif (wheelpos != None):
+          # low coi for wheelpos = 160,200; medium coi for wheelpos = 955, 1000
+          if wheelpos == 160:
+	      if (coi == None) | (coi < 0.1) :
+	         apercf1 = interp1d(aper_160_low['sig'],aper_160_low['ape'],)
+	         apercorr = renormal / apercf1(xx)         
+          if wheelpos == 200:
+	      if (coi == None) | (coi < 0.1) :
+	         apercf2 = interp1d(aper_200_low['sig'],aper_200_low['ape'],) 
+	         apercorr = renormal / apercf2(xx)         
+          if wheelpos == 955:
+	      if (coi == None) | (coi < 0.1) :
+	         apercf3 = interp1d(aper_955_med['sig'],aper_955_med['ape'],)
+	         apercorr = renormal / apercf3(xx)          
+          if wheelpos == 1000:
+	      if (coi == None) | (coi < 0.1) :
+	         apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
+	         apercorr = renormal / apercf4(xx)                   	 
+      else: 
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
        # the function does not rise as steeply so has more prominent wings
-       tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
+        tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
              0.9,  1. ,  1.1,  1.2,  1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,
              2. ,  2.1,  2.2,  2.3,  2.4,  2.5,  2.6,  2.7,  2.8,  2.9,  3. ,
              3.1,  3.2,  3.3,  3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4. ,  4.1,
@@ -3044,7 +3244,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None):
          0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
          0.00000000e+00]), 3)
 	 
-       apercorr = 1.0/scipy.interpolate.splev( xx, tck,)
+        apercorr = 1.0/splev( xx, tck,)
       
    if norder == 2:       
       apercorr = 1.0/uvotmisc.GaussianHalfIntegralFraction( 0.5*(k2-k1)/np.polyval(sigcoef,x) )
@@ -3680,7 +3880,8 @@ def quality_flags():
    zeroth=2,       # strong zeroth order too close to/overlaps spectrum
    weakzeroth=4,   # weak zeroth order too close to/overlaps spectrum
    first=8,        # other first order overlaps and brighter than BG + 5 sigma of noise 
-   overlap=16       # orders overlap to close to separate (first, second) or (first second and third)
+   overlap=16,     # orders overlap to close to separate (first, second) or (first second and third)
+   unknown=32      # quality could not be determined   
    )   
    return flags
    
@@ -3878,17 +4079,34 @@ def pix_from_wave( disp, wave,spectralorder=1 ):
    '''    
    from scipy import interpolate
    import numpy as np
+   from stsci.convolve import boxcar
    
    wave = np.asarray( wave )
    wave = np.atleast_1d(wave)
    wone = np.ones(len(wave))
    
+   grism = None
+   if (disp[-1] > 2350.0) & (disp[-1] < 2750.) : grism = 'UV'
+   if (disp[-1] > 4000.0) & (disp[-1] < 4500.) : grism = 'VIS'
+   if grism == None:
+      raise RuntimeError("The dispersion coefficients do not seem correct. Aborting.")    
+   
    if spectralorder == 1:
      # initial guess
      dinv = polyinverse( disp, np.arange(-370,1150) )
      d = np.polyval(dinv, wave )
-     dp = np.polyval(dinv, wave+1.0 )
-     dpdw = dp-d
+     if len(wave) < 20:
+        dp = np.polyval(dinv, wave+10 )  # CRAP polyval!
+	y = (dp-d)/10.0
+        y[y <= 0] = y[y > 0].mean()
+	dpdw = y
+     else:	
+        fd = interpolate.interp1d(wave,d,bounds_error=False,fill_value=0.3,kind='quadratic') 
+        dp = fd(wave+20)
+        y = (dp-d)/20.0
+        y[y <= 0] = y[y > 0].mean()
+        dpdw = boxcar(y,(100,),mode='reflect')     
+     
      count = 100
      
      while (np.abs(np.polyval(disp,d) - wave) > 0.5 * wone).all() | count > 0:
@@ -4032,7 +4250,7 @@ def runfit3(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp3,pos3,sig3,amp2lim=None
    for the rotated image, multiply err by 2.77 to get right chi-squared (.fnorm/(nele-nparm))
    '''
    import numpy as np
-   import numpy.oldnumeric as Numeric
+   #import numpy.oldnumeric as Numeric
    import mpfit 
    
    if np.isfinite(bg): 
@@ -4216,7 +4434,7 @@ def runfit2(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp2lim=None,fixsig=False,
    for the rotated image, multiply err by 2.77 to get right chi-squared (.fnorm/(nele-nparm))
    '''
    import numpy as np
-   import numpy.oldnumeric as Numeric
+   #import numpy.oldnumeric as Numeric
    import mpfit 
    
    if np.isfinite(bg):
@@ -4322,7 +4540,7 @@ def runfit1(x,f,err,bg,amp1,pos1,sig1,fixsig=False,fixpos=False,fixsiglim=0.2,ch
    for the rotated image, multiply err by 2.77 to get right chi-squared (.fnorm/(nele-nparm))
    '''
    import numpy as np
-   import numpy.oldnumeric as Numeric
+   #import numpy.oldnumeric as Numeric
    import mpfit 
    
    if np.isfinite(bg):
@@ -4358,10 +4576,10 @@ def runfit1(x,f,err,bg,amp1,pos1,sig1,fixsig=False,fixpos=False,fixsiglim=0.2,ch
      
    parinfo = [{  \
    'limited': [1,0],   'limits' : [np.min([0.,bg0]),0.0],'value' :    bg,   'parname': 'bg0'    },{  \
-   'limited': [0,0],   'limits' : [0.0,0.0],           'value'  :   0.0,   'parname': 'bg1'    },{  \
-   'limited': [1,0],   'limits' : [0.0,0.0],           'value'  :  amp1,   'parname': 'amp1'   },{  \
-   'limited': [1,1],   'limits' : [pos1a,pos1b],       'value'  :  pos1,   'parname': 'pos1'   },{  \
-   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi], 'value'  :  sig1,   'parname': 'sig1'   }]  
+   'limited': [0,0],   'limits' : [0.0,0.0],             'value' :   0.0,   'parname': 'bg1'    },{  \
+   'limited': [1,0],   'limits' : [0.0,0.0],             'value' :  amp1,   'parname': 'amp1'   },{  \
+   'limited': [1,1],   'limits' : [pos1a,pos1b],         'value' :  pos1,   'parname': 'pos1'   },{  \
+   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],     'value' :  sig1,   'parname': 'sig1'   }]  
 
    if chatter > 4: 
       print "parinfo has been set to: " 
@@ -4450,7 +4668,10 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
 
    import os
    import numpy as np
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:   
+      import pyfits
    from scipy import interpolate
    
    #==================================================================
@@ -4947,7 +5168,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    tstart : float
       start time exposure (swift time in seconds)
       
-   msg : string
+   msg : string 
       messages   
    
    
@@ -4966,7 +5187,10 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    '''
 
    import numpy as np
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:
+      import pyfits
 
    from uvotwcs import makewcshdr 
    import os
@@ -5008,7 +5232,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
 			    attfile,
 			    wheelpos=wheelp1,
 			    indir=indir,
-                            chatter=chatter) 
+                chatter=chatter) 
        # note that the path rawfile  = indir+'/'+filestub+'ufk_sk.img'
        tempnames.append(filestub)
        tempntags.append('fakefilestub')
@@ -5073,7 +5297,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        print 'The HEADAS environment variable has not been set'
        print 'That is needed for the uvot Ftools '
        return None 
-   command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'+ffile+'['+lfexts+']\" operation=WORLD_TO_PIX'
+   command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
+             +ffile+'['+lfexts+']\" operation=WORLD_TO_PIX'
    if chatter > 0: print command
    system( command )
 
@@ -5084,7 +5309,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    f.close  
    system( 'echo '+repr(x1)+'  '+repr(y1)+'  > skyfits.in' )
    # 
-   command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'+ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D'
+   command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
+             +ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D'
    if chatter > 1: print command
    system( command )
    f = open('detmm.txt', "r")
@@ -5133,7 +5359,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        print 'findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees'
    # cleanup temp files:   
    system('rm radec.txt skyfits.out  skyfits.in detmm.txt')
-   return Xphi*as2deg, Yphi*as2deg, tstart
+   return Xphi*as2deg, Yphi*as2deg, tstart, msg
 
 
 def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
@@ -5146,7 +5372,7 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
      path, filename of ascii file with just the ra, dec position in decimal degrees
 
    objectid : str, optional 
-     name of object that is recognized by the CDS Sesame service
+     name of object that is recognized by the (astropy.coordinates/CDS Sesame) service
      if not supplied a file name is required
         
    tool : str
@@ -6529,7 +6755,10 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
    
    Paul Kuin 2011 (MSSL/UCL)
    '''
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:
+      import pyfits
    import numpy as np
    import uvotmisc
    import pylab as plt
@@ -6798,7 +7027,10 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True,
    by exposure. 
    
    '''
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:   
+      import pyfits
    import numpy as np
    from scipy import interpolate
    import pylab as plt
@@ -6939,7 +7171,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True,
 	    if len(wave_shifts)  != nfiles: wave_shifts.append(0)
 	    excl = []
 	    if len(exclude_wave) == nfiles: excl = exclude_wave[i]
-	    if not ingnore_flags:
+	    if not ignore_flags:
       	       f = pyfits.open(phafiles[i])
 	       W  = f[2].data['lambda']
 	       FL = f[2].data['quality']
@@ -6961,7 +7193,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True,
             exwave.append(excl) 		       			
 	 exclude_wave = exwave
 	    
-	 if not ingnore_flag: sum_PHAspectra(phafiles, wave_shifts=wave_shifts, \
+	 if not ignore_flags: sum_PHAspectra(phafiles, wave_shifts=wave_shifts, \
 	    exclude_wave=exclude_wave, ignore_flags=True, interactive=False, \
 	    outfile=outfile, figno=figno, chatter=chatter, clobber=clobber)
 		 	
@@ -7126,6 +7358,7 @@ def coi_func2(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    fudgespec=1.0,coi_length=26,frametime=0.0110302, background=False,
    sigma1_limits=[3.0,7.5], trackwidth = 1.0, ccc = [0.,-0.,0.40],
    ccb = [0.,-0.67,1.0], debug=False,chatter=1)
+
    
 def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    fudgespec=1.0,coi_length=26,frametime=0.0110302, background=False,
@@ -7366,6 +7599,7 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    elif background: return coi_bg_func 
    elif (not background): return coi_func
 
+
    
 def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False, obsfile=None,grism='uv'):
    '''Tool to compute the grism exposure time needed to get a certain S/N in the 
@@ -7423,7 +7657,10 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
    import io
    import uvotmisc
    import uvotphot
-   import pyfits
+   try:
+      from astropy.io import fits as pyfits
+   except:   
+      import pyfits
    
    if lentifilter == 'w1': lentifilter = 'uvw1'
    if lentifilter == 'w2': lentifilter = 'uvw2'

@@ -627,4 +627,192 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    swifttime = xdiff.total_seconds() 
    return swifttime
    
+def get_dispersion_from_header(header,order=1):
+   """retrieve the dispersion coefficients from the FITS header """ 
+   import numpy as np
+   hist = header.get_history()
+   n = "%1s"%(order)   
+   C = [get_keyword_from_history(hist,'DISP'+n+'_0')]
+   if C = [None]: 
+       raise RuntimeError("header history does not contain the DISP keyword")
+   try:
+      coef = get_keyword_from_history(hist,'DISP'+n+'_1')
+      if coef != None: C.append(coef)
+      try:
+         coef = get_keyword_from_history(hist,'DISP'+n+'_2')
+         if coef != None: C.append(coef)
+	 try:
+	    coef = get_keyword_from_history(hist,'DISP'+n+'_3')
+	    if coef != None: C.append(coef)
+	    try:
+	       coef=get_keyword_from_history(hist,'DISP'+n+'_4')
+	       if coef != None: C.append(coef)
+	    except:
+	       pass
+	 except:
+	    pass   
+      except:
+         pass	 
+   except:
+      pass   
+   return np.array(C,dtype=float)
+
+def get_sigCoef(header,order=1):
+   '''retrieve the sigma coefficients from the FITS header '''  
+   import numpy as np
+   hist = header.get_history() 
+   n = "%1s"%(order)   
+   SIG1 = [get_keyword_from_history(hist,'SIGCOEF'+n+'_0')]
+   try:
+      coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_1')
+      if coef != None: SIG1.append(coef)
+      try:
+         coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_2')
+	 if coef != None: SIG1.append(coef)
+	 try:
+	    coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_3')
+	    if coef != None: SIG1.append(coef)
+	    try:
+	       coef = get_keyword_from_history(hist,'SIGCOEF'+n+'_4')
+	       if coef != None: SIG1.append(coef)
+	    except:
+	       pass
+	 except:
+	    pass   
+      except:
+         pass	 
+   except:
+      pass   
+   return np.array(SIG1,dtype=float)
+  
+def parse_DS9regionfile(file,chatter=0):
+   '''
+   parse the region file
+   
+   Note
+   ----
+   return structure with data
+   so far only for circle() 
+   does not grab colour or annotation metadata
+   '''
+   F = open(file)
+   f = F.readlines()
+   F.close()
+   
+   signs = []
+   position = []
+   box = []
+   boxtype = []
+   
+   try:
+      if f[0].split(":")[1].split()[0] == "DS9":
+         version=f[0].split(":")[1].split()[-1]
+      else:
+         version="0"
+      filename = f[1].split(":")[1].split("\n")[0]
+      epoch = f[3].split("\n")[0].split(":")[0] 
+      wcs = 'wcs'
+      r = f[3].split("\n")[0].split(":")
+      if len(r) > 1:  # other coordinate system definition 
+         wcs = r[1]			    	 
+   except:
+     print "Error reading region file : ",file
+   try: 
+     r = f[4].split("\n")[0]
+     if chatter > 3: 
+        print "line# 4",r
+     if r[0:4].upper() == "WCS":
+        wcs = r
+     elif len(r) == 0:
+        do_nothing = True	
+     elif r.split("(")[0] == "circle" :
+        signs.append("+")
+     	boxtype.append("circle")
+	values = r.split("(")[0].split(")")[0].split(",")
+	position.append(values[0:2])
+	box.append(values[2:])
+     elif r.split("(")[0] == "-circle" :
+        signs.append("-")
+     	boxtype.append("circle")
+	values = r.split("(")[0].split(")")[0].split(",")
+	position.append(values[0:2])
+	box.append(values[2:])	
+     else:
+        print "problem with unknown region type - update _parse_DS9regionfile() "
+	 	
+   except:
+     print "problem reading end header region file "   
+   
+   for k in range(5,len(f)):
+     try:
+        r = f[k].split("\n")[0]
+	if chatter > 3:
+	   print "line# ",k,' line=',r
+        elif r == "\n":
+           continue
+        elif r.split("(")[0] == "circle" :
+           signs.append("+")
+     	   boxtype.append("circle")
+           values = r.split("(")[1].split(")")[0].split(",")
+	   position.append(values[0:2])
+	   box.append(values[2:])
+        elif r.split("(")[0] == "-circle" :
+           signs.append("-")
+     	   boxtype.append("circle")
+	   values = r.split("(")[1].split(")")[0].split(",")
+	   position.append(values[0:2])
+	   box.append(values[2:])	
+        else:
+           print "problem with unknown region type - update _parse_DS9regionfile() "
+	 	
+     except:
+        print "problem reading region record number = ",k
+     	
+   return (version,filename,epoch,wcs),(signs,boxtype,position,box)
+
+
+def encircled_energy(uvotfilter, areapix):
+   """ 
+   Compute the encircled energy in a uvotfilter
+   as compared that in the default 5" radius.
+   
+   Parameters
+   ===========
+   uvotfilter : one of ["wh","v","b","u","uvw1","uvm2","uvw2"]
+      filer name
+   areapix : float   
+      constant describing the number of sub-pixels
+      for computing the cps rate
+      
+   Output
+   ======  
+   ratio : float
+      a number that the count rate needs to be *divided* by
+      which represents the fraction of encircled energy in
+      the circular area extended by areapix pixels.
+      
+   Notes
+   =====
+   This applies solely for point sources.    
+   """
+   import os
+   caldb = os.getenv("CALDB")
+   if uvotfilter == 'wh': uvotfilter = 'white'
+   command="quzcif swift uvota - "+uvotfilter.upper()+\
+           " REEF 2009-10-30 12:00:00 - > quzcif.out"
+   print command	   
+   if not os.system(command):
+      print "not " +command	   
+   f = open("quzcif.out")
+   reeffile, ext = f.read().split()
+   ext = int(ext)
+   f.close()
+   os.system("rm -f quzcif.out")
+   print reeffile, ext
+   f = fits.getdata(reeffile,ext)
+   r = f['radius'] # in arc sec
+   E = f['reef'] 
+   x = sqrt(areapix/pi)*0.502 # lookup radius
+   f = interp1d(r,E)
+   return f(x)
    

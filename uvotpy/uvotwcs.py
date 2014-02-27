@@ -158,8 +158,9 @@ def makewcshdr(filestub, ext, attfile,
        tstart = fh[int(ext)].header['tstart']
        tstop = fh[int(ext)].header['tstop']
        if chatter > 2: 
-          print "initial header update grism file: ",
-	  print fh[int(ext)].header
+          print "initial header update grism file: "
+	  print " "
+	  fh[int(ext)].header
        if attfile != None:
            status, ra_pnt, dec_pnt, roll_pnt = get_pointing_from_attfile(tstart,tstop,attfile)
            if status == 0: 
@@ -421,10 +422,14 @@ def get_pointing_from_attfile(tstart,tstop,attfile):
    
    status = 0 # success
    att = fits.open(attfile)
-   t    = att[('ATTITUDE',1)].data['time']
-   ra   = att[('ATTITUDE',1)].data['pointing'][:,0]
-   dec  = att[('ATTITUDE',1)].data['pointing'][:,1]
-   roll = att[('ATTITUDE',1)].data['pointing'][:,2]
+   try:
+      t    = att[('ATTITUDE',1)].data['time']
+      ra   = att[('ATTITUDE',1)].data['pointing'][:,0]
+      dec  = att[('ATTITUDE',1)].data['pointing'][:,1]
+      roll = att[('ATTITUDE',1)].data['pointing'][:,2]
+   except:
+      status = 1 # fail
+      return status,-1,-1,-1   
    q = (t > tstart) & (t < tstop)
    t = t[q]
    ra = ra[q]
