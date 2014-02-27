@@ -1,5 +1,5 @@
 
-__version__ = "1.5.3"
+__version__ = "1.5.4"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -17,6 +17,7 @@ __version__ = "1.5.3"
 #               add code for xspec output with coi-correction done (background-corrected, 
 #               coi-corrected rates, and errors)
 #               changed error computation, aperture corrected, and assume background error negligible
+# version 1.5.4 February 27, 2014 updated effective area files
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -1024,11 +1025,11 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
         
    if spectralorder == 1: 
       if wheelpos == 200:          
-         calfile = 'swugu0200_20041120v103.arf'
+         calfile = 'swugu0200_20041120v104.arf'
 	 extname = "SPECRESPUGRISM200"
 	 model   = "ZEMAXMODEL_200"
       elif wheelpos == 160:
-         calfile = 'swugu0160_20041120v102.arf'
+         calfile = 'swugu0160_20041120v103.arf'
 	 extname = "SPECRESPUGRISM160"
 	 model   = "ZEMAXMODEL_160"
       elif wheelpos == 955: 
@@ -1036,7 +1037,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
 	 extname = "SPECRESPUGRISM0955"
 	 model   = "ZEMAXMODEL_955"
       elif wheelpos == 1000: 
-         calfile = 'swugv1000_20041120v102.arf'
+         calfile = 'swugv1000_20041120v103.arf'
 	 extname = "SPECRESPUGRISM1000"
 	 model   = "ZEMAXMODEL_1000"
       else:   
