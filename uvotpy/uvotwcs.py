@@ -56,6 +56,7 @@ def makewcshdr(filestub, ext, attfile,
       need to update the tstart and tstop of the primary header (not a showstopper)
 
    '''
+   #
    # 2013-10-02 npmk correct error of assuming reference point graspcorr is boresight
    # 2013-06-25 npmk rewrite: base faked lenticular file on RA,DEC,ROLL from the aspect corrected grism image only 
    # 2010-12-01 npmk modified call to use the teldef file for the observation time (the default)
@@ -197,6 +198,7 @@ def makewcshdr(filestub, ext, attfile,
 	  wS =wcs.WCS(header=newhead,key='S',relax=True,)
 	  bore = boresight(filter=band,order=0,r2d=0,date=newhead['tstart'])
 	  world = wS.all_pix2world([bore],0)[0]
+	  
 	  if chatter>0:
 	      print "WCS pointing  "
 	      print "filter band = "+band

@@ -10,6 +10,7 @@ import numpy as np
 import pylab as plt
 try: 
    from astropy.io import fits as pyfits
+   from astropy import wcs
 except:   
    import pyfits
 import re
@@ -66,18 +67,19 @@ today_ = datetime.date.today()
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
 fileversion=2
 
-def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
-      outfile=None, calfile=None, fluxcalfile=None, \
+def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, 
+      outfile=None, calfile=None, fluxcalfile=None, 
       use_lenticular_image=True,
-      offsetlimit=None, anchor_offset=None, anchor_position=[None,None],\
-      background_lower=[None,None], background_upper=[None,None], \
-      fixed_angle=None, spextwidth=13, curved="update",\
-      fit_second=False, predict2nd=True, skip_field_src=False,      \
-      optimal_extraction=False, catspec=None,write_RMF=write_RMF,\
-      get_curve=False,fit_sigmas=True,get_sigma_poly=False,\
-      lfilt1=None, lfilt1_ext=None, lfilt2=None, lfilt2_ext=None,  \
-      wheelpos=None, interactive=interactive,  sumimage=None, set_maglimit=None,\
-      plot_img=True, plot_raw=True, plot_spec=True, zoom=True, highlight=False, \
+      offsetlimit=None, anchor_offset=None, anchor_position=[None,None],
+      background_lower=[None,None], background_upper=[None,None], 
+      background_template=None,
+      fixed_angle=None, spextwidth=13, curved="update",
+      fit_second=False, predict2nd=True, skip_field_src=False,      
+      optimal_extraction=False, catspec=None,write_RMF=write_RMF,
+      get_curve=False,fit_sigmas=True,get_sigma_poly=False,
+      lfilt1=None, lfilt1_ext=None, lfilt2=None, lfilt2_ext=None,  
+      wheelpos=None, interactive=interactive,  sumimage=None, set_maglimit=None,
+      plot_img=True, plot_raw=True, plot_spec=True, zoom=True, highlight=False, 
       clobber=False, chatter=1 ):
       
    '''Makes all the necessary calls to reduce the data. 
@@ -228,6 +230,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       
         specify a magnitude limit to seach for background sources in the USNO-B1 catalog  
   
+      - **background_template** : numpy 2D array
+        
+	User provides a background template that will be used instead 
+	determining background. Must be in counts. Size and alignment 
+	must exactly match detector image.  
+	
+  
    Returns 
    -------   
    None, or compound data (Y0, Y1, Y2, Y3, Y4) which are explained in the code.
@@ -375,8 +384,14 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
    Yout.update({'indir':indir,'obsid':obsid,'ext':ext})
    Yout.update({'ra':RA,'dec':DEC,'wheelpos':wheelpos})
    
+   
    if sumimage == None:
    
+      if background_template != None:
+         # convert background_template to a dictionary
+         background_template = {'template':np.asarray(background_template),
+                                'sumimg':False}
+
       try:
         ext = int(ext)
       except:
@@ -601,6 +616,22 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
             offsetlimit = 9
 	    sys.stdout.write("automatically set the value for the offsetlimit = "+str(offsetlimit)+'\n') 
    
+      # find position zeroth order on detector from WCS-S after update from uvotwcs 
+      hdr = pyfits.getheader(specfile,int(ext))
+      Yout.update({'hdr':hdr})
+      zero_xy_imgpos = [-1,-1]
+      if chatter > 1: print "zeroth order position on image..."
+      try:
+          wS =wcs.WCS(header=hdr,key='S',relax=True,)
+	  zero_xy_imgpos = wS.wcs_world2pix([[RA,DEC]],0)
+	  print "position not corrected for SIP = ", zero_xy_imgpos[0][0],zero_xy_imgpos[0][1]
+          zero_xy_imgpos = wS.sip_pix2foc(zero_xy_imgpos, 0)[0]
+	  if chatter > 1: 
+	     "print zeroth order position on image:",zero_xy_imgpos
+      except:
+          pass
+      Yout.update({'zeroxy_imgpos':zero_xy_imgpos})	  
+
    # provide some checks on background inputs:
    if background_lower[0] != None:
       background_lower =  np.abs(background_lower)
@@ -622,6 +653,15 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       Y6 = sum_Extimage (None, sum_file_name=sumimage, mode='read')
       extimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, \
       (coef0, coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr = Y6
+      
+      if background_template != None:
+  	  background_template = {'extimg': background_template,
+	                             'sumimg': True}
+          if (background_template['extimg'].size != extimg.size):
+            print "ERROR"
+            print "background_template.size=",background_template['extimg'].size
+	    print "extimg.size=",extimg.size
+            raise IOError("The template does not match the sumimage dimensions")
       
       msg += "order distance 1st-2nd anchors :\n"
       msg += "DIST12=%7.1f\n" % (dist12)
@@ -670,17 +710,36 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       # default extraction 
       
       # start with a quick straight slit extraction	
-      (dis, spnet, bg, bg1, (bg2, bgsig, bgimg, bg_limits_used, bgextra), \
-           extimg, spimg, spnetimg, offset, ank_c) = \
-           extractSpecImg(specfile,ext,ankerimg,angle,spwid=spextwidth,\
+      exSpIm = extractSpecImg(specfile,ext,ankerimg,angle,spwid=spextwidth,
 	      background_lower=background_lower, background_upper=background_upper,
-              offsetlimit=offsetlimit,  chatter=chatter)
-
+	      template = background_template, 
+              offsetlimit=offsetlimit,  chatter=chatter)	      
+      dis         = exSpIm['dis'] 
+      spnet       = exSpIm['spnet'] 
+      bg          = exSpIm['bg']
+      bg1         = exSpIm['bg1'] 
+      bg2         = exSpIm['bg2']
+      bgsig       = exSpIm['bgsigma'] 
+      bgimg       = exSpIm['bgimg']
+      bg_limits_used  = exSpIm['bg_limits_used']
+      bgextra     = exSpIm['bgextras']
+      extimg      = exSpIm['extimg']
+      spimg       = exSpIm['spimg']
+      spnetimg    = exSpIm['spnetimg']
+      offset      = exSpIm['offset']
+      ank_c       = exSpIm['ank_c']
+      if background_template != None:
+         background_template ={"extimg":exSpIm["template_extimg"]}
+         Yout.update({"template":exSpIm["template_extimg"]})
+      if exSpIm['dropouts']: 
+         dropout_mask = exSpIm['dropout_mask']
+      else: dropout_mask = None	 
+	 
       Yout.update({"background_1":bg1,"background_2":bg2})
       #msg += "1st order anchor offset from spectrum = %7.1f\n"%(offset)
       #msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],ank_c[0])
 
-      calibdat = None # should free the memory properly here. 	
+      calibdat = None #  free the memory  	
    
       if chatter > 2: print "============ straight slit extraction complete ================="
 		
@@ -759,10 +818,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
           =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, 
-	     predict_second_order=predict2nd,
+	     predict_second_order=predict2nd,background_template=background_template,
              angle=angle,offset=offset,  poly_1=poly_1,poly_2=poly_2,poly_3=poly_3,
 	     msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
-	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, chatter=chatter) 
+	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
+	     dropout_mask=dropout_mask, chatter=chatter) 
 	 # fit_sigmas parameter needs passing 
 	 
       (present0,present1,present2,present3),(q0,q1,q2,q3), \
@@ -795,9 +855,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
           =  curved_extraction(extimg,ank_c,anker, wheelpos, \
 	     ZOpos=ZOpos, skip_field_sources=skip_field_src, \
 	     background_lower=background_lower, background_upper=background_upper, \
+	     background_template=background_template,\
              angle=angle,offset=offset,  outfull=True, expmap=expmap, \
 	     msg = msg, curved=curved, fit_second=fit_second, 
-	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, chatter=chatter) 
+	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
+	     dropout_mask=dropout_mask, chatter=chatter) 
 	     
       (present0,present1,present2,present3),(q0,q1,q2,q3), \
           (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
@@ -1296,6 +1358,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, \
 def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
         searchwidth=35,spwid=13,offsetlimit=None, fixoffset=None, 
 	background_lower=[None,None], background_upper=[None,None],
+	template=None,
 	clobber=True,chatter=2):
    '''
    extract the grism image of spectral orders plus background
@@ -1313,8 +1376,10 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       angle of the spectrum at 2600A in first order from zemax    e.g., 28.8  
    searchwidth : float
       find spectrum with this possible offset ( in crowded fields
-      it should be set to a smaller value)	 
-   
+      it should be set to a smaller value)	
+   template : dictionary    
+      template for the background. 
+      
    use_rectext : bool
       If True then the HEADAS uvotimgrism program rectext is used to extract the image 
       This is a better way than using ndimage.rotate() which does some weird smoothing.
@@ -1325,6 +1390,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    make sure to keep track of the new pixel area.  	     
    2011-09-08 NPMK incorporated rectext as new extraction and removed interactive plot, 
      curved, and optimize which are now olsewhere.
+   2014-02-28 Add template for the background as an option  
    ''' 
    import numpy as np
    import os
@@ -1335,6 +1401,11 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    import scipy.ndimage as ndimage
    
    #out_of_img_val = -1.0123456789 now a global 
+   
+   Tmpl = (template != None)
+   if Tmpl:
+      if template['sumimg']:
+         raise IOError("extractSpecImg should not be called when there is sumimage input")    
 
    if chatter > 4:
       print 'extractSpecImg parameters: file, ext, anker, angle'
@@ -1344,7 +1415,12 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       print searchwidth,chatter,spwid,offsetlimit
 
    img, hdr = pyfits.getdata(file,ext,header=True)
-   img = np.array(img)
+   if Tmpl:
+      if (img.shape != template['template'].shape) : 
+         print "ERROR"
+         print "img.shape=", img.shape
+         print "background_template.shape=",template['template'].shape 
+         raise IOError("The templare array does not match the image")  
    wheelpos = hdr['WHEELPOS']
 
    if chatter > 4: print 'wheelpos:', wheelpos
@@ -1368,17 +1444,23 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    
       # the ankor is now centered in array a; initialize a with out_of_img_val
       a = np.zeros( (n1,n2), dtype=float) + cval
+      if Tmpl : a_ = np.zeros( (n1,n2), dtype=float) + cval
+      
       # load array in middle
       a[c1:c1+img.shape[0],c2:c2+img.shape[1]] = img
+      if Tmpl: a_[c1:c1+img.shape[0],c2:c2+img.shape[1]] = template['template']
+      
       # patch outer regions with something like mean to get rid of artifacts
       mask = abs(a - cval) < 1.e-8
       # Kludge:
       # test image for bad data and make a fix by putting the image average in its place
-      aanan = np.isnan(a)
+      dropouts = False
+      aanan = np.isnan(a)          # process further for flagging
       aagood = np.isfinite(a)
       aaave = a[np.where(aagood)].mean()
       a[np.where(aanan)] = aaave
       if len( np.where(aanan)[0]) > 0 :
+         dropouts = True
          print "extractSpecImg WARNING: BAD IMAGE DATA fixed by setting to mean of good data whole image " 
    
    # now we want to rotate the array to have the dispersion in the x-direction 
@@ -1388,8 +1470,14 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    
    if not use_rectext:
       b = ndimage.rotate(a,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
+      if Tmpl: 
+         b_ = ndimage.rotate(a_,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
+      if dropouts: #try to rotate the bolean image
+         aanan = ndimage.rotate(a_,theta,reshape = False,order = 1,mode = 'constant',)
       e2 = 0.5*b.shape[0]
       c = b[e2-100:e2+100,:]
+      if Tmpl: c_ = b_[e2-100:e2+100,:]
+      if dropouts: aanan = aanan[e2-100:e2+100,:]
       ank_c = [ (c.shape[0]-1)/2+1, (c.shape[1]-1)/2+1 , 0, c.shape[1]]
       
    if use_rectext:
@@ -1422,6 +1510,8 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       # out_of_img_val = 0.
       if clobber:
          os.system("rm "+outfile)
+      if Tmpl: 
+         raise("background_template cannot be used with use_rectext option")	 
        
    # extract the strips with the background on both sides, and the spectral orders
    # find optimised place of the spectrum
@@ -1499,8 +1589,14 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    #for i in range(bgimg_.shape[0]): bgimg_[i,:]=bg
    spnetimg = spimg - bg
    spnet = spnetimg.sum(axis=0)
-   return dis, spnet, bg, bg1, (bg2, bgsigma, bgimg, bg_limits, bgextras), c, spimg, spnetimg, offset, ank_c   
-   
+   result = {"dis":dis,"spnet":spnet,"bg":bg,"bg1":bg1,
+            "bg2":bg2,"bgsigma":bgsigma,"bgimg":bgimg,
+	    "bg_limits_used":bg_limits,"bgextras":bgextras,
+	    "extimg":c,"spimg":spimg,"spnetimg":spnetimg,
+	    "offset":offset,"ank_c":ank_c,'dropouts':dropouts}   
+   if dropouts: result.update({"dropout_mask":aanan})
+   if Tmpl: result.update({"template_extimg":c_})	    
+   return result
    
 def findBackground(extimg,background_lower=[None,None], background_upper=[None,None],yloc_spectrum=100, 
     smo1=None, smo2=None, chatter=2):
@@ -2595,12 +2691,13 @@ def spec_curvature(wheelpos,anchor,order=1,):
    	   
 def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
     anker0=None, anker2=None, anker3=None, angle=None, \
-    background_lower=[None,None], background_upper=[None,None],\
+    background_lower=[None,None], background_upper=[None,None],background_template=None,\
     trackonly=False, trackfull=False, caldefault=True, curved="noupdate", \
     poly_1=None,poly_2=None,poly_3=None, set_offset=False, \
     composite_fit=True, test=None, chatter=0, skip_field_sources=False,\
     predict_second_order=True, ZOpos=None,outfull=False, msg='',\
-    fit_second=True,fit_third=True,C_1=None,C_2=None,dist12=None):
+    fit_second=True,fit_third=True,C_1=None,C_2=None,dist12=None,
+    dropout_mask=None):
     
    '''This routine knows about the curvature of the spectra in the UV filters  
       can provide the coefficients of the tracks of the orders
@@ -2613,6 +2710,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       ZOpos variables defining Zeroth Order positions
       angle [req with ZOpos]
       
+      background_template - if provided, the background will be based on this 
+      dropout_mask from extractSpecImg 
       override curvature polynomial coefficients with poly_1,poly_2,poly_3
       i.e., after a call to updateFitorder()
 
@@ -2722,11 +2821,13 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    #if cval == None: cval = out_of_img_val = -1.0123456789  cval now global   
    
    bg, bg1, bg2, bgsig, bgimg, bg_limits, \
-     (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
-     = findBackground(extimg,background_lower=background_lower, 
-       background_upper=background_upper,yloc_spectrum=anky, chatter=2)
-            
-   spimg = extimg - bgimg   # output parameter bgimg
+       (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
+       = findBackground(extimg,background_lower=background_lower, 
+         background_upper=background_upper,yloc_spectrum=anky, chatter=2)
+   if background_template != None:
+       bgimg = background_template['extimg']    
+
+   spimg = extimg - bgimg    
    ny,nx = spimg.shape
    
    # initialise quality array, exposure array for spectrum and flags
@@ -2947,6 +3048,9 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	       if set_qual:
 	           if (map_all[i,k1:k2].mean() != 1.):
                        quality[i] = qflag['bad']	       
+               if dropout_mask != None:
+	           if dropout_mask[k1:k2,i].any(): 
+	               quality[i] = qflag['bad']  
 	       
       if present2:
          for i in range(nx): 

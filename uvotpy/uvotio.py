@@ -17,7 +17,7 @@ __version__ = "1.5.4"
 #               add code for xspec output with coi-correction done (background-corrected, 
 #               coi-corrected rates, and errors)
 #               changed error computation, aperture corrected, and assume background error negligible
-# version 1.5.4 February 27, 2014 updated effective area files
+# version 1.5.4 February 27, 2014 updated effective area files, updated write_rmf_file 
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -115,7 +115,8 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    
    Notes
    -----
-   2013-05-05 NPMKuin - adding support for new flux calibration files; new kwarg 	      
+   2013-05-05 NPMKuin - adding support for new flux calibration files; new kwarg 
+   2014-02-28 fixed. applying fnorm now to get specrespfunc	      
    '''
    
    import numpy as np
@@ -174,7 +175,9 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
 	    hdu,fnorm = z
 	    w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) )    
 	    r = list(hdu.data['SPECRESP'])
-	    w.reverse() ; r.reverse()
+	    w.reverse() 
+	    r.reverse()
+	    r = np.array(r) * fnorm(w)
 	    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN )
 	    
    else: return None
@@ -1025,20 +1028,20 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
         
    if spectralorder == 1: 
       if wheelpos == 200:          
-         calfile = 'swugu0200_20041120v104.arf'
+         calfile = 'swugu0200_20041120v103.arf'
 	 extname = "SPECRESPUGRISM200"
 	 model   = "ZEMAXMODEL_200"
       elif wheelpos == 160:
-         calfile = 'swugu0160_20041120v103.arf'
+         calfile = 'swugu0160_20041120v102.arf'
 	 extname = "SPECRESPUGRISM160"
 	 model   = "ZEMAXMODEL_160"
       elif wheelpos == 955: 
          calfile = 'swugv0955_20041120v102.arf'
-	 extname = "SPECRESPUGRISM0955"
+	 extname = "SPECRESPVGRISM0955"
 	 model   = "ZEMAXMODEL_955"
       elif wheelpos == 1000: 
-         calfile = 'swugv1000_20041120v103.arf'
-	 extname = "SPECRESPUGRISM1000"
+         calfile = 'swugv1000_20041120v102.arf'
+	 extname = "SPECRESPVGRISM1000"
 	 model   = "ZEMAXMODEL_1000"
       else:   
          print "FATAL: invalid filterwheel position encoded"
@@ -1046,6 +1049,8 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
    else: return None	 
       
    uvotpy = os.getenv("UVOTPY")  
+   if chatter > 1:
+      print "uvotio.readFluxCalFile attempt to read effective area file: "+uvotpy+"/calfiles/"+calfile
    try:    
       hdu = fits.open(uvotpy+"/calfiles/"+calfile)
    except:
@@ -1200,243 +1205,6 @@ def getZmxFlux(x,y,model,ip=1):
 	    
    return flux          	       
 	       
-def write_rmf_file (rmffile, wave, wheelpos, spectralorder, disp,
-    arf1=None, arf2=None, chatter=1, clobber=False  ):
-   '''
-   Write the RMF file 
-   
-   Parameters
-   ----------
-      rmffile : path, str
-         file name output file
-	 
-      wave : ndarray
-         wavelengths of the bins
-	 
-      spectralorder : int
-         1 or 2
-
-      disp : ndarray
-         dispersion coefficients 
-      
-      kwargs : dict
-      ------
-       - **arf1** : path, str
-         first order ancillary response file 
-		
-       - **arf2** :path, str
-         second order ancillary response file
-		
-       - **chatter** : int
-         verbosity
-	 
-       - **clobber** : bool
-         if true overwrite output file if it already exists
-	 
-   Returns
-   -------
-   Writes the RMF file
-   
-   Notes
-   -----
-   The routine is very slow, but uses the best known PSF 
-   which varies with wavelength.
-   
-   ''' 
-#
-#   *** needs to be sampled better to properly to it speed up ***	 		
-#
-   try:
-      from astropy.io import fits
-   except:   
-      import pyfits as fits
-   import numpy as np
-   import os
-   from scipy.ndimage import convolve
-   import uvotio
-   import uvotgetspec
-   from scipy import interpolate
-   import datetime
-   
-   version = '120116'
-   now = datetime.date.today()
-   datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
-   
-   # define a spectral response function resp(wave):
-   respfunc = SpecResp (wheelpos, spectralorder, arf1=arf1, arf2=arf2)
-   resp = np.zeros(len(wave),dtype=float)
-   for i in range(len(wave)):
-      resp[i] = respfunc(wave[i])
-   # filter for illegal response 
-   resp[np.isnan(resp)] = 0.
-
-   NN = len(wave)  # number of channels
-   if NN < 3:
-      print "write_rmf_file: not enough valid data points. No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
-      return
-      
-   aa = uvotgetspec.pix_from_wave(disp, wave, spectralorder=spectralorder)
-   
-   channel = range(NN)
-   aarev = range(NN)
-   aarev.reverse()
-   wave_lo = np.polyval(disp,aa-0.5)
-   wave_hi = np.polyval(disp,aa+0.5)
-   energy_lo = uvotio.angstrom2kev(wave_hi[aarev])
-   energy_hi = uvotio.angstrom2kev(wave_lo[aarev])
-   ener = uvotio.angstrom2kev(wave[aarev])
-   
-   n_grp = np.ones(NN)
-   f_chan = np.zeros(NN)
-   n_chan = np.ones(NN) * NN
-   matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
-   
-   # assuming first order
-   # second order needs attention: instrument + LSF
-   
-   instrument_fwhm = 2.7/0.54 # pix
-   ww = uvotgetspec.singlegaussian(np.arange(-12,12),1.0,0.,instrument_fwhm)
-   ww = ww/ww.sum().flatten()  # normalised gaussian 
-   
-   if wheelpos < 500: 
-      filtername = "UGRISM"
-   else:
-      filtername = "VGRISM"
-         
-   UVOTPY = os.getenv('UVOTPY')
-   if UVOTPY == '': 
-      print 'The UVOTPY environment variable has not been set'
-
-   lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' )  
-   tlsf = lsffile[1].data
-   lsfchan = tlsf.field('channel')[0:15]   # energy value 
-   lsfwav = uvotio.kev2angstrom(lsfchan)
-   epix    = tlsf.field('epix')[0,:]       # offset in half pixels
-   lsfdata = tlsf.field('lsf')[:15,:]      # every half pixel a value
-   lsffile.close()
-      
-   n5 = NN
-   k5 = NN
-   
-   e_mid = 0.5*(energy_lo+energy_hi)  # increasing energy 
-
-   #disp_inv = interpolate.interp1d(wave, aa, bounds_error=False,fill_value=0.0)
-   #disp_inv = uvotgetspec.polyfit(wave, aa, 4)      
-   d_lo = np.array(uvotgetspec.pix_from_wave(disp, wave_lo) + 0.5,dtype=int)
-   d_hi = np.array(uvotgetspec.pix_from_wave(disp, wave_hi) + 0.5,dtype=int)
-
-   print "computation of the response matrix file takes a while ... "
-   
-   for k in aarev:
-   
-         #  find index e in lsfchan and interpolate lsf
-         w = wave[k]
-         j = lsfwav.searchsorted(w)
-         if j == 0: 
-            lsf = lsfdata[0,:].flatten()
-         elif ((j > 0) & (j < 15) ):
-            e1 = lsfchan[j-1]
- 	    e2 = lsfchan[j]
- 	    frac = (e_mid[k]-e1)/(e2-e1)
-            lsf1 = lsfdata[j-1,:]
-	    lsf2 = lsfdata[j,:]
-	    lsf = ((1-frac) * lsf1 + frac * lsf2).flatten()	 	 
-         else:
-            # j = 15
-	    lsf = lsfdata[14,:].flatten()
-
-         # convolution lsf with instrument_fwhm and multiply with response 
-         lsf_con = convolve(lsf,ww.copy(),)
-      
-         # assign wave to lsf array relative to w at index k in matrix (since on diagonal)   
-         # rescale lsfcon from half-pixels to channels 
-
-         d   = np.arange(-79,79)*0.5 + (uvotgetspec.pix_from_wave(disp, w))[0]
-         wave1 = np.polyval(disp,d)  
-         ener = uvotio.angstrom2kev(wave1)
-         # now each pixel has a wave (wave1), energy(keV) (ener) and lsf_con value 
-
-         # new array to fill 
-         lsfnew   = np.zeros(k5)
-	 ener_ = list(ener)
-	 lsf_con_ = list(lsf_con)
-	 ener_.reverse()
-	 lsf_con_.reverse()
-	 # now we have ener as an increasing function - if not, the interpolating function fails.
-         inter = interpolate.interp1d(ener_, lsf_con_,bounds_error=False,fill_value=0.0)
-	 
-         for i in range(NN):
-	    lsfnew[i] = np.abs(inter( e_mid[i] )) 
-	 
-	 q = np.where(np.isfinite(lsfnew))
-	 qx = np.where(np.isnan(lsfnew))
-	 if len(q[0]) > 0:   
-	    lsfnew_norm = lsfnew[q[0]].sum() 
-	    if (np.isnan(lsfnew_norm)) | (lsfnew_norm <= 0.0): lsfnew_norm = 5.0e9     
-            lsfnew[q[0]] = ( lsfnew[q[0]] / lsfnew_norm) * resp[k]
-	    if len(qx[0]) >0: lsfnew[qx[0]] = 0.	 
-            matrix[NN-k-1] =  lsfnew 
-	 else:
-	    matrix[NN-k-1] =  np.zeros(NN)
-	    
- 
-          
-   hdu = fits.PrimaryHDU()
-   hdulist=fits.HDUList([hdu])
-   hdulist[0].header.update('TELESCOP','SWIFT   ','Telescope (mission) name')                       
-   hdulist[0].header.update('INSTRUME','UVOTA   ','Instrument Name')   
-    
-   col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo,unit='KeV')
-   col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi,unit='KeV') 
-   col13 = fits.Column(name='N_GRP',format='1I',array=n_grp,unit='None')
-   col14 = fits.Column(name='F_CHAN',format='1I',array=f_chan,unit='None')
-   col15 = fits.Column(name='N_CHAN',format='1I',array=n_chan,unit='None' )
-   col16 = fits.Column(name='MATRIX',format='PE(NN)',array=matrix,unit='cm**2' )
-   cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
-   tbhdu1 = fits.new_table(cols1)    
-   tbhdu1.header.update('EXTNAME','MATRIX','Name of this binary table extension')
-   tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
-   tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
-   tbhdu1.header.update('FILTER',filtername)
-   tbhdu1.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
-   tbhdu1.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
-   tbhdu1.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
-   tbhdu1.header.update('HDUCLAS2','RSP_MATRIX','contains response matrix')   
-   tbhdu1.header.update('HDUCLAS3','FULL','type of stored matrix')   
-   tbhdu1.header.update('HDUVERS','1.3.0','version of the file format')      
-   tbhdu1.header.update('ORIGIN','MSSL/UCL','source of FITS file')
-   tbhdu1.header.update('TLMIN4', 0, 'First legal channel number')                           
-   tbhdu1.header.update('TLMAX4',NN-1, 'Last legal channel number')                           
-   tbhdu1.header.update('NUMGRP',NN, 'Sum of the N_GRP column')                           
-   tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
-   tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
-   tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
-   tbhdu1.header.update('DATE',datestring, 'File creation date')                           
-   hdulist.append(tbhdu1)
-   
-   col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
-   col22 = fits.Column(name='E_MIN',format='E',array=energy_lo,unit='keV')
-   col23 = fits.Column(name='E_MAX',format='E',array=energy_hi,unit='keV')
-   cols2 = fits.ColDefs([col21,col22,col23])
-   tbhdu2 = fits.new_table(cols2)    
-   tbhdu2.header.update('EXTNAME','EBOUNDS','Name of this binary table extension')
-   tbhdu2.header.update('TELESCOP','Swift','Telescope (mission) name')
-   tbhdu2.header.update('INSTRUME','UVOTA','Instrument name')
-   tbhdu2.header.update('FILTER',filtername)
-   tbhdu2.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
-   tbhdu2.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
-   tbhdu2.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
-   tbhdu2.header.update('HDUCLAS2','EBOUNDS','type of stored matrix')   
-   tbhdu2.header.update('HDUVERS','1.2.0','version of the file format')      
-   tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
-   tbhdu2.header.update('TLMIN1', 0, 'First legal channel number')                           
-   tbhdu2.header.update('TLMAX1',NN-1, 'Last legal channel number')                              
-   tbhdu2.header.update('DATE',datestring, 'File creation date')                           
-   hdulist.append(tbhdu2)     
-   #hdulist.verify()
-   hdulist.writeto(rmffile,clobber=clobber)
-   #hdulist.close()
-
 
 def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clean=True, chatter=1, clobber=False):
    '''
@@ -1832,7 +1600,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       exposure = hdr['exposure']
       extimg = Y['extimg']
       expmap = Y['expmap']
-      
+      zeroxy = Y['zeroxy_imgpos']
+      # if present background_template extimg is in Y['template']
 
    else:   
       # this will be removed soon in favor of the dictionary passing method
@@ -1860,7 +1629,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       if Y4 != None: 
          wav2p, dis2p, rate2p, qual2p, dist12p = Y4[0]
       phx, phy = anker_field
-      
+      zeroxy = [1000,1000]
       
    # ensure that offset is a scalar  
     
@@ -2125,11 +1894,12 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
         ^ os.access(outfile2,os.F_OK) ^ os.access(backfile2,os.F_OK)):
          print 'Error: output file already present. '
          if write_rmffile & (not os.access(rmffile1,os.F_OK)):
-             write_rmf_file (rmffile1, wave, hdr['wheelpos'],1, C_1, 
-	        arf1=arf1, arf2=None, clobber=clobber,chatter=chatter  )
+             write_rmf_file (rmffile1, wave, hdr['wheelpos'], C_1, 
+	        anchor=anker, clobber=clobber,chatter=chatter  )
          if present2 & fit_second & write_rmffile & (not os.access(rmffile2,os.F_OK)):
-            write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
-	        arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
+           # write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
+	   #     arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
+	   print "no RMF file for second order available"
 	 if interactive:
    	    answer =  raw_input('       DO YOU WANT TO REWRITE THE OUTPUT FILES (answer yes/NO)? ')
 	    if len(answer) < 1:  answer = 'NO'
@@ -2145,15 +1915,17 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       expmap=expmap, spectrum_second = spectrum_second, 
       back_second = back_second, calspec_second=calspec_second, 
       present2=(present2 & fit_second), fileversion=fileversion,
+      zeroxy=zeroxy,
       clobber=clobber, chatter=chatter)
       
    if write_rmffile: 
-      write_rmf_file (rmffile1, wave, hdr['wheelpos'],1, C_1, arf1=arf1, 
-            arf2=None, clobber=clobber,chatter=chatter  )
+      write_rmf_file (rmffile1, wave, hdr['wheelpos'], C_1,  
+            anchor=anker, clobber=clobber,chatter=chatter  )
          
    if present2 & fit_second & write_rmffile:
-      write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
-            arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
+      #write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
+      #      arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
+      print "no RMF file for second order available"
       
 def apcorr_errf(trackwidth,wheelpos):
    "The additional RMS percentage rate error when making an aperture correction"
@@ -2171,7 +1943,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    history, spectrum_first, back_first, calspec_first, extimg, outfile1, 
    backfile1, rmffile1, outfile2=None, backfile2=None, rmffile2=None, expmap=None,   
    spectrum_second = None, back_second = None, calspec_second=None, present2=False, 
-   fileversion = 1,
+   fileversion = 1, zeroxy=[1000,1000],
    clobber=False, chatter=0 ):
    '''performs the actual creation of the output file (mostly FITS stuff) 
    
@@ -2321,10 +2093,9 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format') 
    # convert ra,dec -> zerodetx,zerodety using uvotapplywcs?  
    # look in code uvotimgrism
-   tbhdu1.header.update('ZERODETX',1100.000,'dummy zeroth order position')
-   tbhdu1.header.update('ZERODETY',1100.000,'dummy zeroth order position')   
+   tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
+   tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu1)
-   #hdulist.writeto()
    #
    #  second extension first order
    # 
@@ -2441,8 +2212,8 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       tbhdu2.header.update('HDUCLAS2','TOTAL')   
    elif fileversion == 2:
       tbhdu2.header.update('HDUCLAS2','NET')
-   tbhdu2.header.update('ZERODETX',1000.000)
-   tbhdu2.header.update('ZERODETY',1000.000,'dummy zeroth order position')   
+   tbhdu2.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
+   tbhdu2.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu2)
    #
    #  THIRD extension: extracted image
@@ -2582,10 +2353,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
 #    tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
      tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-     tbhdu1.header.update('CRPIX1  ','(0,'+str(len(channel2)-1)+')','Channel binning of the CHANNEL column')
+     tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel2))+')','Channel binning of the CHANNEL column')
      tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-     tbhdu1.header.update('ZERODETX',1000.000,'dummy zeroth order position')
-     tbhdu1.header.update('ZERODETY',1000.000,'dummy zeroth order position')   
+     tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
+     tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
      hdulist.append(tbhdu1)
      try:
         hdulist.writeto(outfile2nd,clobber=clobber)
@@ -2688,8 +2459,8 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
        tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
        tbhdu1.header.update('CHANTYPE','PI','Type of channel PHA/PI')
-       tbhdu1.header.update('TLMIN1  ',0,'Lowest legal channel number')
-       tbhdu1.header.update('TLMAX1',len(channel)-1,'Highest legal channel number')
+       tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
+       tbhdu1.header.update('TLMAX1',len(channel),'Highest legal channel number')
        tbhdu1.header.update('POISSERR',False,'Poissonian errors not applicable')
        tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
        tbhdu1.header.update('DETCHANS',len(channel),'Total number of detector channels available')
@@ -2701,10 +2472,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
        tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
        tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-       tbhdu1.header.update('CRPIX1  ','(0,'+str(len(channel)-1)+')','Channel binning of the CHANNEL column')
+       tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
        tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-       tbhdu1.header.update('ZERODETX',1000.000,'dummy zeroth order position')
-       tbhdu1.header.update('ZERODETY',1000.000,'dummy zeroth order position')   
+       tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
+       tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
        hdulist.append(tbhdu1)
        try:
           hdulist.writeto(backfile1,clobber=clobber)
@@ -2800,8 +2571,8 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
           tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
           tbhdu1.header.update('CHANTYPE','PI','Type of channel PHA/PI')
-          tbhdu1.header.update('TLMIN1  ',0,'Lowest legal channel number')
-          tbhdu1.header.update('TLMAX1',len(channel)-1,'Highest legal channel number')
+          tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
+          tbhdu1.header.update('TLMAX1',len(channel),'Highest legal channel number')
           tbhdu1.header.update('POISSERR',False,'Poissonian errors not applicable')
           tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
           tbhdu1.header.update('DETCHANS',len(channel),'Total number of detector channels available')
@@ -2813,10 +2584,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
           tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
           tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-          tbhdu1.header.update('CRPIX1  ','(0,'+str(len(channel)-1)+')','Channel binning of the CHANNEL column')
+          tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
           tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-          tbhdu1.header.update('ZERODETX',1000.000,'dummy zeroth order position')
-          tbhdu1.header.update('ZERODETY',1000.000,'dummy zeroth order position')   
+          tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
+          tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
           hdulist.append(tbhdu1)
           try:
              hdulist.writeto(backfile2,clobber=clobber)
@@ -3310,3 +3081,254 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    hdulist.flush()
    hdulist.close()
 
+def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], chatter=1, clobber=False  ):
+   '''
+   Write the RMF file for the first order spectrum
+   
+   Parameters
+   ----------
+      rmffile : path, str
+         file name output file
+	 
+      wave : ndarray
+         wavelengths of the bins
+	 
+      wheelpos : int
+         filter wheel position 	 
+	 
+      disp : ndarray
+         dispersion coefficients 
+      
+      kwargs : dict
+      ------
+       - **chatter** : int
+         verbosity
+	 
+       - **clobber** : bool
+         if true overwrite output file if it already exists
+	 
+   Returns
+   -------
+   Writes the RMF file 
+   
+   Notes
+   -----
+   The line spread function from the uv grism at default position is
+   currently used for all computations. Since the RMF file encodes also
+   the effective area, this version presumes given anchor position. 
+   
+   2014-02-27 For speedup, the RMF is calculated in about 40 points and 
+              then propagated using interpolation
+   ''' 
+#
+#   *** needs to be sampled better to properly to it speed up ***	 		
+#
+   try:
+      from astropy.io import fits
+   except:   
+      import pyfits as fits
+   import numpy as np
+   import os
+   from scipy.ndimage import convolve
+   import uvotio
+   import uvotgetspec
+   from scipy import interpolate
+   import datetime
+   
+   version = '140227'
+   now = datetime.date.today()
+   datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
+   if chatter > 0: print "computing RMF file. This takes ~40 sec or more on older machines"
+   
+   spectralorder = 1  # not possible for second order yet
+   
+   # get the effective area for the grism mode, anchor position and order at each wavelength
+   hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,spectralorder=spectralorder,chatter=chatter)
+   w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])     
+   r = hdu.data['SPECRESP']
+   ii = range(len(w)-1,-1,-1)
+   w = w[ii]
+   r = r[ii]
+   r = r * fnorm(w)
+   specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=0.0 )
+   resp = specrespfunc(wave)
+   
+   NN = len(wave)  # number of channels
+   if NN < 20:
+      print "write_rmf_file: not enough valid data points. No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
+      return
+   
+   #iNL = range(0,5) 
+   #for k in range(8,NN-9,NN/40): iNL.append(k) # index of sample of channels (every hundred Angstrom)
+   #for k in range(NN-6,NN,1): iNL.append(k)
+   #iNL = np.array(iNL,dtype=int)
+   iNL = np.arange(NN,dtype=int)
+   NL = len(iNL)   # number of sample channels
+   
+   aa = uvotgetspec.pix_from_wave(disp, wave, spectralorder=spectralorder)  # slow !
+   tck_Cinv = interpolate.splrep(wave,aa,)  # B-spline coefficients to look up pixel position (wave)
+   
+   channel = range(NN)
+   aarev   = range(NN-1,-1,-1)
+   channel = np.array(channel) + 1
+   # wavelengths bounding a pixel (no relation to wave spacing!, there can be gaps or overlap)
+   wave_lo = np.polyval(disp,aa-0.5)  # increasing
+   wave_hi = np.polyval(disp,aa+0.5)  # increasing
+   energy_lo = uvotio.angstrom2kev(wave_hi[aarev]) # increasing energy channels (index reverse)
+   energy_hi = uvotio.angstrom2kev(wave_lo[aarev])
+   energy_mid = uvotio.angstrom2kev(wave[aarev])
+   
+   # output arrays
+   n_grp = np.ones(NN)
+   f_chan = np.zeros(NN)
+   n_chan = np.ones(NN) * NN
+   matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
+   
+   # low resolution arrays
+   _matrix = np.zeros( NL*NN, dtype=float).reshape(NL,NN)
+   
+   # assuming first order
+   # second order needs attention: instrument + LSF
+
+   # telescope and image intensifier broadening   
+   if wheelpos < 500:
+      instrument_fwhm = 2.7/0.54 # pix
+   else:    
+      instrument_fwhm = 5.8/0.54 # pix
+   ww = uvotgetspec.singlegaussian(np.arange(-12,12),1.0,0.,instrument_fwhm)
+   ww = ww/ww.sum().flatten()  # normalised gaussian 
+            
+   UVOTPY = os.getenv('UVOTPY')
+   if UVOTPY == '': 
+      raise IOError( 'The UVOTPY environment variable has not been set; aborting RMF generation [write_rmf_file-]'+version)
+
+   lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' )  
+   if wheelpos < 500: 
+      lsfextension = 1
+   else:
+      print "using the LSF model of the UV grism for the Visible grism until such time as it can be incorporated"   
+   lsfchan = lsffile[1].data['channel'][0:15]   # energy value 
+   epix    = lsffile[1].data['epix'][0,:]       # 158 values - offset in half pixels (to be converted to wave(wave))
+   lsfdata = lsffile[1].data['lsf'][:15,:]      # every half pixel a value
+   lsfwav = uvotio.kev2angstrom(lsfchan)
+   lsffile.close()
+      
+   e_mid = 0.5*(energy_lo+energy_hi)  # increasing energy 
+
+   d_lo = np.array(interpolate.splev(wave_lo, tck_Cinv,) + 0.5,dtype=int)
+   d_hi = np.array(interpolate.splev(wave_hi, tck_Cinv,) + 0.5,dtype=int)
+   
+   for k in range(NL):
+         ii = iNL[k]
+         #  find index e in lsfchan and interpolate lsf
+         w = wave[ii]
+         j = lsfwav.searchsorted(w)
+         if j == 0: 
+            lsf = lsfdata[0,:].flatten()
+         elif ((j > 0) & (j < 15) ):
+            e1 = lsfchan[j-1]
+ 	    e2 = lsfchan[j]
+ 	    frac = (e_mid[k]-e1)/(e2-e1)
+            lsf1 = lsfdata[j-1,:]
+	    lsf2 = lsfdata[j,:]
+	    lsf = ((1-frac) * lsf1 + frac * lsf2).flatten()	 	 
+         else:
+            # j = 15
+	    lsf = lsfdata[14,:].flatten()
+
+         # convolution lsf with instrument_fwhm and multiply with response 
+         lsf_con = convolve(lsf,ww.copy(),)
+	 qpos = (lsf_con != 0.)
+      
+         # assign wave to lsf array relative to w at index k in matrix (since on diagonal)   
+         # rescale lsfcon from half-pixels to channels 
+
+         d  = (np.where(qpos)[0]-79)*0.5 + interpolate.splev(w, tck_Cinv,)  
+         #d   = np.arange(-79,79)*0.5 + interpolate.splev(w, tck_Cinv,)
+         wave1 = np.polyval(disp,d)  
+         ener = uvotio.angstrom2kev(wave1)
+         # now each pixel has a wave (wave1), energy(keV) (ener) and lsf_con value 
+
+         # new array to fill 
+         lsfnew   = np.zeros(NN)
+	 ener_ = list(ener)
+	 lsf_con_ = list(lsf_con[qpos])
+	 ener_.reverse()
+	 lsf_con_.reverse()
+	 # now we have ener as an increasing function - if not, the interpolating function fails.
+         inter = interpolate.interp1d(ener_, lsf_con_,bounds_error=False,fill_value=0.0)
+	 
+         for i in range(NN):
+	    lsfnew[i] = np.abs(inter( e_mid[i] )) 
+	 
+	 q = np.isfinite(lsfnew)
+	 qx = np.isnan(lsfnew)
+	 if np.array(qpos,dtype=int).sum() > 0:   
+	    lsfnew_norm = lsfnew[q].sum() 
+	    if (np.isnan(lsfnew_norm)) | (lsfnew_norm <= 0.0): lsfnew_norm = 5.0e9     
+            lsfnew[q] = ( lsfnew[q] / lsfnew_norm) * resp[ii]
+	    if np.array(qx,dtype=int).sum() >0: lsfnew[qx[0]] = 0.	 
+            matrix[NN-k-1] =  lsfnew 
+	 else:
+	    matrix[NN-k-1] =  np.zeros(NN)
+
+
+   # for output
+   if wheelpos < 500: 
+      filtername = "UGRISM"
+   else:
+      filtername = "VGRISM"
+
+   hdu = fits.PrimaryHDU()
+   hdulist=fits.HDUList([hdu])
+   hdulist[0].header.update('TELESCOP','SWIFT   ','Telescope (mission) name')                       
+   hdulist[0].header.update('INSTRUME','UVOTA   ','Instrument Name')   
+    
+   col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo,unit='KeV')
+   col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi,unit='KeV') 
+   col13 = fits.Column(name='N_GRP',format='1I',array=n_grp,unit='None')
+   col14 = fits.Column(name='F_CHAN',format='1I',array=f_chan,unit='None')
+   col15 = fits.Column(name='N_CHAN',format='1I',array=n_chan,unit='None' )
+   col16 = fits.Column(name='MATRIX',format='PE(NN)',array=matrix,unit='cm**2' )
+   cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
+   tbhdu1 = fits.new_table(cols1)    
+   tbhdu1.header.update('EXTNAME','MATRIX','Name of this binary table extension')
+   tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
+   tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
+   tbhdu1.header.update('FILTER',filtername)
+   tbhdu1.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
+   tbhdu1.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
+   tbhdu1.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
+   tbhdu1.header.update('HDUCLAS2','RSP_MATRIX','contains response matrix')   
+   tbhdu1.header.update('HDUCLAS3','FULL','type of stored matrix')   
+   tbhdu1.header.update('HDUVERS','1.3.0','version of the file format')      
+   tbhdu1.header.update('ORIGIN','MSSL/UCL','source of FITS file')
+   tbhdu1.header.update('TLMIN4', 1, 'First legal channel number')                           
+   tbhdu1.header.update('TLMAX4',NN, 'Last legal channel number')                           
+   tbhdu1.header.update('NUMGRP',NN, 'Sum of the N_GRP column')                           
+   tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
+   tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
+   tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
+   tbhdu1.header.update('DATE',datestring, 'File creation date')                           
+   hdulist.append(tbhdu1)
+   
+   col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
+   col22 = fits.Column(name='E_MIN',format='E',array=energy_lo,unit='keV')
+   col23 = fits.Column(name='E_MAX',format='E',array=energy_hi,unit='keV')
+   cols2 = fits.ColDefs([col21,col22,col23])
+   tbhdu2 = fits.new_table(cols2)    
+   tbhdu2.header.update('EXTNAME','EBOUNDS','Name of this binary table extension')
+   tbhdu2.header.update('TELESCOP','Swift','Telescope (mission) name')
+   tbhdu2.header.update('INSTRUME','UVOTA','Instrument name')
+   tbhdu2.header.update('FILTER',filtername)
+   tbhdu2.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
+   tbhdu2.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
+   tbhdu2.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
+   tbhdu2.header.update('HDUCLAS2','EBOUNDS','type of stored matrix')   
+   tbhdu2.header.update('HDUVERS','1.2.0','version of the file format')      
+   tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
+   tbhdu2.header.update('TLMIN1', 1, 'First legal channel number')                           
+   tbhdu2.header.update('TLMAX1',NN, 'Last legal channel number')                              
+   tbhdu2.header.update('DATE',datestring, 'File creation date')                           
+   hdulist.append(tbhdu2)     
+   hdulist.writeto(rmffilename,clobber=clobber)
