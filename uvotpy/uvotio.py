@@ -33,7 +33,8 @@ def get_uvot_observation(coordinate=None,name=None,obsid=None,chatter=0):
    return
 
 def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0],\
-    arf1=None, arf2=None, spectralorder=1, trackwidth = 1.0, anker=None, test=None, respfunc=False,\
+    arf1=None, arf2=None, effarea1=None, effarea2=None,
+    spectralorder=1, trackwidth = 1.0, anker=None, test=None, respfunc=False,\
     swifttime=None, option=2, fudgespec=1.0, frametime=0.0110302, debug=False, chatter=1):
    ''' 
    Convert net count rate to flux 
@@ -72,12 +73,10 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    sigma1_limits : list
    	sigma will be truncated at the limits
 	
-   arf1 : path or "CALDB", optional 
-   	when present: use this effective area for the first order
-		
-   arf2 : path or "CALDB, optional
-   	when present: use this effective area for the second order 
-   	only one of arf1 or arf2 can be present in a call
+   arf1, arf2 : path or "CALDB", optional 
+			
+   effarea1, effarea2 : FITS HDU[, interpolating function]
+        result from a previous call to 	readFluxCalFile() for first or second order
 		
    spectralorder : int
    	the spectral order of the spectrum, usually =1
@@ -116,7 +115,7 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    Notes
    -----
    2013-05-05 NPMKuin - adding support for new flux calibration files; new kwarg 
-   2014-02-28 fixed. applying fnorm now to get specrespfunc	      
+   2014-02-28 fixed. applying fnorm now to get specrespfunc, pass earlier effective area	      
    '''
    
    import numpy as np
@@ -139,7 +138,7 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    coef = np.polyfit(dis,wave,4)	 
    binwidth = np.polyval(coef,dis+0.5) - np.polyval(coef,dis-0.5)      # width of each bin in A (= scale A/pix)
       
-   if (spectralorder == 1) | (spectralorder == 2) :
+   if ((spectralorder == 1) & (effarea1 == None)) | ((spectralorder == 2) & (effarea2 == None)) :
       if (test != None) & (anker != None):
 	 # attempt to use the new spectral response (if returns None then not available)
 	 z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder,chatter=chatter)
@@ -166,7 +165,12 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
 	    
       else:
 	 # attempt to use the new spectral response (if returns None then not available)
-	 z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder,chatter=chatter)
+	 if (effarea1 != None) & (spectralorder == 1):
+	     z = effarea1
+	 elif (effarea2 != None) & (spectralorder == 2):   
+	     z = effarea2
+	 else:
+             z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder,chatter=chatter)
 	 if (z == None): 
 	    print "uvotio.rate2flux warning: fall back to XYSpecResp call " 
       	    specrespfunc = XYSpecResp(wheelpos=wheelpos, spectralorder=spectralorder, anker=anker,chatter=chatter)
@@ -180,6 +184,37 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
 	    r = np.array(r) * fnorm(w)
 	    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN )
 	    
+   elif ((spectralorder == 1) & (effarea1 != None)): 
+       if len(effarea1) == 2:	    
+	    hdu,fnorm = effarea1
+ 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+	    r = hdu.data['SPECRESP']
+	    ii = range(len(w)-1,-1,-1) 
+	    r = r * fnorm(w)
+	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+       else:  
+            hdu  = effarea1
+ 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+	    r = hdu.data['SPECRESP']
+	    ii = range(len(w)-1,-1,-1) 
+	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+
+   elif ((spectralorder == 2) & (effarea2 != None)): 	#this is under development only
+       print "second order Effective area is under development - not for science use"    
+       if len(effarea2) == 2:	    
+	    hdu,fnorm = effarea2
+ 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+	    r = hdu.data['SPECRESP']
+	    ii = range(len(w)-1,-1,-1) 
+	    r = r * fnorm(w)
+	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+       else:  
+            hdu  = effarea2
+ 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+	    r = hdu.data['SPECRESP']
+	    ii = range(len(w)-1,-1,-1) 
+	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+      	   
    else: return None
    
    if respfunc: return specrespfunc  # feed for writeSpectrum() 	 
@@ -191,7 +226,7 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
       senscorr = 1.0 
       print "NO Sensitivity correction applied"  
    
-   if ((bkgrate != None) & (pixno !=None)):
+   if ((bkgrate != None) & (pixno != None)):
       if chatter > 0: print "performing the COI correction "
           # do the coi-correction
 	  
@@ -211,7 +246,8 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
       flux = hnu*rate*senscorr/specrespfunc(wave)/binwidth   # [erg/s/cm2/angstrom]
         
    return flux
-
+   
+   
 def sensitivityCorrection(swifttime,sens_rate=0.01):
    '''
    give the sensitivity correction factor to divide the rate/flux by 
@@ -979,7 +1015,7 @@ def SpecResp (wheelpos, spectralorder, arf1 = None, arf2 = None):
    specrespfunc = interpolate.interp1d(wmean, xresp, kind='linear', bounds_error=False ) 
    return specrespfunc
 
-def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatter=0):
+def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,arf=None,chatter=0):
    """Read the new flux calibration file, or return None.
    
    Parameters
@@ -997,9 +1033,14 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
         option=="default" + anchor : nearest flux calibration + model extrapolation
 	option=="nearest" : return nearest flux calibration
 	option=="model" : model 
+	
     - **spectralorder** : int
         spectral order (1, or 2)
-   
+	
+    - **arf**: path	
+        fully qualified path to a selected response file
+	
+
    Returns
    -------
    None if not (yet) supported
@@ -1024,46 +1065,97 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
    import os 
    import numpy as np
    from scipy import interpolate
-   #import rationalfit
-        
+
+   grismname = "UGRISM"
+   if wheelpos > 500: grismname  = "VGRISM"
+
+   check_extension = False
+   # here the "latest" version of the calibration files has been hardcoded    
+   # latest update:   
    if spectralorder == 1: 
-      if wheelpos == 200:          
-         calfile = 'swugu0200_20041120v103.arf'
-	 extname = "SPECRESPUGRISM200"
-	 model   = "ZEMAXMODEL_200"
-      elif wheelpos == 160:
-         calfile = 'swugu0160_20041120v102.arf'
-	 extname = "SPECRESPUGRISM160"
-	 model   = "ZEMAXMODEL_160"
-      elif wheelpos == 955: 
-         calfile = 'swugv0955_20041120v102.arf'
-	 extname = "SPECRESPVGRISM0955"
-	 model   = "ZEMAXMODEL_955"
-      elif wheelpos == 1000: 
-         calfile = 'swugv1000_20041120v102.arf'
-	 extname = "SPECRESPVGRISM1000"
-	 model   = "ZEMAXMODEL_1000"
-      else:   
-         print "FATAL: invalid filterwheel position encoded"
-         return None
-   else: return None	 
-      
-   uvotpy = os.getenv("UVOTPY")  
+          if wheelpos == 200:          
+             calfile = 'swugu0200_20041120v103.arf'
+	     extname = "SPECRESPUGRISM200"
+	     model   = "ZEMAXMODEL_200"
+          elif wheelpos == 160:
+             calfile = 'swugu0160_20041120v102.arf'
+	     extname = "SPECRESPUGRISM160"
+	     model   = "ZEMAXMODEL_160"
+          elif wheelpos == 955: 
+             calfile = 'swugv0955_20041120v102.arf'
+	     extname = "SPECRESPVGRISM0955"
+	     model   = "ZEMAXMODEL_955"
+          elif wheelpos == 1000: 
+             calfile = 'swugv1000_20041120v102.arf'
+	     extname = "SPECRESPVGRISM1000"
+	     model   = "ZEMAXMODEL_1000"
+          else:   
+             print "FATAL: invalid filterwheel position encoded"
+             return None
+   else: 	 
+	     print "spectral order not 1 - no effective area available"
+             return None
+	     
    if chatter > 1:
-      print "uvotio.readFluxCalFile attempt to read effective area file: "+uvotpy+"/calfiles/"+calfile
-   try:    
-      hdu = fits.open(uvotpy+"/calfiles/"+calfile)
-   except:
-      print "UVOTPY environment variable not set or calfiles directory entries missing" 
-      pass      
-      return None  
+      print "uvotio.readFluxCalFile attempt to read effective area file: "
       
-   print "opening flux calibration file: ",uvotpy+"/calfiles/"+calfile
+   if arf != None:
+      if arf.upper() == "CALDB":
+   # try to get the file from the CALDB
+         os.getenv("CALDB")
+         command="quzcif swift uvota - "+grismname+\
+          " SPECRESP now now  wheelpos.eq."+str(wheelpos)+" > quzcif.out"
+         f = open("quzcif.out")
+         records = f.readlines()
+         f.close()
+         os.system("rm -f quzcif.out")
+         arf, extens = records[0].split()  
+         arf = CALDB + "/data/swift/uvota/cpf/arf/"+arf     
+         hdu = fits.open(arf)
+       
+      else:
+      # path to arf is supplied
+      # the format must give the full path (starting with "/" plus FITS extension
+      # if no extension was supplied and there is only one, assume that's it.
+      # check version==2, using presence of CBD70001 keyword and see if spectral order is right
+         try:  # get extension from path 
+            if len(arf.split("+") ) == 2: 
+	       file, extens = arf.split("+")
+	    elif len(arf.split("[") ) == 2:
+	       file = arf.split("[")[0]
+	       extens = arf.split("[")[1].split("]")[0] 
+	    else:
+	       check_extension = True
+	    arf = file
+         except: 
+            raise IOError("The supplied effective area file name "+arf+" cannot be understood.")	           
+       
+         hdu = fits.open(arf)
+         if check_extension:  # old version file 
+            if hdu[1].header['CBD60001'].split("(")[1].split(")")[0] != spectralorder: 
+               raise IOError("The supplied effective area file is not correct spectral order.")
+            if ("CBD70001" not in hdu[extens].header) :  # old version
+	       print "Using the oldest version of the effective area. \n"+\
+	            "Flux, COI correction will be wrong."
+               return hdu[extname]
+   
+   else:    # argument arf = None      
+       uvotpy = os.getenv("UVOTPY")  
+       arf = uvotpy+"/calfiles/"+calfile
+       
+       try:    
+          hdu = fits.open(arf)
+       except:
+          print "UVOTPY environment variable not set or calfiles directory entries missing" 
+          pass      
+          return None  
+      
+   print "using flux calibration file: ",arf
    hdu.info()
    
    if (option == "default") | (option == "nearest"):
-      if anchor == None:
-         return hdu[extname]
+      if anchor == None:  # assume centre of detector
+         anchor = [1000,1000]
       else:
          if (option == "default"): modelhdu = hdu[model]
 	 if wheelpos < 500:
@@ -1107,10 +1199,6 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
 	      print "ReadFluxCalFile:       =784*",n2," ?"
 	    w = w.reshape(n2,784)[q,0]
 	    fn = modelobsflux[q]/modelcalflux[q]
-	    #P, Q = ratfit(w,fn,3, 2, ) 
-	    #x = np.arange(1650,6800,10)
-	    #y = np.polyval(P,x)/np.polyval(Q,x)
-            # extend to 1650A by linear extrapolation, and constant tp 7000A.
 	    w1 = 1650.0
 	    f1 = 1.0 # (fn[1]-fn[0])/(w[1]-w[0])*(w1-w[0]) + fn[0]
 	    n = len(w)+2
@@ -1126,16 +1214,15 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,chatte
             fnorm = interpolate.interp1d(x,y,)	    
 	    return cal, fnorm
 	 except RuntimeError:
-	   pass
-	   print "WARNING: Failure to use the model for inter/extrapolation of the calibrated locations."
-	   print "         Using Nearest Eaafective Area File for the Flux calibration."
-	   fnorm = interpolate.interp1d([1600,7000],[1.,1.],)
-	   return cal, fnorm
-         # 
+	     pass
+	     print "WARNING: Failure to use the model for inter/extrapolation of the calibrated locations."
+	     print "         Using Nearest Eaafective Area File for the Flux calibration."
+	     fnorm = interpolate.interp1d([1600,7000],[1.,1.],)
+	     return cal, fnorm 
    elif option == "model":
-      return hdu[model]
+       return hdu[model]
    else:
-      raise RuntimeError( "invalid option passed to readFluxCalFile") 
+       raise RuntimeError( "invalid option passed to readFluxCalFile") 
 
         
 def getZmxFlux(x,y,model,ip=1):
@@ -1602,6 +1689,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       expmap = Y['expmap']
       zeroxy = Y['zeroxy_imgpos']
       # if present background_template extimg is in Y['template']
+      effarea1 = Y['effarea1']
+      effarea2 = Y['effarea2']
 
    else:   
       # this will be removed soon in favor of the dictionary passing method
@@ -1630,6 +1719,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          wav2p, dis2p, rate2p, qual2p, dist12p = Y4[0]
       phx, phy = anker_field
       zeroxy = [1000,1000]
+      effarea1 = None
+      effarea2 = None
       
    # ensure that offset is a scalar  
     
@@ -1705,9 +1796,10 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    else:
       # position dependent response function [ should get more from rate2flux - too 
       #  much duplication right now ! 
-      specresp1func = rate2flux(wave, sprate, wheelpos, bkgrate=bg1rate, \
-          pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0], respfunc=True, \
-          arf1=None, arf2=None, spectralorder=1, trackwidth = trackwidth, anker=anker, test=None, \
+      specresp1func = rate2flux(wave, sprate, wheelpos, bkgrate=bg1rate, 
+          pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0], respfunc=True, 
+          arf1=None, arf2=None, effarea1=effarea1, effarea2=effarea2, 
+	  spectralorder=1, trackwidth = trackwidth, anker=anker, test=None, 
           option=2, fudgespec=1.0, frametime=hdr['framtime'], debug=False, chatter=1)
       #specresp1func = XYSpecResp(wheelpos=hdr['wheelpos'],spectralorder=1, Xank=anker[0], Yank=anker[1]) 
       
@@ -1919,7 +2011,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       clobber=clobber, chatter=chatter)
       
    if write_rmffile: 
-      write_rmf_file (rmffile1, wave, hdr['wheelpos'], C_1,  
+      write_rmf_file (rmffile1, wave, hdr['wheelpos'], C_1, effarea1=effarea1,  
             anchor=anker, clobber=clobber,chatter=chatter  )
          
    if present2 & fit_second & write_rmffile:
@@ -3081,7 +3173,8 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    hdulist.flush()
    hdulist.close()
 
-def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], chatter=1, clobber=False  ):
+def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], 
+    effarea1=None, effarea2=None, chatter=1, clobber=False  ):
    '''
    Write the RMF file for the first order spectrum
    
@@ -3117,8 +3210,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], chatt
    currently used for all computations. Since the RMF file encodes also
    the effective area, this version presumes given anchor position. 
    
-   2014-02-27 For speedup, the RMF is calculated in about 40 points and 
-              then propagated using interpolation
+   2014-02-27 code cleaned up. Speed depends on number of points
+   
    ''' 
 #
 #   *** needs to be sampled better to properly to it speed up ***	 		
@@ -3143,15 +3236,29 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], chatt
    spectralorder = 1  # not possible for second order yet
    
    # get the effective area for the grism mode, anchor position and order at each wavelength
-   hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,spectralorder=spectralorder,chatter=chatter)
-   w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])     
+   if effarea1 != None:
+      if len(effarea1 == 2):
+          hdu, fnorm = effarea1          
+          w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
+	  fnorm = fnorm(w)    
+      else: 
+          hdu = effarea1
+          w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
+	  fnorm = 1    
+   else:
+       hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,spectralorder=spectralorder,chatter=chatter)
+       w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])   
+       fnorm = fnorm(w)  
    r = hdu.data['SPECRESP']
    ii = range(len(w)-1,-1,-1)
    w = w[ii]
    r = r[ii]
-   r = r * fnorm(w)
+   r = r * fnorm
    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=0.0 )
-   resp = specrespfunc(wave)
+   resp = specrespfunc(wave) 
+   hdu = ""           # cleanup
+   fnorm = ""
+   specrespfunc = ""
    
    NN = len(wave)  # number of channels
    if NN < 20:
@@ -3219,6 +3326,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], chatt
    d_hi = np.array(interpolate.splev(wave_hi, tck_Cinv,) + 0.5,dtype=int)
    
    for k in range(NL):
+         if (chatter > 0) & (k == (NL/10)*10):  
+    	      print "RMF : ",(NL/10),"% ..."
          ii = iNL[k]
          #  find index e in lsfchan and interpolate lsf
          w = wave[ii]

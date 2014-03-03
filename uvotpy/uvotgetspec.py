@@ -331,7 +331,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     
    #     The background must be consistent with the width of the spectrum summed. 
    
-   from uvotio import fileinfo, rate2flux
+   from uvotio import fileinfo, rate2flux, readFluxCalFile
    
    # check environment
    CALDB = os.getenv('CALDB')
@@ -962,7 +962,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if predict2nd:
       Y4 = predict_second_order(dis,(sp_first-bg_first), C_1,C_2, dist12, quality,dlim1L, dlim1U,wheelpos) 
       wav2p, dis2p, flux2p, qual2p, dist12p = Y4[0]
-      
+
+   # retrieve the effective area 
+   EffArea1 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=1,arf=fluxcalfile,chatter=chatter)
+   EffArea2 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=2,arf=None,chatter=chatter)
+   # note that the output differs depending on parameters given, i.e., arf, anchor
+   Yout.update({"effarea1":EffArea1,"effarea2":EffArea2})   
+   
    if interactive:
       import pylab as plt
 
@@ -1196,7 +1202,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             flux1 = rate2flux(wav1,rate1, wheelpos, bkgrate=bkgrate1, 
 	                pixno=x[q1[0]], sig1coef=sig1coef, 
 			sigma1_limits=[2.6,4.0], 
-			arf1=fluxcalfile, arf2=None, 
+			arf1=fluxcalfile, arf2=None, effarea1=EffArea1,
 			spectralorder=1, swifttime=tstart, 
 			trackwidth = trackwidth, anker=anker, 
 			option=2, fudgespec=1.0,
