@@ -705,7 +705,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       "wheelpos":wheelpos,"dist12":dist12,
       "hdr":hdr,"offset":offset})    	 	
       Yout.update({"background_1":bg1,"background_2":bg2})
-       
+      dropout_mask = None
+      Yout.update({"zeroxy_imgpos":[1000,1000]}) 
    else:
       # default extraction 
       
