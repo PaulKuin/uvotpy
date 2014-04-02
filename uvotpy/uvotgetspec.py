@@ -476,17 +476,16 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       expo     = hdr['EXPOSURE']
       expmap   = [hdr['EXPOSURE']]
       Yout.update({'wheelpos':wheelpos})
-      
-      try:
-        framtime = hdr['framtime']
-      except: 
+            
+      if 'FRAMTIME' not in  hdr:       
         # compute the frametime from the CCD deadtime and deadtime fraction 
         deadc = hdr['deadc']
         deadtime = 600*285*1e-9 # 600ns x 285 CCD lines seconds
         framtime = deadtime/(1.0-deadc)
         hdr.update('framtime',framtime,comment='frame time computed from deadc ')
         Yout.update({'hdr':hdr})
-        pass
+	if chatter > 1:
+	    print "frame time computed from deadc - added to hdr"
 
       if not 'detnam' in hdr:
         hdr.update('detnam',str(hdr['wheelpos']))    
