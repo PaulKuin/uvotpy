@@ -485,6 +485,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         deadtime = 600*285*1e-9 # 600ns x 285 CCD lines seconds
         framtime = deadtime/(1.0-deadc)
         hdr.update('framtime',framtime,comment='frame time computed from deadc ')
+        Yout.update({'hdr':hdr})
         pass
 
       if not 'detnam' in hdr:

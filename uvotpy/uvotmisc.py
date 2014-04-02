@@ -593,6 +593,10 @@ def swtime2JD(TSTART):
    outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 
+def JD2swift(JD):
+   import numpy as np
+   return (JD - np.double(2451910.5))*(86400.0)
+
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''Convert time in UT to swift time in seconds.
    
@@ -633,7 +637,7 @@ def get_dispersion_from_header(header,order=1):
    hist = header.get_history()
    n = "%1s"%(order)   
    C = [get_keyword_from_history(hist,'DISP'+n+'_0')]
-   if C = [None]: 
+   if C == [None]: 
        raise RuntimeError("header history does not contain the DISP keyword")
    try:
       coef = get_keyword_from_history(hist,'DISP'+n+'_1')
