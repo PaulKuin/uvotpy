@@ -486,6 +486,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         Yout.update({'hdr':hdr})
 	if chatter > 1:
 	    print "frame time computed from deadc - added to hdr"
+	    print "with a value of ",hdr['framtime'],"   ",Yout['hdr']['framtime']
 
       if not 'detnam' in hdr:
         hdr.update('detnam',str(hdr['wheelpos']))    
@@ -616,9 +617,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             offsetlimit = 9
 	    sys.stdout.write("automatically set the value for the offsetlimit = "+str(offsetlimit)+'\n') 
    
-      # find position zeroth order on detector from WCS-S after update from uvotwcs 
-      hdr = pyfits.getheader(specfile,int(ext))
-      Yout.update({'hdr':hdr})
+      # find position zeroth order on detector from WCS-S after update from uvotwcs
+      #if 'hdr' not in Yout: 
+      #   hdr = pyfits.getheader(specfile,int(ext))
+      #   Yout.update({'hdr':hdr})
       zero_xy_imgpos = [-1,-1]
       if chatter > 1: print "zeroth order position on image..."
       try:
