@@ -196,6 +196,7 @@ def makewcshdr(filestub, ext, attfile,
 	  # corresponding to the date of observation. Note that these 
 	  # are dirrerent from those in the CALDB as used by uvotimgrism
           newhead = fits.getheader(grismfile,ext)
+          roll = newhead['PA_PNT']
 	  wS =wcs.WCS(header=newhead,key='S',relax=True,)
 	  bore = boresight(filter=band,order=0,r2d=0,date=newhead['tstart'])
 	  world = wS.all_pix2world([bore],0)[0]
@@ -217,7 +218,6 @@ def makewcshdr(filestub, ext, attfile,
 	      #      with a bad attitude correction
 	      ra_pnt = newhead['RA_PNT']
 	      dec_pnt = newhead['DEC_PNT']
-              roll = newhead['PA_PNT']
           else:
 	      # use the new values found after success with uvotgraspcorr
 	      if len(world) > 0: 
