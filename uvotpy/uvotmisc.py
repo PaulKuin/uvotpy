@@ -689,6 +689,34 @@ def get_sigCoef(header,order=1):
       pass   
    return np.array(SIG1,dtype=float)
   
+def get_curvatureCoef(header,order=1):
+   '''retrieve the sigma coefficients from the FITS header '''  
+   import numpy as np
+   hist = header.get_history() 
+   n = "%1s"%(order)   
+   CURVE = [get_keyword_from_history(hist,'COEF'+n+'_0')]
+   try:
+      coef=get_keyword_from_history(hist,'COEF'+n+'_1')
+      if coef != None: CURVE.append(coef)
+      try:
+         coef=get_keyword_from_history(hist,'COEF'+n+'_2')
+	 if coef != None: CURVE.append(coef)
+	 try:
+	    coef=get_keyword_from_history(hist,'COEF'+n+'_3')
+	    if coef != None: CURVE.append(coef)
+	    try:
+	       coef = get_keyword_from_history(hist,'COEF'+n+'_4')
+	       if coef != None: CURVE.append(coef)
+	    except:
+	       pass
+	 except:
+	    pass   
+      except:
+         pass	 
+   except:
+      pass   
+   return np.array(CURVE,dtype=float)
+  
 def parse_DS9regionfile(file,chatter=0):
    '''
    parse the region file

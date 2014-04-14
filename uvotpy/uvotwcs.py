@@ -162,13 +162,14 @@ def makewcshdr(filestub, ext, attfile,
           print "initial header update grism file: "
 	  print " "
 	  fh[int(ext)].header
+       roll=hdr['pa_pnt']
        if attfile != None:
-           status, ra_pnt, dec_pnt, roll_pnt = get_pointing_from_attfile(tstart,tstop,attfile)
+           status, ra_pnt, dec_pnt, roll = get_pointing_from_attfile(tstart,tstop,attfile)
            if status == 0: 
                fh[int(ext)].header['ra_pnt'] = ra_pnt
                fh[int(ext)].header['dec_pnt']= dec_pnt
-               fh[int(ext)].header['pa_pnt'] = roll_pnt	
-	       msg += "updated header RA_PNT=%10.5f,DEC_PNT=%10.5f,roll_pnt=%8.1f"%(ra_pnt,dec_pnt,roll_pnt)    
+               fh[int(ext)].header['pa_pnt'] = roll	
+	       msg += "updated header RA_PNT=%10.5f,DEC_PNT=%10.5f,roll=%8.1f"%(ra_pnt,dec_pnt,roll)    
 	   if chatter > 2: 
 	       print "further header updates"       
        fh.close()          
