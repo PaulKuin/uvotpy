@@ -1,5 +1,6 @@
+# -*- coding: iso-8859-15 -*-
 
-__version__ = "1.5.4"
+__version__ = "1.5.5"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -18,6 +19,7 @@ __version__ = "1.5.4"
 #               coi-corrected rates, and errors)
 #               changed error computation, aperture corrected, and assume background error negligible
 # version 1.5.4 February 27, 2014 updated effective area files, updated write_rmf_file 
+# version 1.5.5 May 1, 2014, update of coi-computation 
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -35,7 +37,7 @@ def get_uvot_observation(coordinate=None,name=None,obsid=None,chatter=0):
 def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0],\
     arf1=None, arf2=None, effarea1=None, effarea2=None,
     spectralorder=1, trackwidth = 1.0, anker=None, test=None, respfunc=False,\
-    swifttime=None, option=2, fudgespec=1.0, frametime=0.0110302, debug=False, chatter=1):
+    swifttime=None, option=1, fudgespec=1.322, frametime=0.0110329, debug=False, chatter=1):
    ''' 
    Convert net count rate to flux 
    
@@ -56,7 +58,7 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    	wavelength in A
 	
    rate	: float ndarray
-   	net count rate spectrum, aperture corrected
+   	net count rate/bin in spectrum, aperture corrected
 	
    wheelpos : int
    	filter wheel position
@@ -115,7 +117,8 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    Notes
    -----
    2013-05-05 NPMKuin - adding support for new flux calibration files; new kwarg 
-   2014-02-28 fixed. applying fnorm now to get specrespfunc, pass earlier effective area	      
+   2014-02-28 fixed. applying fnorm now to get specrespfunc, pass earlier effective area
+   2014-04-30 NPMK changed coi_func parameters (option=1,fudgespec=1.322,frametime,coi_length=29)	      
    '''
    
    import numpy as np
@@ -231,11 +234,11 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
           # do the coi-correction
 	  
       fcoibg = coi_func(pixno,wave,rate,bkgrate,sig1coef=sig1coef,option=option,
-        fudgespec=fudgespec,coi_length=26,frametime=frametime, background=True,
+        fudgespec=fudgespec,coi_length=29,frametime=frametime, background=True,
         sigma1_limits=sigma1_limits, trackwidth = trackwidth,
         debug=debug,chatter=chatter)
       fcoi = coi_func(pixno,wave,rate,bkgrate,sig1coef=sig1coef,option=option,
-        fudgespec=fudgespec,coi_length=26,frametime=frametime, background=False,
+        fudgespec=fudgespec,coi_length=29,frametime=frametime, background=False,
         sigma1_limits=sigma1_limits, trackwidth = trackwidth,
         debug=debug,chatter=chatter)
       netrate = rate*fcoi(wave)
@@ -1739,7 +1742,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    exposure=hdr['exposure']
    expospec1 = expospec[1,q1[0]].flatten()
    wave =  polyval(C_1, x[q1[0]])
-   senscorr = 1./sensitivityCorrection(hdr['tstart'])
+   senscorr = sensitivityCorrection(hdr['tstart'])
    background_strip1 = background_strip1[q1[0]]
    background_strip2 = background_strip2[q1[0]]
      
@@ -1780,11 +1783,11 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    bg1rate = bkg/expospec1*2.5/trackwidth        # background counts for 2.5 sigma width at spectrum
    
    
-   fcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=2,\
-       fudgespec=1.0,coi_length=26,frametime=hdr['framtime'], background=False, \
+   fcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=1,\
+       fudgespec=1.322,coi_length=29,frametime=hdr['framtime'], background=False, \
        sigma1_limits=[2.6,4.0], trackwidth = 2.5,debug=False,chatter=1)
-   bgcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=2,\
-       fudgespec=1.0,coi_length=26,frametime=hdr['framtime'], background=True, \
+   bgcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=1,\
+       fudgespec=1.322,coi_length=29,frametime=hdr['framtime'], background=True, \
        sigma1_limits=[2.6,4.0], trackwidth = 2.5, debug=False,chatter=1)
        
    sprate = sprate*senscorr
@@ -1800,7 +1803,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
           pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0], respfunc=True, 
           arf1=None, arf2=None, effarea1=effarea1, effarea2=effarea2, 
 	  spectralorder=1, trackwidth = trackwidth, anker=anker, test=None, 
-          option=2, fudgespec=1.0, frametime=hdr['framtime'], debug=False, chatter=1)
+          option=1, fudgespec=1.32, frametime=hdr['framtime'], debug=False, chatter=1)
       #specresp1func = XYSpecResp(wheelpos=hdr['wheelpos'],spectralorder=1, Xank=anker[0], Yank=anker[1]) 
       
    hnu = h_c_ang/(wave)
@@ -1879,11 +1882,11 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          binwidth2 = np.polyval(C_2,dis2+0.5) - np.polyval(C_2,dis2-0.5)
 	 pix2      = x[q2[0]]                                           # pixel number to align with first order
 	 
-         fcoi_2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=2,\
-            fudgespec=1.0,coi_length=26,frametime=hdr['framtime'], background=False, \
+         fcoi_2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=1,\
+            fudgespec=1.32,coi_length=29,frametime=hdr['framtime'], background=False, \
             sigma1_limits=[2.6,6.0], trackwidth = 2.5,debug=False,chatter=1)
-         bgcoi2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=2,\
-            fudgespec=1.0,coi_length=26,frametime=hdr['framtime'], background=True, \
+         bgcoi2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=1,\
+            fudgespec=1.32,coi_length=29,frametime=hdr['framtime'], background=True, \
             sigma1_limits=[2.6,6.0], trackwidth = 2.5, debug=False,chatter=1)
 
          sp2rate = sp2rate * senscorr    # perform sensitivity loss correction
