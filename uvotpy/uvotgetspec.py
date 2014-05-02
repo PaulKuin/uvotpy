@@ -2,7 +2,7 @@
 
 # Developed by N.P.M. Kuin (MSSL/UCL)
 
-__version__ = '1.0.2 20140101'
+__version__ = '1.0.3 20140501'
  
 import sys
 import optparse
@@ -352,7 +352,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #   print 'WARNING: cannot locate the sesame program \nDid you install the cdsclient tools?\n'   
 
    # fix some parameters 
-   framtime = 0.0110322
+   framtime = 0.0110329
    splineorder=3
    getzmxmode='spline'
    smooth=50
@@ -1208,7 +1208,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 			arf1=fluxcalfile, arf2=None, effarea1=EffArea1,
 			spectralorder=1, swifttime=tstart, 
 			trackwidth = trackwidth, anker=anker, 
-			option=2, fudgespec=1.0,
+			option=1, fudgespec=1.32,
 			frametime=framtime, 
 	                debug=False,chatter=1)
             #flux1_err = 0.5*(rate2flux(,,rate+err,,) - rate2flux(,,rate-err,,))
@@ -1236,7 +1236,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	    #flux1 = rate2flux(wav1, counts[1,q1[0]]/expo, wheelpos, spectralorder=1, arf1=fluxcalfile)
             flux1 = rate2flux(wav1,counts[1,q1[0]]/expo, wheelpos, bkgrate=bgkrate1, pixno=x[q1[0]], sig1coef=sig1coef, \
 	       sigma1_limits=[2.6,4.0], arf1=fluxcalfile, arf2=None, spectralorder=1, swifttime=tstart,\
-	       trackwidth = trackwidth, anker=anker, option=2, fudgespec=1.0,frametime=framtime, \
+	       trackwidth = trackwidth, anker=anker, option=1, fudgespec=1.32,frametime=framtime, \
 	       debug=False,chatter=1)
 	    p3, = plt.plot(wav1, flux1,'g',alpha=0.5,ls='steps',lw=2,label='optimal' )
 	    p4, = plt.plot(wav1,flux1,'k',alpha=0.5,ls='steps',lw=2,label='_nolegend_' )
@@ -5560,8 +5560,8 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
       if objectid == None: 
          raise RuntimeError("objectid is needed for position lookup")
       from astropy import coordinates
-      pos = coordinates.ICRSCoordinates.from_name(objectid)
-      return pos.ra.degrees, pos.dec.degrees
+      pos = coordinates.ICRS.from_name(objectid)
+      return pos.ra.degree, pos.dec.degree
    else:
       raise IOError("improper tool or file in calling parameters ")	 
 	 
@@ -7463,18 +7463,18 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True,
               interactive=False, outfile=outfile, figno=None, chatter=chatter, clobber=True)   
 	 return C       
   
-def coi_func2(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
-   fudgespec=1.0,coi_length=26,frametime=0.0110302, background=False,
+def coi_func2(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
+   fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[2.6,4.0], trackwidth = 1.0, ccc = [0.,-0.,0.40],
    ccb = [0.,-0.67,1.0], debug=False,chatter=1):
-   return coi_func(pixno,wave,countrate,bkgrate,sig1coef=[4.5],option=2,
-   fudgespec=1.0,coi_length=26,frametime=0.0110302, background=False,
+   return coi_func(pixno,wave,countrate,bkgrate,sig1coef=[4.5],option=1,
+   fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[3.0,7.5], trackwidth = 1.0, ccc = [0.,-0.,0.40],
    ccb = [0.,-0.67,1.0], debug=False,chatter=1)
 
    
-def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
-   fudgespec=1.0,coi_length=26,frametime=0.0110302, background=False,
+def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
+   fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[2.6,4.0], trackwidth = 2.5, ccc = [-1.5,+1.5,-1.5,+1.5,-1.5,+1.5,+0.995],
    ccb = [+0.72,-0.72,0.995], ca=[0,0,3.2],cb=[0,0,3.2],debug=False,chatter=1):
    #ccb = [+2.68,-2.68,-3.3,+3.3,0.995], debug=False,chatter=1): - proper background 
@@ -7552,7 +7552,11 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
        high background levels stealing counts from source). Option 2 has now been optimized 
        to work. Basically, there are multiple practical solutions to the problem, the third 
        option will be more in line with the theoretical model for coincidence loss in the 
-       UVOT. 	   
+       UVOT. 
+   - 2014-04-30 NPMK default changed to option=1, fudgespec=1.32 (415 pixels^2), coi_length=29
+     changed frametime to 0.0110329 (was 0.0110302)
+     no dependence coi-correction on the background 
+     added fudgespec to coi-area computation   	   
    '''   
    import uvotmisc
    import numpy as np
@@ -7598,9 +7602,9 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    # scaling the counts per frame 
    #  - get the background counts per pixel by dividing through 2*sigma1*trackwidth
    #  - scale background to number of pixels used in photometry coi-background  correction
-   bgareafactor = 315.0/(2 *sigma1*trackwidth)  # strip 'trackwidth' sigma halfwidth determined by input
-   factor = 315.0/(2 *sigma1*trackwidth)        # strip 'trackwidth' sigma halfwidth determined by input
-   specfactor = 315.0/(2.*sigma1*2.5)           # aperture correction was assumed done on the input rate to be consistent with the 2.5 sigma Eff. Area
+   bgareafactor = fudgespec*314.26/(2 *sigma1*trackwidth)  # strip 'trackwidth' sigma halfwidth determined by input
+   factor = fudgespec*314.26/(2 *sigma1*trackwidth)        # strip 'trackwidth' sigma halfwidth determined by input
+   specfactor = fudgespec*314.26/(2.*sigma1*2.5)           # aperture correction was assumed done on the input rate to be consistent with the 2.5 sigma Eff. Area
    # coi-area spectrum in limit (net = zero) must be background one, so same factor
    # Very high backgrounds deviate (Breeveld et al. 2010, fig 6; ccb=[+2.68,-2.68,-3.3,+3.3,0.995] matches plot)
    
@@ -7610,6 +7614,7 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
       tot_cpf = obs_countsperframe = boxcar((countrate + bkgrate) * frametime, (coi_length,))
       net_cpf = boxcar( countrate * frametime, (coi_length,))
    bkg_cpf = bkg_countsperframe = boxcar( bkgrate * frametime, (coi_length,) )  
+
    # PROBLEM: boxcar smooth does not work for pixels on the array ends. downturn coi-correction. Need something better.
    
    if chatter > 3: 
@@ -7624,12 +7629,17 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
 	 	 
       bkg_cpf_incident = (-1.0/alpha) * np.log(1.0 - bgareafactor*bkg_countsperframe)/(bgareafactor)
       
-      if option == 1:   # default 
-	 # classic coi formula
-         yy = 1.0 - specfactor*obs_countsperframe
+      if option == 1:   #
+	 # classic coi formula with coi-area adjusted by fudgespec
+         yy = 1.0 - specfactor*tot_cpf
 	 v[ yy < 1e-6 ] = False
 	 yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
          obs_cpf_incident = (-1.0/alpha) * np.log(yy)/specfactor
+	 
+         yy = 1.0 - specfactor*bkg_cpf
+	 v[ yy < 1e-6 ] = False
+	 yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+         bkg_cpf_incident = (-1.0/alpha) * np.log(yy)/specfactor
 	 
       if option == 2: 	 
 	 # new default reverts to classic coi-formula when all coef = 0 except the last one, which must be 1. 
@@ -7680,7 +7690,10 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    except:
       print "ERROR: probably the effective counts per frame are > 1."
       print "WARNING: Continuing Setting COI factor = 1.0"
-      obs_cpf_incident = obs_countsperframe
+      if not background:
+         obs_cpf_incident = obs_countsperframe
+      else:
+         obs_cpf_incident = bkg_cpf	 
    
    # notify user that some points were flagged bad
    if v.all() != True: 
@@ -7702,8 +7715,8 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=2,
    
    # calibrate
    if chatter > 0: 
-      if not background: print " coi_factor stats (min, mean, max): ",np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor)
-      print " bgcoi_factor stats (min, mean, max): ",np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor)
+      if not background: print option,": coi_factor stats (min, mean, max): ",np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor)
+      print option,": bgcoi_factor stats (min, mean, max): ",np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor)
    
    # assume wave is monotonically increasing: 
    if not background: coi_func = interpolate.interp1d(wave[v],coi_factor[v],kind='nearest',bounds_error=False,fill_value=1.0 ) 
