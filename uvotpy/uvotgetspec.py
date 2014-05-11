@@ -452,9 +452,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          msg2 += "spectrum extraction preset width = "+str(spextwidth)+'\n'
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
+      hdr = pyfits.getheader(specfile,int(ext))
       if chatter > -1:
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
+	   msg += ' Start date-time  : '+str(hdr['date-obs'])+'\n'
            msg += ' grism file       : '+specfile+'['+str(ext)+']\n'
            msg += ' attitude file    : '+attfile+'\n'
 	   if lfiltpresent & use_lenticular_image:
@@ -467,7 +469,6 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	   if not use_lenticular_image:
 	      msg += "anchor position derived without lenticular filter\n"	 
 
-      hdr = pyfits.getheader(specfile,int(ext))
       Yout.update({'hdr':hdr})
 
       tstart = hdr['TSTART']
@@ -7106,7 +7107,8 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
 	 return sumimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, (coef0,
 	        coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr   
 
-def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True, 
+def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], 
+      ignore_flags=True, use_flags=[1], 
       interactive=True, outfile=None, figno=[14], ylim=[],chatter=1, clobber=True):
    '''Read a list of phafiles. Sum the spectra after applying optional wave_shifts. 
    
@@ -7139,6 +7141,9 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], ignore_flags=True,
    broad sum of counts in a region which includes the spectrum, unscaled, not even
    by exposure. 
    
+   ** fails quietly for interactive=T, ignore_flags=F, exclude_wave=[],
+      wave_shifts=[0,0,..], use interactive=F
+   ** not yet implemented:  selection on flags using use-flags 
    '''
    try:
       from astropy.io import fits as pyfits
