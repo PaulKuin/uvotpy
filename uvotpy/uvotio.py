@@ -2179,6 +2179,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
    tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
    tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
+   tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
    tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
    tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -2442,6 +2443,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
      tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
      tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
+     tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
      tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
      tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -3176,6 +3178,40 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    hdulist.flush()
    hdulist.close()
 
+def make_rmf(phafile,rmffile=None,clobber=False,chatter=1):
+    """
+    Make the rmf file after writing the extracted spectrum file.
+    
+    Parameters
+    ----------
+    phafile : path
+       name of the pha file
+    rmffile : path (optional)
+       name of the rmf file 
+       default is <phafile root>.rmf   
+    
+    Notes
+    -----
+    
+        
+    """
+    import numpy as np
+    from astropy.io import fits
+    import uvotmisc
+    
+    if rmffile == None: rmffile=phafile.split(".pha")[0]+".rmf"
+    f = fits.open(phafile)
+    wave = f[2].data['lambda']
+    wheelpos = f[1].header['wheelpos']
+    hdr = f[1].header
+    disp = uvotmisc.get_dispersion_from_header(hdr, order=1)
+    hist = hdr['history']
+    anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
+    anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
+    write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
+       chatter=chatter,clobber=clobber)
+       
+
 def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], 
     effarea1=None, effarea2=None, chatter=1, clobber=False  ):
    '''
@@ -3290,7 +3326,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    
    # output arrays
    n_grp = np.ones(NN)
-   f_chan = np.zeros(NN)
+   f_chan = np.ones(NN)
    n_chan = np.ones(NN) * NN
    matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
    
@@ -3384,6 +3420,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
 	 else:
 	    matrix[NN-k-1] =  np.zeros(NN)
 
+   # remove channels that have zero response
 
    # for output
    if wheelpos < 500: 
@@ -3421,7 +3458,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
    tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
-   tbhdu1.header.update('DATE',datestring, 'File creation date')                           
+   tbhdu1.header.update('DATE',now.isoformat(), 'File creation date') 
+   #tbhdu1.header['null'] = 0.                          
    hdulist.append(tbhdu1)
    
    col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
@@ -3441,6 +3479,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu2.header.update('TLMIN1', 1, 'First legal channel number')                           
    tbhdu2.header.update('TLMAX1',NN, 'Last legal channel number')                              
-   tbhdu2.header.update('DATE',datestring, 'File creation date')                           
+   tbhdu2.header.update('DATE',now.isoformat(), 'File creation date')                           
    hdulist.append(tbhdu2)     
    hdulist.writeto(rmffilename,clobber=clobber)
