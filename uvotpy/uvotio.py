@@ -2179,7 +2179,6 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
    tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
    tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-   tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
    tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
    tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -2443,7 +2442,6 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
      tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
      tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-     tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
      tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
      tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -3326,7 +3324,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    
    # output arrays
    n_grp = np.ones(NN)
-   f_chan = np.ones(NN)
+   f_chan = np.zeros(NN)
    n_chan = np.ones(NN) * NN
    matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
    
@@ -3420,7 +3418,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
 	 else:
 	    matrix[NN-k-1] =  np.zeros(NN)
 
-   # remove channels that have zero response
 
    # for output
    if wheelpos < 500: 
@@ -3458,8 +3455,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
    tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
-   tbhdu1.header.update('DATE',now.isoformat(), 'File creation date') 
-   #tbhdu1.header['null'] = 0.                          
+   tbhdu1.header.update('DATE',datestring, 'File creation date')                           
    hdulist.append(tbhdu1)
    
    col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
@@ -3479,6 +3475,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu2.header.update('TLMIN1', 1, 'First legal channel number')                           
    tbhdu2.header.update('TLMAX1',NN, 'Last legal channel number')                              
-   tbhdu2.header.update('DATE',now.isoformat(), 'File creation date')                           
+   tbhdu2.header.update('DATE',datestring, 'File creation date')                           
    hdulist.append(tbhdu2)     
    hdulist.writeto(rmffilename,clobber=clobber)

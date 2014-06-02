@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='1.0.1',
+      version='2.0.1',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images

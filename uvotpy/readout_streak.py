@@ -15,6 +15,7 @@ def readout_streak(obsid,
        magfile='magnitudes.txt',
        do_only_band=None,
        rerun_readout_streak=False,
+       snthresh=6.0, 
        chatter=1):
    '''
    do the readout streak extraction in Swift UVOT images 
@@ -35,6 +36,8 @@ def readout_streak(obsid,
    ***radec*** : list , optional
       give the sky position ra,dec (J2000/ICRS) in units of 
       decimal degrees, e.g., [305.87791,+20.767536]
+   ***snthresh*** : float
+      Signal to noise thresholt for readout streak detection above background   
    ***do_only_band*** : string
       one of ['uvw2','uvm2','uvw1','u','b','v']
       select only this filter (multiple values not allowed) 
@@ -233,8 +236,9 @@ def readout_streak(obsid,
         os.system(command)	    
      # run Mat's readout_streak c program on the mod8 corrected file
      resfile = "results."+b+".1234.txt"
-     command = 'readout_streak infile='+md+' > '+resfile
-     if (not os.access(resfile, os.F_OK)) & rerun_readout_streak: 
+     command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
+     print "calling readout_streak main program:\n\t",command
+     if (not os.access(resfile, os.F_OK)) or rerun_readout_streak: 
         # if already present only rerun if parameter is set
         print command
         os.system(command)
@@ -284,12 +288,12 @@ def readout_streak(obsid,
 	    #   
 
    # mag output : cycle through filters
-   formatstr =["%6.3f -1    -1    -1    -1    -1        %5.3f -1    -1    -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    %6.3f -1    -1    -1    -1        -1    %5.3f -1    -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    %6.3f -1    -1    -1        -1    -1    %5.3f -1    -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    %6.3f -1    -1        -1    -1    -1    %5.3f -1    -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    -1    %6.3f -1        -1    -1    -1    -1    %5.3f -1    %10i %16s %10s+%i\n",
-               "-1    -1    -1    -1    -1    %6.3f     -1    -1    -1    -1    -1    %5.3f %10i %16s %10s+%i\n",
+   formatstr =["%6.3f  -1     -1     -1     -1     -1        %5.3f -1    -1    -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1     %6.3f  -1     -1     -1     -1        -1    %5.3f -1    -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1     -1     %6.3f  -1     -1     -1        -1    -1    %5.3f -1    -1    -1    %10i %16s %10s+%i\n",
+               "-1     -1     -1     %6.3f  -1     -1        -1    -1    -1    %5.3f -1    -1    %10i %16s %10s+%i\n",
+               "-1     -1     -1     -1     %6.3f  -1        -1    -1    -1    -1    %5.3f -1    %10i %16s %10s+%i\n",
+               "-1     -1     -1     -1     -1     %6.3f     -1    -1    -1    -1    -1    %5.3f %10i %16s %10s+%i\n",
 	       ]
    if (do_only_band != None):
       fmt = [formatstr[k_band-1]]
@@ -464,7 +468,10 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
       return 1.0, (0,0), (1100.5,1100.5)
     
 def _read_readout_streak_output(obses,inp='results.1234.txt',
-     band=None,dateobs=None,tstart=None,infile=None):
+     band=None,
+     dateobs=None,
+     tstart=None,
+     infile=None):
    '''convert output from results.1234.txt to list of obs dict 
    and append them to obses list
    
@@ -600,7 +607,11 @@ def _readout_streak_mag(obs, target='target',lss=1.0,
    print "sensitivity correction = %7.3f"%((1+0.01*xyear))
 
    # index for the proper frametime   
-   k = np.where(abs(1-np.array(frametimes)/obs['frametime']) < 1e-2)[0][0]
+   try:
+      k = np.where(abs(1-np.array(frametimes)/obs['frametime']) < 1.5e-2)[0][0]
+   except:
+      raise RuntimeError("Frame time is not in our list or differs by more than 1.5 percent")
+   
    
    # if not target in 'streak_id' field, set first
    xx = np.array(obs['streak_id'],dtype=bool) 
@@ -650,9 +661,9 @@ def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
    mag_u = zp[band][k] - 2.5*np.log10(r_coi_u)
    mag_d = zp[band][k] - 2.5*np.log10(r_coi_d)
    if overlimit: 
-      print "count rate is over the recommended limit"
+      print "count rate is over the recommended limit - returning negative errors. Deal with it properly !!!"
       print "%s magnitude <%7.3f (+%7.3f -%7.3f)\n"%(band,mag,mag_u-mag,mag-mag_d)
-      return overlimit,band,mag,.9999,.99999
+      return overlimit,band,mag,-mag_u+mag,-mag+mag_d
    else:   
       print "%s magnitude = %7.3f +%7.3f -%7.3f\n"%(band,mag,mag_u-mag,mag-mag_d)
    return overlimit,band,mag,mag_u-mag,mag-mag_d

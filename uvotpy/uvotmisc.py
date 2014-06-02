@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-15 -*-
 '''
    These are some general purpose routines
 '''
 # Developed by N.P.M. Kuin (MSSL/UCL)
-__version__ = '20090211-0.4.0'
+__version__ = '20140501-0.5.0'
 
 import numpy as N
 

@@ -7108,7 +7108,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
 	        coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr   
 
 def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], 
-      ignore_flags=True, use_flags=[1], 
+      ignore_flags=True, use_flags=['bad'], 
       interactive=True, outfile=None, figno=[14], ylim=[],chatter=1, clobber=True):
    '''Read a list of phafiles. Sum the spectra after applying optional wave_shifts. 
    
@@ -7122,6 +7122,9 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       list of lists of exclude regions; same length as pha files; one list per file
    ignore_flags : bool
       do not automatically convert flagged sections of spectrum to exclude_wave regions 
+   use_flags : list
+      list of flags (except - 'good') to exclude. 
+      Valid keyword values for the flags are defined in quality_flags(),    
    interactive : bool
       if False, the program will only use the given wave_shifts, and exclude_regions
    outfile : str
@@ -7153,6 +7156,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    from scipy import interpolate
    import pylab as plt
    import copy
+   from uvotspec import quality_flags_to_ranges
    
    # first create the wave_shifts and exclude_wave lists; then call routine again to 
    # create output file (or if None, return result)
@@ -7161,12 +7165,10 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    # assume phafiles are all valid paths
    if chatter > 2:
       print " INPUT ============================================================================="
-      print "sum_PHAspectra(phafiles, wave_shifts= , exclude_wave= , ignore_flags=%s,\n" %(ignore_flags)
-      print "interactive=%s, outfile=%s, \nfigno=%s, chatter=%i, clobber=%s)\n" % (interactive,outfile,figno,chatter,clobber)
-      print " where "
-      print "phafiles=",phafiles
-      print "wave_shifts=",wave_shifts
-      print "exclude_wave=",exclude_wave
+      print "sum_PHAspectra(\nphafiles;%s,\nwave_shifts=%s,\nexclude_wave=%s,\nignore_flags=%s\n" %(
+           phafiles,wave_shifts,exclude_wave,ignore_flags)
+      print "interactive=%s, outfile=%s, \nfigno=%s, chatter=%i, clobber=%s)\n" % (
+           interactive,outfile,figno,chatter,clobber)
       print "===================================================================================="
    exclude_wave_copy = copy.deepcopy(exclude_wave)  
 
@@ -7190,7 +7192,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	    print 'wav max ',wmax
 	 
       # create arrays - output arrays
-      wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps
+      wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps at integer values 
       nw = len(wave)                     # number of wavelength points
       flux = np.zeros(nw,dtype=float)	 # flux
       error = np.zeros(nw,dtype=float)   # mean RMS errors in quadrature
@@ -7206,12 +7208,26 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       wgt = np.zeros(nw,dtype=float)       # weight
       wvar= np.zeros(nw,dtype=float)       # weighted variance
       one = np.ones(nw,dtype=int)          # unit
+      sector = np.ones(nw,dtype=int)      # sector numbers for disconnected sections of the spectrum
+	 
       D = []
       for i in range(nfiles):
-         if chatter > 1: 
-	    print 'processing file number ',i,'  from ',fx[1].header['date-obs']
          fx = f[i]
 	 excl = exclude_wave[i]
+         if chatter > 1: 
+	    print 'processing file number ',i,'  from ',fx[1].header['date-obs']
+	    print "filenumber: %i\nexclude_wave type: %s\nexclude_wave values: %s"%(i,type(excl),excl)
+	 #
+         # create/append to exclude_wave when not ignore_flags and use_flags non-zero. 
+         if (not ignore_flags) & (len(use_flags) > 1) : 
+            if chatter > 1: print "creating/updating exclude_wave" 
+            quality_range = quality_flags_to_ranges(quality)
+            for flg in use_flags:
+	        if flg in quality_range:
+		    pixranges = quality_range[flg]
+		    for pixes in pixranges:
+		        waverange=fx[2].data['lambda'][pixes]
+      	                excl.append(list(waverange))
          W = fx[2].data['lambda']+wave_shifts[i]
 	 F = fx[2].data['flux']   
 	 E = fx[2].data['fluxerr']
@@ -7219,7 +7235,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	 fF = interpolate.interp1d( W[p], F[p], )
 	 fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
 	 
-         M = np.ones(len(wave),dtype=bool)     # mask
+         M = np.ones(len(wave),dtype=bool)     # mask set to True
 	 M[wave < W[p][0]] = False
 	 M[wave > W[p][-1]] = False
 	 while len(excl) > 0:
@@ -7239,22 +7255,30 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	 err[M]     += error[M]**2
 	 wgt[M]     += 1.0/error[M]**2    # sum weights
          D.append(((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed),(mf,wf,wvar),(var,err,wgt)))
-
+	 
+      # make sectors
+      sect = 1
+      for i in range(1,len(nsummed),1):
+          if (nsummed[i] != 0) & (nsummed[i-1] != 0): sector[i] = sect
+	  elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
+	     sect += 1
+	     sector[i]=sect
+      q = np.where(nsummed > 0)	     
       exclude_wave = copy.deepcopy(exclude_wave_copy)
-      mf = mf/nsummed              # mean flux
-      var = np.abs(var/nsummed - mf**2)    # variance in flux (deviations from mean of measurements)
-      err = err/nsummed            # mean variance from errors in measurements 	
-      wf = wf/wgt                  # mean weighted flux
-      wvar = np.abs(wvar/wgt - wf**2)      # variance weighted from measurement errors		
+      mf[q] = mf[q]/nsummed[q]              # mean flux
+      var[q] = np.abs(var[q]/nsummed[q] - mf[q]**2)    # variance in flux (deviations from mean of measurements)
+      err[q] = err[q]/nsummed[q]            # mean variance from errors in measurements 	
+      wf[q] = wf[q]/wgt[q]                  # mean weighted flux
+      wvar[q] = np.abs(wvar[q]/wgt[q] - wf[q]**2)      # variance weighted from measurement errors		
       # perform a 3-point smoothing? (since PSF spans several pixels)
       # TBD
       # variance smoothing depending on number of spectra summed?
       svar = np.sqrt(var)
       serr = np.sqrt(err)
-      result = wave, wf, wvar, mf, svar, serr, nsummed, wave_shifts, exclude_wave 
+      result = wave[q], wf[q], wvar[q], mf[q], svar[q], serr[q], nsummed[q], wave_shifts, exclude_wave, sector[q]
 
       # debug : 	 
-      D.append( ((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed),(mf,wf,wvar),(var,err,wgt)) )
+      D.append( ((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed,sector),(mf,wf,wvar),(var,err,wgt)) )
       	 	 
       for fx in f:		# cleanup
          fx.close()
@@ -7272,14 +7296,19 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	    fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
 	 fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
 	    +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
-	    +"#          flux error (mean noise), number of data summed\n")
-	 for i in range(nw):
-	    if np.isfinite(wf[i]): 
-               fout.write( ("%8.2f  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %4i\n") % \
-	               (wave[i],wf[i],wvar[i],mf[i],svar[i],serr[i],nsummed[i]))
+	    +"#          flux error (mean noise), number of data summed, sector\n")
+	 if chatter > 4: 
+	    print "len arrays : %i\nlen (q) : %i"%(nw,len(q[0]))   
+	 for i in range(len(q[0])):
+	    if np.isfinite(wf[q][i]): 
+               fout.write( ("%8.2f %12.5e %12.5e %12.5e %12.5e %12.5e %4i %3i\n") % \
+	            (wave[q][i],wf[q][i],wvar[q][i],
+		     mf[q][i],svar[q][i],serr[q][i],
+		     nsummed[q][i],sector[q][i]))
          fout.close()		       
 	 
    else:
+      # build exclude_wave from data quality ? 
       if len(wave_shifts)  != nfiles: wave_shifts = []
       if len(exclude_wave) != nfiles: exclude_wave = []
       if not interactive:
@@ -7295,25 +7324,40 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	       FL = f[2].data['quality']
 	       f.close()
 	       ex = []
-	       if FL[0] != 0: ex=[0]
-	       for i in range(1,len(W)):
-	          same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
-		  good = (FL[i] == 0)
-		  if not same:
-		     if good: ex.append[i]
-		     else: ex = [i]
-	          if len(ex) == 2: 
-		     excl.append(ex)
-		     ex = []
-		  if (i == (len(W)-1)) & (len(ex) == 1): 
-		     ex.append(len(W))
-		     excl.append(ex) 
+	       if len(use_flags) == 0:
+                   if chatter > 1: print "creating/updating exclude_wave" 
+   	           if FL[0] != 0: ex=[0]
+	           for i in range(1,len(W)):
+	              same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
+		      good = (FL[i] == 0)
+		      if not same:
+		         if good: ex.append[i]
+		         else: ex = [i]
+	              if len(ex) == 2: 
+		         excl.append(ex)
+		         ex = []
+		      if (i == (len(W)-1)) & (len(ex) == 1): 
+		         ex.append(len(W))
+		         excl.append(ex) 
+               else:
+                   if chatter > 1: print "creating/updating exclude_wave" 
+                   quality_range = quality_flags_to_ranges(FL)
+                   for flg in use_flags:
+	               if flg in quality_range:
+		           pixranges=quality_range[flg]
+			   for pixes in pixranges:
+			       waverange=W[pixes]
+      	                       excl.append(list(waverange))
             exwave.append(excl) 		       			
 	 exclude_wave = exwave
 	    
-	 if not ignore_flags: sum_PHAspectra(phafiles, wave_shifts=wave_shifts, \
-	    exclude_wave=exclude_wave, ignore_flags=True, interactive=False, \
-	    outfile=outfile, figno=figno, chatter=chatter, clobber=clobber)
+	 if not ignore_flags: 
+	    sum_PHAspectra(phafiles, wave_shifts=wave_shifts, 
+	    exclude_wave=exclude_wave, 
+	    ignore_flags=True, use_flags=use_flags,
+	    interactive=False, 
+	    outfile=outfile, figno=figno, 
+	    chatter=chatter, clobber=clobber)
 		 	
       else:    # interactively adjust wavelength shifts and clipping ranges
          # first flag the bad ranges for each spectrum
@@ -7339,11 +7383,25 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	    if figno != None: plt.figure(figno[0])
 	    plt.clf()
 	    OK = True
+	    
+	    excl_ = exclude_wave[i]
+	    if len(excl_) != 0: print "exclusions passed by argument for file %s are: %s"%(phafiles[i],excl_)
+            if (not ignore_flags) & (len(use_flags) > 1) : 
+                quality_range = quality_flags_to_ranges(quality)
+                for flg in use_flags:
+	           if flg in quality_range:
+		      pixranges=quality_range[flg]
+		      for pixes in pixranges:
+			  waverange=W[pixes]
+      	                  excl_.append(list(waverange))
+		print "exclusions including those from selected quality flags for file %s are: %s"%(phafiles[i],excl_)      
+
 	    if len(exclude_wave) == nfiles:
-	       print "wavelength exclusions for this file are: ",exclude_wave[i]
+	       print "wavelength exclusions for this file are: ",excl_
      	       ans = raw_input(" change this ? (y/N) : ")
 	       if ans.upper()[0] == 'Y' :  OK = True
 	       else: OK = False
+         
             if chatter > 1: print "update exclude wave OK = ",OK	       
 	    nix1 = 0
 	    while OK:     # update the wavelength exclusions
@@ -7377,8 +7435,12 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 		        EXCL = not (ans.upper()[0] == 'N')
 			if ans.upper()[0] == 'N': break		     
 		        ans = input('Give the exclusion wavelength range as two numbers separated by a comma: ')
-		        excl.append(list(ans))
-		  exclude_wave.append( excl )
+			lans = list(ans)
+			if len(lans) != 2: 
+			   print "input either the range like: 20,30  or: [20,30] "
+			   continue
+		        excl.append(lans)
+		  excl_.append( excl )
 		  OK = False
 	       except:
 	          print "problem encountered with the selection of exclusion regions"

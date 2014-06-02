@@ -224,6 +224,7 @@ def makewcshdr(filestub, ext, attfile,
 	          ra_pnt,dec_pnt = world
                   roll = newhead['PA_PNT']  # perhaps update from attcorr.asp ? 
 		  msg += "updated pointing using corrected WCS-S keywords"
+		  print "updated pointing using corrected WCS-S keywords"
 		  attfile = None #  		  
 	      else:	  
                   # get the updated ra,dec,roll values from the attcorr.asp table

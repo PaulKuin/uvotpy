@@ -1,6 +1,15 @@
 The uvot grism python software release notes
 ============================================
 
+Version 2.0 2014-06-01 
+
+The coincidence method was updated to the classic coincidence 
+formula with a the coincidence loss computed for the count 
+rate in a slightly larger area of 414 pixels. The effect of the
+background contribution has been set to zero as the current 
+calibration measurements show no longer a dependency. 
+
+
 Version 1.0.1 2013-11-19
 
 Bug fixes to make code compatible with Numpy 1.9, Scipy 0.14.0.
