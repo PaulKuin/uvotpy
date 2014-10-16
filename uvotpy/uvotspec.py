@@ -6,9 +6,9 @@
       - flag bad quality data 
 '''
 # Developed by N.P.M. Kuin (MSSL/UCL)
-__version__ = '20140424-0.0.1'
+__version__ = '20140424-0.0.2'
 
-
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from stsci.convolve import boxcar
@@ -79,6 +79,8 @@ spdata = {
 {'transition':'','wavevac':3345.8, 'label':u'[NeV]'},
 {'transition':'','wavevac':3425.9, 'label':u'[NeV]'},
 {'transition':'','wavevac':3727  , 'label':u'[OIII]'},
+{'transition':'','wavevac':3869, 'label':u'[NeIII]'},
+{'transition':'','wavevac':3968, 'label':u'[NeIII]'},
 {'transition':'','wavevac':4363  , 'label':u'[OIII]'},
 {'transition':'','wavevac':4636  , 'label':u'NIII*'},
 {'transition':'','wavevac':4643  , 'label':u'NIII*'},
@@ -87,64 +89,6 @@ spdata = {
 {'transition':'','wavevac':4959  , 'label':u'[OIII]'},
 {'transition':'','wavevac':5007  , 'label':u'[OIII]'},
 {'transition':'','wavevac':5755  , 'label':u'[NII]'},
-#{'transition':'','wavevac':.0, 'label':u''}
-#{'transition':'','wavevac':.0, 'label':u''}
-  ],
-'V339_Del':[ # add also H, HeI, HeII 
-# 
-{'transition':'2-4'  ,'wavevac':4862.69,   'label':r'H$\beta$'},
-{'transition':'2-5'  ,'wavevac':4341.69,   'label':r'H$\gamma$'},
-{'transition':'2-6'  ,'wavevac':4102.899,  'label':r'H$\delta$'},
-{'transition':'2-7'  ,'wavevac':3971.202,  'label':r'H$\epsilon$'},
-#{'transition':'4 - 7','wavevac':5411.5, 'label':u'HeII'},
-{'transition':'3 - 4','wavevac':4687.1, 'label':u'He II'},
-{'transition':'3 - 5','wavevac':3203.95,'label':u'He II'},
-{'transition':'3 - 6','wavevac':2734.13,'label':u'He II+O II*'},
-{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':''},
-# unclutter {'transition':'3 - 6','wavevac':2734.13,'label':u'HeII'},
-# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':u'OII*'},
-{'transition':'3 - 7','wavevac':2511.2, 'label':u'He II'},
-{'transition':'3 - 8','wavevac':2385.4, 'label':u'He II'},
-{'transition':'','wavevac':1750  , 'label':u'N III]'},
-{'transition':'','wavevac':1908.7, 'label':u'C III]'},
-#{'transition':'','wavevac':1987.7, 'label':u'S IX]*'},
-# declutter {'transition':'','wavevac':2143  , 'label':u'N II]'},
-{'transition':'','wavevac':2147  , 'label':u'N II]+IV]'},
-# declutter {'transition':'','wavevac':2151.0, 'label':u'N IV]'},
-#{'transition':'','wavevac':2321.66, 'label':u'O III]'},
-{'transition':'','wavevac':2325.6, 'label':u'C II+[O II]'},
-{'transition':'','wavevac':2332.1, 'label':''},
-# unclutter {'transition':'','wavevac':2325.6, 'label':u'C II'},
-# unclutter {'transition':'','wavevac':2332.1, 'label':u'[O III]'},
-#{'transition':'5D-3D','wavevac':2437.2, 'label':u'Ni V]'},
-{'transition':'','wavevac':2471.0, 'label':u'O II]'},
-#{'transition':'','wavevac':2522.5, 'label':u'Ni V]'},
-#{'transition':'','wavevac':2784, 'label':u'Mg V]'},
-{'transition':'','wavevac':2800, 'label':u'Mg II'},
-{'transition':'','wavevac':2844.9, 'label':u'C III]'},
-{'transition':'','wavevac':2937.4, 'label':u'Mg II*'},
-#{'transition':'','wavevac':2949, 'label':u'Mg V]'},
-# unsure of this one {'transition':'','wavevac':2990, 'label':u'Ni VII]'},
-{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3134.2, 'label':u'O II*'},
-# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3287.5, 'label':u'OII*'},
-#{'transition':'','wavevac':.0, 'label':u''}
-#{'transition':'','wavevac':3132, 'label':u'?Be II ?Fe II '},
-#{'transition':'2s2 2p2 3P 0-2s2 2p2 1D 2','wavevac':3301.4, 'label':u'[NeV]'},
-# declutter {'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3346.8, 'label':u'[NeV]'},
-# declutter {'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3426.9, 'label':u'[NeV]'},
-#{'transition':'3d4 5D-3d4 3G','wavevac':3446.61, 'label':u'[FeV]'},
-{'transition':'','wavevac':3448, 'label':u'N IV*'},
-#declutter {'transition':'','wavevac':3444.6, 'label':u'N IV*'},
-#declutter {'transition':'','wavevac':3461.4, 'label':u'N IV*'}, # opt. thick, especially at later times 
-{'transition':'2s2 2p4 3P 2-2s2 2p4 3P 0','wavevac':3461.7, 'label':u'[Ca XIII]'},
-#{'transition':'3d4 5D-3d4 3G','wavevac':3464.5, 'label':u'[FeV]'},
-{'transition':'','wavevac':4363  , 'label':u'[O III]'},
-# declutter {'transition':'','wavevac':4640  , 'label':u'N III*'},
-{'transition':'','wavevac':4645, 'label':u'C III*+N III*'},
-# declutter {'transition':'','wavevac':4649, 'label':u'C III*'},
-{'transition':'','wavevac':4959  , 'label':u'[O III]'},
-{'transition':'','wavevac':5007  , 'label':u'[O III]'},
-{'transition':'','wavevac':5755  , 'label':u'[N II]'},
 #{'transition':'','wavevac':.0, 'label':u''}
 #{'transition':'','wavevac':.0, 'label':u''}
   ],
@@ -217,8 +161,9 @@ class DraggableSpectrum:
         return self.delwav
 		
 
-def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
-    ylim=[None,None],ions=['HI','HeII']):
+def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
+    ylim=[None,None],ions=['HI','HeII'],reference_spectrum=None,
+    recalculate=False):
     """manually adjust the wavelength scale
     
     Parameters
@@ -234,6 +179,11 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     ions : list
        list of ions to use for annotation 
        valid ions are spdata.keys()
+    reference_spectrum : astropy.table.table.Table
+       column 1: wavelength, column 2: flux  
+    recalculate : bool
+       when set, use wavelength shift to determine shift of pixno array 
+       and use dispersion to recalculate the wavelengths    
        
     Notes
     -----
@@ -244,6 +194,7 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     Returns the figure instance    
     
     """
+    import uvotmisc
     # data
     if openfile != None:
        f = openfile 
@@ -258,6 +209,7 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
 	          
     elif file != None:
        f = fits.open(file,mode='update')
+       filename=file
     else:
        raise IOError("what ? nothing to adjust?")
     # axis instance to use   
@@ -267,13 +219,16 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     else:
        fig = plt.figure()
     fig.set_facecolor('lightgreen')
-    ax = fig.add_axes([0.13,0.13,0.8,0.7]) 
+    ax = fig.add_axes([0.05,0.13,0.9,0.77]) 
     canvas = ax.figure.canvas 
     ax.set_title("")   
     # initial plot to get started
     w = f[2].data['lambda']
     flx = f[2].data['flux']
-    spectrum, = ax.plot(w, flx, )
+    spectrum, = ax.plot(w, flx,color='b',label='spectrum to fix' )
+    if reference_spectrum != None:
+       refsp, = ax.plot(reference_spectrum['col1'],reference_spectrum['col2'],
+            color='k',label='reference spectrum')
     # add annotation
     if ylim[0] == None: 
        ylim = ax.get_ylim()
@@ -283,13 +238,20 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         plot_line_ids(ax,ylower=0.8*(ylim[1]-ylim[0])+ylim[0], ion=io) 
     ax.set_xlabel(u'wavelength($\AA$)')
     ax.set_ylabel(u'flux')
+    ax.legend(loc=0)  
+    ax.set_title(filename) 
     fig.show()
     print "Now is a good time to select a part of the figure to use for shifting the wavelengths."
     #  drag figure
     #background = canvas.copy_from_bbox(ax.bbox)
     newspec = DraggableSpectrum(ax,spectrum)
     done = False
-    delwav = 0
+    if 'WAVSHFT' in f[2].header:
+        delwav0 = f[2].header['WAVSHFT']
+	delwav = 0
+    else:
+        delwav0 = 0
+	delwav = 0
     try:
         while not done:
             if raw_input("Do you want to adjust wavelengths ? (Y) ").upper()[0] == 'Y':
@@ -303,18 +265,85 @@ def uvot_adjust_wavelength_manually(file=None,openfile=None,openplot=None,
 		ax.set_title("")
 	        done = True
         newspec.disconnect()
-	print "wavelength shift found = %s"%(delwav)
-        f[2].header['WAVSHFT'] = (delwav, "manual wavelength shift applied")
-        f[2].data['LAMBDA'] = f[2].data['LAMBDA'] + delwav    
-        f[1].header['WAVSHFT'] = (delwav, "manual wavelength shift applied")
-        f[1].header['COMMENT'] = "Manual wavelength shift not applied to response file."
+	if recalculate:
+	    print "recalculating wavelength scale after finding shift"
+	    if 'PIXSHFT' in f[2].header: 
+	        pixshift0 = f[2].header['PIXSHFT']
+            else: pixshift0 = 0		
+            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+	    delpix = int(round(delwav / C_1[-2]))  # round to nearest int
+	    pixno = f[2].data['pixno'] + delpix 
+	    yes2ndorder = False
+	    if 'pixno2'.upper() in f[2].data.names:
+	       yes2ndorder = True
+	       pixno2= f[2].data['pixno2']+ delpix 
+  	    print "wavelength shift found = %f; which results in a pixno shift of %i"%(delwav,delpix)
+	    f[2].data['pixno'] = pixno
+	    if yes2ndorder: f[2].data['pixno2'] = pixno2 
+	    f[2].data['lambda'] = np.polyval(C_1,pixno)
+            f[2].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            f[1].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+	    h = f[1].header['history']
+	    if yes2ndorder:
+	       dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
+	       f[2].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+	    # now we should update the plot...
+	else:
+  	   sys.stderr.write( "wavelength shift found = %s\n"%(delwav) )
+           f[2].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+           f[2].data['LAMBDA'] = f[2].data['LAMBDA'] + delwav    
+           f[1].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+           f[1].header['COMMENT'] = "Manual wavelength shift not applied to response file."
         f.verify()
 	f.flush()
+	# replot 
+	spectrum.set_color('c')
+        f = fits.open(file)
+        w = f[2].data['lambda']
+        flx = f[2].data['flux']
+        spectrum, = ax.plot(w, flx,color='darkblue',label='fixed spectrum' )
+	ax.legend()
+	ax.figure.canvas.draw()
     except:
+        #sys.stderr.write("error: wavshift %f,pixshift0 %i,C_1 %s,C_2 %s\n"%(delwav,pixshift0,C_1,C_2) )
         raise RuntimeError("Some error occurred during the selection of the wavelength shift. No shift was applied.")
 	newspec.disconnect()
     # apply the shift 
-    return fig
+    return fig, ax, spectrum
+
+def apply_shift(file,delwav,recalculate=False):
+    """apply a given wavelength shift in A"""
+    import uvotmisc
+    f = fits.open(file,mode='update')
+    delwav0 = 0
+    if 'WAVSHFT' in f[2].header:
+        delwav0 = f[2].header['WAVSHFT']+delwav
+    if recalculate:
+	if 'PIXSHFT' in f[2].header: 
+	    pixshift0 = f[2].header['PIXSHFT']
+	else: pixshift0 = 0    
+        C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+        C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+	delpix = int(round(delwav / C_1[-2]))
+	pixno  = f[2].data['pixno']  +delpix
+	pixno2 = f[2].data['pixno2'] +delpix
+	f[2].data['pixno'] = pixno  
+	f[2].data['pixno2'] = pixno2  
+	f[2].data['lambda'] = np.polyval(C_1,pixno)
+        f[2].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+        f[1].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+	h = f[1].header['history']
+	dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
+	f[2].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+    else:	
+        f[2].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+        f[2].data['LAMBDA'] = f[2].data['LAMBDA'] + delwav    
+        f[1].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+    f.verify()
+    f.flush()
+
+
 
 class SelectBadRegions:
     """Select the bad regions on a spectrum interactively"""
@@ -422,7 +451,7 @@ class SelectBadRegions:
         self.badregions = badregions	
         
 
-def uvot_flag_bad_manually(file=None,openfile=None,openplot=None,
+def flag_bad_manually(file=None,openfile=None,openplot=None,
         ylim=[None,None], ):
     """manually flag bad parts of the spectrum
     
@@ -656,7 +685,7 @@ def check_flag(quality,flag,chatter=0):
 	      loc[i] = True
    return loc
 
-def get_continuum_values(wave,flux,cont_regions=[],):
+def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
     """give a list of good continuum bands in spectrum and 
     determine averages 
     
@@ -666,6 +695,10 @@ def get_continuum_values(wave,flux,cont_regions=[],):
       wavelength array
     flux : array
       flux array  
+    quality : array
+      quality values
+    qlimit : int
+      include only quality less than this limit    
     cont_regions : list
       a list of [start, stop] wavelengths
     
@@ -676,50 +709,68 @@ def get_continuum_values(wave,flux,cont_regions=[],):
        value in each band 
        
     """
+    import numpy as np
     if len(cont_regions) == 0: return
-    result = []
+    result = [date]
     for r in cont_regions:
-       q = (wave > r[0]) & (wave <= r[1])
-       result.append([wave[q].mean(),flux[q].mean()])
+       q = (wave > r[0]) & (wave <= r[1]) & (quality < qlimit) & np.isfinite(flux)
+       if len(np.where(q)[0]):
+          result.append([wave[q].mean(),flux[q].mean(), flux[q].std()])
+       else: 
+          result.append([np.NaN,np.NaN,np.NaN])	  
     return result
     
-def get_smooth_continuum(cont_list,wave_range=[None,None],):
-    """give a list of continuum points, put a smooth line 
-    through them and return as a function valid on the 
-    wave_range.
+def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,full=True):
+    '''
+    given a list of PHA spectra files and a list of (continuum)
+    regions, extract the mean flux and error in the 
+    (continuum) regions.
     
     parameters
     ----------
-    cont_list: list 
-      list items must be a list of [wavelength, flux] for
-      continuum points
-    wave_range : list
-      minimum and maximum wavelengths for the solution
-      
+    cont_regions : list
+      a list of [start, stop] wavelengths
+    
     returns
     -------
-    a function that returns the continuum as a function of 
-    wavelength    
-    
-    """   
+    wavelength, mean flux+error in each region as an astropy table
+    '''   
     import numpy as np
-    from scipy import interpolate
-    c = np.array(cont_list)
-    if c.shape[1] == 2:
-       w = c[:,0]
-       f = c[:,1]
-    else:
-       raise RuntimeError( "check the cont_list parameter" )  
-    if wave_range[0] == None:
-       wave_range[0] = w.min()-250.0
-    if wave_range[1] == None:
-       wave_range[1] = w.max()+250.0   
-    tck = interpolate.splrep(w,f,k=1,
-             xb=wave_range[0],xe=wave_range[1],
-	     s=len(w)+np.sqrt(2*len(w)))
-    w = np.arange(wave_range[0],wave_range[1]+100,100)
-    f = interpolate.splev(w,tck,)
-    return interpolate.interp1d(w,f,)
+    from astropy.io import ascii,fits
+    
+    # build wavelengths array
+    w = []
+    for r in regions:
+       w.append(np.asarray(r,dtype=float).mean())
+    w = np.array(w,dtype=float)
+    n = len(w)
+    records=[]  
+    if daily: daynorm=86400.0
+    else: daynorm = 1.0
+    for file in phafiles:
+       sp = fits.open(file[0])
+       result =  get_continuum_values(
+          (sp[2].header['tstart']-tstart)/daynorm,
+          sp[2].data['lambda'],
+	  sp[2].data['flux'],
+	  sp[2].data['quality'],
+	  cont_regions=regions,
+	  qlimit=qlimit)
+       sp.close()	  
+       records.append(result) 	  
+    t=[]
+    for rec in records:
+        t.append(rec[0])
+    allbands=[]
+    k=1
+    for r in regions:
+        band=[]
+        for rec in records:
+	    band.append(rec[k])
+        allbands.append(band)
+        k+=1		
+    if full:
+       return w,t, allbands, records
     
 def plot_spectrum(ax,phafile,errbars=False, errhaze=False, 
         hazecolor='grey', hazealpha=0.2, flag='all'):
@@ -731,7 +782,7 @@ def plot_spectrum(ax,phafile,errbars=False, errhaze=False,
     w = f[2].data['lambda']
     flx = f[2].data['flux']
     err = f[2].data['fluxerr']
-    if not witherr:
+    if not errbars:
         for rr in r:
             ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],label=label)
 	    if errhaze:
@@ -849,7 +900,7 @@ class poly_background():
         self.poly_coef=coef
 			
 
-    
+# following routines are under development - no testing was yet done    
 class fit_spectrum():
     """
     Fit the spectrum in a way similar to Xspec. 
@@ -1093,7 +1144,7 @@ class fit_spectrum():
 	   return [status, (y-F)]   
     
     
-def runfit2(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
+def dofit2gpbg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
     amp2lim=None,fixsig=False,
     fixsiglim=0.2, fixpos=False,chatter=0):
    '''
@@ -1197,7 +1248,7 @@ def runfit2(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
       print "parinfo has been set to: " 
       for par in parinfo: print par
 
-   Z = mpfit(fit2,p0,functkw=fa,parinfo=parinfo,quiet=True)
+   Z = mpfit(_fit2,p0,functkw=fa,parinfo=parinfo,quiet=True)
    
    if (Z.status <= 0): 
       print 'uvotgetspec.runfit2.mpfit error message = ', Z.errmsg
@@ -1210,7 +1261,7 @@ def runfit2(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
    return Z	
        
        
-def fit2(p, fjac=None, x=None, y=None, err=None):
+def _fit2(p, fjac=None, x=None, y=None, err=None):
    import numpy as np
 
    (bg0,bg1,amp1,pos1,sig1,amp2,pos2,sig2) = p 
@@ -1219,6 +1270,58 @@ def fit2(p, fjac=None, x=None, y=None, err=None):
            amp1 * np.exp( - ((x-pos1)/sig1)**2 ) + \
            amp2 * np.exp( - ((x-pos2)/sig2)**2 ) 
 	    
+   status = 0
+   return [status, (y-model)/err]
+    
+def dofit2poly(x,f,err,coef1=[0,1],coef2=[0,1],
+    chatter=0):
+   '''
+   Fit the sum of two first order polynomials f(x)
+   
+   Parameters
+   ==========
+   x : array
+   f : array
+   err : ?
+   coef? : list
+      coefficients of polynomial
+   
+   PROBLEM: gives some numbers that don't make sense...
+   '''
+   import numpy as np
+   from mpfit import mpfit
+      
+   p0 = (coef1[1],coef1[0],coef2[1],coef2[0])
+   
+   # define the variables for the function 'myfunct'
+   fa = {'x':x,'y':f,'err':err}
+     
+   parinfo = [{  
+   'limited': [0,0],   'limits' : [0.0,0.0],'value':  coef1[1],   'parname': 'coef11'  },{  
+   'limited': [0,0],   'limits' : [0.0,0.0],'value':  coef1[0],   'parname': 'coef10'  },{  
+   'limited': [0,0],   'limits' : [0.0,0.0],'value':  coef2[1],   'parname': 'coef21'  },{  
+   'limited': [0,0],   'limits' : [0.0,0.0],'value':  coef2[0],   'parname': 'coef20'  },]  
+      
+   if chatter > 4: 
+      print "parinfo has been set to: " 
+      for par in parinfo: print par
+
+   Z = mpfit(_fit3,p0,functkw=fa,parinfo=parinfo,quiet=True)
+   
+   if (Z.status <= 0): 
+      print 'uvotspec.dofit2poly.mpfit error message = ', Z.errmsg
+      print "parinfo has been set to: " 
+      for par in parinfo: print par
+   elif (chatter > 3):   
+      print "\nparameters and errors : "
+      for i in range(4): print "%10.3e +/- %10.3e\n"%(Z.params[i],Z.perror[i])
+   
+   return Z	
+              
+def _fit3(p, fjac=None, x=None, y=None, err=None):
+   import numpy as np
+   (coef11,coef10,coef21,coef20) = p 	     
+   model = np.polyval([coef10,coef11],x)+np.polyval([coef20,coef21],x)
    status = 0
    return [status, (y-model)/err]
     

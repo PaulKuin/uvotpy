@@ -606,7 +606,7 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    
    year : int
      e.g., 2012
-   month : str
+   month : str or int
      e.g., 'JAN' 
    day : int
      e.g., 21 
@@ -624,9 +624,11 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    import numpy as np
    if chatter > 1: print year, type(year), month, type(month), day,type(day), hour,type(hour), minute, type(minute), second, type(second), millisecond, type(millisecond)
    swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
-   defmonths={'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12} 
-   imon = defmonths[month.upper()]
-   if chatter > 1: print imon, type(imon)
+   if type(month) == string:
+      defmonths={'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12} 
+      imon = defmonths[month.upper()]   
+      if chatter > 1: print imon, type(imon)
+   else: imon = month   
    xx = datetime.datetime(year,imon,day,hour,minute,second,millisecond*1000)  
    xdiff = xx-swzero_datetime
    swifttime = xdiff.total_seconds() 
@@ -635,7 +637,7 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
 def get_dispersion_from_header(header,order=1):
    """retrieve the dispersion coefficients from the FITS header """ 
    import numpy as np
-   hist = header.get_history()
+   hist = header['history']
    n = "%1s"%(order)   
    C = [get_keyword_from_history(hist,'DISP'+n+'_0')]
    if C == [None]: 
@@ -665,7 +667,7 @@ def get_dispersion_from_header(header,order=1):
 def get_sigCoef(header,order=1):
    '''retrieve the sigma coefficients from the FITS header '''  
    import numpy as np
-   hist = header.get_history() 
+   hist = header['history'] 
    n = "%1s"%(order)   
    SIG1 = [get_keyword_from_history(hist,'SIGCOEF'+n+'_0')]
    try:
@@ -693,7 +695,7 @@ def get_sigCoef(header,order=1):
 def get_curvatureCoef(header,order=1):
    '''retrieve the sigma coefficients from the FITS header '''  
    import numpy as np
-   hist = header.get_history() 
+   hist = header['history'] 
    n = "%1s"%(order)   
    CURVE = [get_keyword_from_history(hist,'COEF'+n+'_0')]
    try:
@@ -849,3 +851,58 @@ def encircled_energy(uvotfilter, areapix):
    f = interp1d(r,E)
    return f(x)
    
+def polyfit_with_fixed_points(n, x, y, xf, yf): 
+    """  compute a polynomial fit with fixed points 
+    
+    parameters
+    ----------
+    n : int
+       order of polynomial
+    x,y : array like
+       data point coordinates
+    xf,yf : array like
+       fixed data point coordinates
+       
+    reference
+    ---------
+       Stackoverflow.com/users/110026/jaime
+       with added typing x,y,xf,yf
+    
+    Example
+    -------
+    n, d, f = 50, 8, 3
+    x = np.random.rand(n)
+    xf = np.random.rand(f)
+    poly = np.polynomial.Polynomial(np.random.rand(d + 1))
+    y = poly(x) + np.random.rand(n) - 0.5
+    yf = np.random.uniform(np.min(y), np.max(y), size=(f,))
+    params = polyfit_with_fixed_points(d, x , y, xf, yf)
+    poly = np.polynomial.Polynomial(params)
+    xx = np.linspace(0, 1, 1000)
+    plt.plot(x, y, 'bo')
+    plt.plot(xf, yf, 'ro')
+    plt.plot(xx, poly(xx), '-')
+    plt.show()
+    """
+    import numpy as np
+    x = np.asarray(x)
+    y = np.asarray(y)
+    xf = np.asarray(xf,dtype=float)
+    yf = np.asarray(yf,dtype=float)
+    mat = np.empty((n + 1 + len(xf),) * 2)
+    vec = np.empty((n + 1 + len(xf),))
+    x_n = x**np.arange(2 * n + 1)[:, None]
+    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
+    x_n = np.sum(x_n, axis=1)
+    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
+    mat[:n + 1, :n + 1] = np.take(x_n, idx)
+    xf_n = xf**np.arange(n + 1)[:, None]
+    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[n + 1:, :n + 1] = xf_n.T
+    mat[n + 1:, n + 1:] = 0
+    vec[:n + 1] = yx_n
+    vec[n + 1:] = yf
+    params = np.linalg.solve(mat, vec)
+    return params[:n + 1]
+    
+    

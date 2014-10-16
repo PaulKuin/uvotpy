@@ -1,8 +1,44 @@
 #!/usr/stsci/pyssg/Python-2.7/bin/python
+# -*- coding: iso-8859-15 -*-
+#
+# This software was written by N.P.M. Kuin (Paul Kuin) 
+# Copyright N.P.M. Kuin 
+# All rights reserved
+# This software is licenced under a 3-clause BSD style license
+# 
+#Redistribution and use in source and binary forms, with or without 
+#modification, are permitted provided that the following conditions are met:
+#
+#Redistributions of source code must retain the above copyright notice, 
+#this list of conditions and the following disclaimer.
+#
+#Redistributions in binary form must reproduce the above copyright notice, 
+#this list of conditions and the following disclaimer in the documentation 
+#and/or other materials provided with the distribution.
+#
+#Neither the name of the University College London nor the names 
+#of the code contributors may be used to endorse or promote products 
+#derived from this software without specific prior written permission.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+#THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+#PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+#CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+#EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+#PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+#OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+#WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+#OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+#ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 
-# Developed by N.P.M. Kuin (MSSL/UCL)
+from __future__ import division
+# Developed by N.P.M. Kuin (MSSL/UCL) 
+# uvotpy 
+# (c) 2009-2014, see Licence  
 
-__version__ = '1.0.3 20140501'
+__version__ = '2.0.6 20140930'
  
 import sys
 import optparse
@@ -62,10 +98,17 @@ if __name__ != '__main__':
       write_RMF = False
       background_source_mag = 18.0
       zeroth_blim_offset = 1.0
+      coi_half_width = None
 
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
 fileversion=2
+calmode=True
+print 66*"="
+print "uvotpy module uvotgetspec version=",__version__
+print "N.P.M. Kuin (c) 2009-2014, see uvotpy licence." 
+print "please use reference provided at http://github.com/PaulKuin/uvotpy"
+print 66*"=","\n"
 
 def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, 
       outfile=None, calfile=None, fluxcalfile=None, 
@@ -115,10 +158,25 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         instead of default background list offset from spectrum as list 
         of two numbers, like [20, 40]. Distance relative to spectrum 
      
-      - **offsetlimit** : int
+      - **offsetlimit** : None,int,[center,range]
 	
-        when strong spectrum lies next to target, feed offsetlimit a value.
-        can be positive or negative. Try small numbers like -1, or 3, etc.
+	Default behaviour is to determine automatically any required offset from 
+	the predicted anchor position to the spectrum, and correct for that. 
+	The automated method may fail in the case of a weak spectrum and strong zeroth 
+	or first order next to the spectrum. Two methods are provided:
+	
+        (1) provide a number which will be used to limit the allowed offset. If 
+	within that limit no peak is identified, the program will stop and require 
+	you to provide a manual offset value. Try small numbers like 1, -1, 3, etc..
+	
+	(2) if you already know the approximate y-location of the spectrum at the 
+	anchor x-position in the rotated small image strip around the spectrum, you 
+	can give this with a small allowed range for fine tuning as a list of two
+	parameter values. The first value in the list must be the y-coordinate 
+	(by default the spectrum falls close to y=100 pixels), the second parameter
+	the allowed adjustment to a peak value in pixels. For example, [105,2]. 
+	This will require no further interactive input, and the spectrum will be 
+	extracted using that offset. 
 	
       - **wheelpos**: {160,200,955,1000}
         
@@ -239,7 +297,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
   
    Returns 
    -------   
-   None, or compound data (Y0, Y1, Y2, Y3, Y4) which are explained in the code.
+   None, (give_result=True) compounded data (Y0, Y1, Y2, Y3, Y4) which 
+   are explained in the code, or (give_new_result=True) a data dictionary. 
+    
   
    Notes
    ----- 
@@ -280,6 +340,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
      Version 2012-01-15 NPMK(MSSL)  : optimal extraction is no longer actively supported until further notice
      Version 2013-10-23 NPMK(MSSL)  : fixed bug so uvotgraspcorr gives same accuracy as lenticular filter 
      Version 2014-01-01 NPMK(MSSL)  : aperture correction for background added; output dictionary
+     Version 2014-07-23 NPMK(MSSL)  : coi-correction using new calibrared coi-box and factor
+     Version 2014-08-04 NPMK(MSSL/UCL): expanded offsetlimit parameter with list option to specify y-range.  
 
    Example
    -------
@@ -307,9 +369,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     where, 
    #     
    #(present0,present1,present2,present3),(q0,q1,q2,q3), \
-   #  (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-   #  (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-   #  (x,xstart,xend,sp_all,quality)  = fit     
+   #  (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
+   #  (y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
+   #  (x,xstart,xend,sp_all,quality,co_back)  = fit     
    #     
    #     dis = dispersion with zero at ~260nm[UV]/420nm[V] ; spnet = background-substracted spectrum from 'spnetimg'
    #     angle  = rotation-angle used to extract 'extimg'  ; anker = first order anchor position in DET coordinates
@@ -332,6 +394,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     The background must be consistent with the width of the spectrum summed. 
    
    from uvotio import fileinfo, rate2flux, readFluxCalFile
+   
+   if type(offsetlimit) == list:
+       if len(offsetlimit) != 2:
+           raise IOError("offsetlimit list must be [center, distance from center] in pixels")
    
    # check environment
    CALDB = os.getenv('CALDB')
@@ -457,8 +523,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
 	   msg += ' Start date-time  : '+str(hdr['date-obs'])+'\n'
-           msg += ' grism file       : '+specfile+'['+str(ext)+']\n'
-           msg += ' attitude file    : '+attfile+'\n'
+           msg += ' grism file       : '+specfile.split('/')[-1]+'['+str(ext)+']\n'
+           msg += ' attitude file    : '+attfile.split('/')[-1]+'\n'
 	   if lfiltpresent & use_lenticular_image:
 	      if ((lfilt1 != None) & (lfilt1_ext != None)): 
 	         msg += ' lenticular file 1: '+lfilt1+'['+str(lfilt1_ext)+']\n'
@@ -469,6 +535,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	   if not use_lenticular_image:
 	      msg += "anchor position derived without lenticular filter\n"	 
 
+      if not 'ASPCORR' in hdr: hdr['ASPCORR'] = 'UNKNOWN'
       Yout.update({'hdr':hdr})
 
       tstart = hdr['TSTART']
@@ -480,9 +547,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             
       if 'FRAMTIME' not in  hdr:       
         # compute the frametime from the CCD deadtime and deadtime fraction 
-        deadc = hdr['deadc']
-        deadtime = 600*285*1e-9 # 600ns x 285 CCD lines seconds
-        framtime = deadtime/(1.0-deadc)
+        #deadc = hdr['deadc']
+        #deadtime = 600*285*1e-9 # 600ns x 285 CCD lines seconds
+        #framtime = deadtime/(1.0-deadc)
+	framtime = 0.0110329
         hdr.update('framtime',framtime,comment='frame time computed from deadc ')
         Yout.update({'hdr':hdr})
 	if chatter > 1:
@@ -497,6 +565,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
       if chatter > 0:
            msg += ' wheel position   : '+str(wheelpos)+'\n'
+	   msg += ' roll angle       : %5.1f\n'% (hdr['pa_pnt'])
+	   msg += 'coincidence loss version: 2 (2014-07-23)\n'
            msg += '======================================\n'
 	
       try: 
@@ -548,6 +618,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       # read the anchor and dispersion out of the wavecal file  	      
       anker, anker2, C_1, C_2, angle, calibdat = getCalData(Xphi,Yphi,wheelpos, date1, \
          calfile=calfile, chatter=chatter)    
+	 
+      hdrr = pyfits.getheader(specfile,int(ext))
+      if (hdrr['aspcorr'] == 'UNKNOWN') & (not lfiltpresent):
+         msg += "WARNING: No aspect solution found. Anchor uncertainty large.\n"
       msg += "first order anchor position on detector in det coordinates:\n"
       msg += "anchor1=(%8.2f,%8.2f)\n" % (anker[0],anker[1])   
       msg += "first order dispersion polynomial (distance anchor, \n"
@@ -682,7 +756,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       ank_c = [100,500,0,2000]
       if offsetlimit == None:
         offset = 0
-      else: 
+      elif type(offsetlimit) == list:
+        offset = offsetlimit[0]-96
+	ank_c[0] = offsetlimit[0]
+      else:	
         offset = offsetlimit  # for sumimage used offsetlimit to set the offset
 	ank_c[0] = 96+offsetlimit 	
       dis = np.arange(-500,1500)
@@ -821,7 +898,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
-          =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, 
+          =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, offsetlimit=offsetlimit, 
 	     predict_second_order=predict2nd,background_template=background_template,
              angle=angle,offset=offset,  poly_1=poly_1,poly_2=poly_2,poly_3=poly_3,
 	     msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
@@ -829,23 +906,27 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	     dropout_mask=dropout_mask, chatter=chatter) 
 	 # fit_sigmas parameter needs passing 
 	 
-      (present0,present1,present2,present3),(q0,q1,q2,q3), \
-              (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-              (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	      (x,xstart,xend,sp_all,quality)  = fitorder
-	      
+      (present0,present1,present2,present3),(q0,q1,q2,q3), (
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	      y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	      y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
+	      x,xstart,xend,sp_all,quality,co_back)  = fitorder
+
       # update the anchor y-coordinate	      
       ank_c[0] = y1[ank_c[1]]	      
       
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
+      "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
+      "borderup":borderup,"borderdown":borderdown,
       "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
       "present0":present0,"present1":present1,"present2":present2,"present3":present3,
       "q0":q0,"q1":q1,"q2":q2,"q3":q3,
-      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,
-      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first,
-      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,
-      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third,
-      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,"co_zeroth":co_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first, "co_first": co_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
       "apercorr":apercorr,"expospec":expospec})
        
       Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	 	      
@@ -857,7 +938,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown) , apercorr, expospec, msg, curved \
           =  curved_extraction(extimg,ank_c,anker, wheelpos, \
-	     ZOpos=ZOpos, skip_field_sources=skip_field_src, \
+	     ZOpos=ZOpos, skip_field_sources=skip_field_src, offsetlimit=offsetlimit,\
 	     background_lower=background_lower, background_upper=background_upper, \
 	     background_template=background_template,\
              angle=angle,offset=offset,  outfull=True, expmap=expmap, \
@@ -866,19 +947,23 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	     dropout_mask=dropout_mask, chatter=chatter) 
 	     
       (present0,present1,present2,present3),(q0,q1,q2,q3), \
-          (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-          (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	  (x,xstart,xend,sp_all,quality)  = fitorder
+          (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	  y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
+          (y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	  y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
+	  (x,xstart,xend,sp_all,quality,co_back)  = fitorder
 	
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
+      "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
+      "borderup":borderup,"borderdown":borderdown,
       "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
       "present0":present0,"present1":present1,"present2":present2,"present3":present3,
       "q0":q0,"q1":q1,"q2":q2,"q3":q3,
-      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,
-      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first,
-      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,
-      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third,
-      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,"co_zeroth":co_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first, "co_first": co_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
       "apercorr":apercorr,"expospec":expospec})  
         	 	
       ank_c[0] = y1[ank_c[1]]	      
@@ -893,8 +978,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       #    msg += "updated fitorder\n"
       # 
       #    (present0,present1,present2,present3),(q0,q1,q2,q3), \
-      #        (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-      #        (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
+      #        (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
+      #        (y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
       #	      (x,xstart,xend,sp_all,quality)  = fitorder2
       #	      
       #    # update the anchor y-coordinate	      
@@ -939,7 +1024,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
    offset = ank_c[0]-100.0	      		
    msg += "best fit 1st order anchor offset from spectrum = %7.1f\n"%(offset)
-   msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],ank_c[0])
+   msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],y1[int(ank_c[1])])
    Yout.update({"offset":offset})
    
    #2012-02-20 moved updateFitorder to curved_extraction
@@ -1203,23 +1288,32 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	            /expospec[1,[q1[0]]]).flatten()
 	    bkgrate1 = ((bg_first)[q1[0]] * (2.5/trackwidth)
 	            /expospec[1,[q1[0]]]).flatten()
-            flux1 = rate2flux(wav1,rate1, wheelpos, bkgrate=bkgrate1, 
-	                pixno=x[q1[0]], sig1coef=sig1coef, 
-			sigma1_limits=[2.6,4.0], 
+	    print "computing flux for plot; frametime =",framtime	    
+            flux1,wav1,coi_valid1 = rate2flux(wav1,rate1, wheelpos, 
+	                bkgrate=bkgrate1, 
+                        co_sprate = (co_first[q1[0]]/expospec[1,[q1[0]]]).flatten(),
+                        co_bgrate = (co_back [q1[0]]/expospec[1,[q1[0]]]).flatten(),
+	                pixno=x[q1[0]], 
+			#sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
 			arf1=fluxcalfile, arf2=None, effarea1=EffArea1,
 			spectralorder=1, swifttime=tstart, 
-			trackwidth = trackwidth, anker=anker, 
-			option=1, fudgespec=1.32,
+			#trackwidth = trackwidth, 
+			anker=anker, 
+			#option=1, fudgespec=1.32,
 			frametime=framtime, 
 	                debug=False,chatter=1)
             #flux1_err = 0.5*(rate2flux(,,rate+err,,) - rate2flux(,,rate-err,,))
 	    p1, = plt.plot(wav1[np.isfinite(flux1)],flux1[np.isfinite(flux1)],
-	                   color='darkred',label=u'curved') 	    
+	                   color='darkred',label=u'curved') 
+	    p11, = plt.plot(wav1[np.isfinite(flux1)&(coi_valid1==False)],
+	           flux1[np.isfinite(flux1)&(coi_valid1==False)],'.',
+		   color='lawngreen',
+		   label="too bright")		   	    
 	    	    
 	    #  PROBLEM quality flags !!!
-	    qbad1 = np.where((quality[x[q1[0]]] > 0) & (quality[x[q1[0]]] < 16))
-	    qbad2 = np.where((quality[x[q1[0]]] > 0) & (quality[x[q1[0]]] == qflag.get("bad")))
-	    plt.legend([p1],[u'curved'])
+	    qbad1 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] < 16))
+	    qbad2 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] == qflag.get("bad")))
+	    plt.legend([p1,p11],[u'calibrated spectrum',u'too bright - not calibrated'])
 	    if len(qbad2[0]) > 0:      
                p2, = plt.plot(wav1[qbad2],flux1[qbad2],
 	             '+k',markersize=4,label=u'bad data')
@@ -1235,9 +1329,14 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	    print "OPTIMAL EXTRACTION IS NO LONGER SUPPORTED"
 	    wav1 = np.polyval(C_1,x[q1[0]])
 	    #flux1 = rate2flux(wav1, counts[1,q1[0]]/expo, wheelpos, spectralorder=1, arf1=fluxcalfile)
-            flux1 = rate2flux(wav1,counts[1,q1[0]]/expo, wheelpos, bkgrate=bgkrate1, pixno=x[q1[0]], sig1coef=sig1coef, \
-	       sigma1_limits=[2.6,4.0], arf1=fluxcalfile, arf2=None, spectralorder=1, swifttime=tstart,\
-	       trackwidth = trackwidth, anker=anker, option=1, fudgespec=1.32,frametime=framtime, \
+            flux1,wav1,coi_valid1 = rate2flux(wav1,counts[1,q1[0]]/expo, wheelpos, bkgrate=bgkrate1, 
+               co_sprate = (co_first[q1[0]]/expospec[1,[q1[0]]]).flatten(),
+               co_bgrate = (co_back [q1[0]]/expospec[1,[q1[0]]]).flatten(),
+	       pixno=x[q1[0]], #sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
+	       arf1=fluxcalfile, arf2=None, spectralorder=1, swifttime=tstart,
+	       #trackwidth = trackwidth, 
+	       anker=anker, #option=1, fudgespec=1.32,
+	       frametime=framtime, 
 	       debug=False,chatter=1)
 	    p3, = plt.plot(wav1, flux1,'g',alpha=0.5,ls='steps',lw=2,label='optimal' )
 	    p4, = plt.plot(wav1,flux1,'k',alpha=0.5,ls='steps',lw=2,label='_nolegend_' )
@@ -1257,12 +1356,16 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	       wav2 = polyval(C_2,x[q2[0]]-dist12)
 	       rate2 = ((sp_second[q2[0]]-bg_second[q2[0]])* 
 	           apercorr[2,[q2[0]]].flatten()/expospec[2,[q2[0]]].flatten() )
-               flux2 = rate2flux(wav2, rate2, wheelpos, spectralorder=2,swifttime=tstart)
+               flux2,wav1,coi_valid2 = rate2flux(wav2, rate2, wheelpos,
+	               co_sprate = co_second[q2[0]]/expospec[2,[q2[0]]],
+                       co_bgrate = co_back [q2[0]]/expospec[2,[q2[0]]],
+	               frametime=framtime, 
+                       spectralorder=2,swifttime=tstart,)
                #flux1_err = rate2flux(wave,rate_err, wheelpos, spectralorder=1,)
 	       plt.cla()
 	       p1, = plt.plot(wav2,flux2,'r',label='curved') 	    
 	       plt.plot(wav2,flux2,'k',alpha=0.2,label='_nolegend_') 	    
-	       qbad1 = np.where((quality[x[q2[0]]] > 0) & (quality[x[q2[0]]] < 16))
+	       qbad1 = np.where((quality[np.array(x[q2[0]],dtype=int)] > 0) & (quality[np.array(x[q2[0]],dtype=int)] < 16))
 	       p2, = plt.plot(wav2[qbad1],flux2[qbad1],'+k',markersize=4,label='suspect data')
 	       plt.legend(['uncalibrated','suspect data'])
 	       plt.ylabel(u'estimated 2nd order flux')
@@ -1312,6 +1415,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 		 offset,ank_c2,extimg, C_1, 
                  history=None,chatter=1,
 		 clobber=clobber, 
+		 calibration_mode=calmode,
 		 interactive=interactive)  
 		  
       elif not optimal_extraction:
@@ -1326,6 +1430,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	      write_rmffile=write_RMF, fileversion=2,
 	      used_lenticular=use_lenticular_image,
 	      history=msg, 
+	      calibration_mode=calmode,
 	      chatter=chatter, 
 	      clobber=clobber ) 
 	  
@@ -1394,13 +1499,22 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       If True then the HEADAS uvotimgrism program rectext is used to extract the image 
       This is a better way than using ndimage.rotate() which does some weird smoothing.
    
+   offsetlimit : None, float/int, list
+      if None, search for y-offset predicted anchor to spectrum using searchwidth 
+      if float/int number, search for offset only up to a distance as given from y=100
+      if list, two elements, no more. [y-value, delta-y] for search of offset.
+      if delta-y < 1, fixoffset = y-value. 
+      
+   
    History
    -------
    2011-09-05 NPMK changed interpolation in rotate to linear, added a mask image to 
    make sure to keep track of the new pixel area.  	     
    2011-09-08 NPMK incorporated rectext as new extraction and removed interactive plot, 
      curved, and optimize which are now olsewhere.
-   2014-02-28 Add template for the background as an option  
+   2014-02-28 Add template for the background as an option 
+   2014-08-04 add option to provide a 2-element list for the offsetlimit to constrain 
+     the offset search range.   
    ''' 
    import numpy as np
    import os
@@ -1482,8 +1596,8 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       b = ndimage.rotate(a,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
       if Tmpl: 
          b_ = ndimage.rotate(a_,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
-      if dropouts: #try to rotate the bolean image
-         aanan = ndimage.rotate(a_,theta,reshape = False,order = 1,mode = 'constant',)
+      if dropouts: #try to rotate the boolean image
+         aanan = ndimage.rotate(aanan,theta,reshape = False,order = 1,mode = 'constant',)
       e2 = 0.5*b.shape[0]
       c = b[e2-100:e2+100,:]
       if Tmpl: c_ = b_[e2-100:e2+100,:]
@@ -1543,7 +1657,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    if chatter > 1: 
       #print 'image was rotated; anchor in extracted image is ', ank_c[:2]
       #print 'limits spectrum are ',ank_c[2:]
-      print 'finding location spectrum from a slice around anchor sized:',minrange,':',maxrange
+      print 'finding location spectrum from a slice around anchor x-sized:',minrange,':',maxrange
       print 'offsetlimit = ', offsetlimit  
    d = (c[:,(ank_c[1]-minrange):(ank_c[1]+maxrange)]).sum(axis=1).squeeze()
    if len(qofd[0]) > 0:
@@ -1553,24 +1667,38 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
      ank_c[2] = -1
      ank_c[3] = -1 
 
+   y_default=100
+   if (type(offsetlimit) == list):
+       if (len(offsetlimit)==2): 
+       # sane y_default
+           if (offsetlimit[0] > 50) & (offsetlimit[0] < 150):
+               y_default=int(offsetlimit[0]+0.5)
+           else: raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))	
+           if offsetlimit[1] < 1:
+               fixoffset = offsetlimit[0]-100
+           else:  searchwidth=int(offsetlimit[1]+0.5)
    if fixoffset == None:
-      offset = ( (np.where(d == (d[100-searchwidth:100+searchwidth]).max() ) )[0] - 100 )
-      if chatter>0: print 'offset found is : ', -offset
+      offset = ( (np.where(d == (d[y_default-searchwidth:y_default+searchwidth]).max() ) )[0] - y_default )
+      if chatter>0: print 'offset found from y=%i is %i '%(y_default ,-offset)
       if len(offset) == 0:
          print 'offset problem: offset set to zero'
          offset = 0
       offset = offset[0]
-      if offsetlimit != None:
-        if abs(offset) >= offsetlimit: 
-           offset = 0 
-	   print 'This is larger than the offsetlimit. The offset has been set to 0'
-	   if interactive: 
-	      offset = float(raw_input('Please give a value for the offset:  '))
+      if (type(offsetlimit) != list):
+          if (offsetlimit != None):
+              if abs(offset) >= offsetlimit: 
+                 offset = 0 
+	         print 'This is larger than the offsetlimit. The offset has been set to 0'
+	         if interactive: 
+	            offset = float(raw_input('Please give a value for the offset:  '))
    else: offset = fixoffset	      
    if chatter>0: 
       print 'offset used is : ', -offset	 
-      
-   ank_c[0] += offset  
+   
+   if (type(offsetlimit) == list) & (fixoffset == None):
+      ank_c[0] = offsetlimit[0]-offset
+   else:    
+      ank_c[0] += offset  
  
    print 'image was rotated; anchor in extracted image is [', ank_c[0],',',ank_c[1],']'
    print 'limits spectrum on image in dispersion direction are ',ank_c[2],' - ',ank_c[3] 
@@ -1608,6 +1736,89 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    if Tmpl: result.update({"template_extimg":c_})	    
    return result
    
+
+
+def sigclip1d_mask(array1d, sigma, badval=None, conv=1e-5, maxloop=30):
+    """ 
+    sigma clip array around mean, using number of sigmas 'sigma' 
+    after masking the badval given, requiring finite numbers, and 
+    either finish when converged or maxloop is reached.
+    
+    return good mask
+    
+    """
+    import numpy as np
+     
+    y = np.asarray(array1d)
+    if badval != None: 
+        valid = (np.abs(y - badval) > 1e-6) & np.isfinite(y)
+    else:
+        valid = np.isfinite(y)
+    yv = y[valid]
+    mask = yv < (yv.mean() + sigma * yv.std()) 
+
+    ym_  = yv.mean()
+    ymean = yv[mask].mean()
+    yv = yv[mask]
+     
+    while (np.abs(ym_-ymean) > conv*np.abs(ymean)) & (maxloop > 0):
+         ym_ = ymean
+         mask = ( yv < (yv.mean() + sigma * yv.std()) )
+	 yv = yv[mask]
+	 ymean = yv.mean()
+	 maxloop -= 1
+          
+    valid[valid] = y[valid] < ymean + sigma*yv.std()
+    return valid 
+
+def background_profile(img, smo1=30, badval=None):
+    """
+    helper routine to determine for the rotated image 
+    (spectrum in rows) the background using sigma clipping. 
+    """
+    import numpy as np
+    from scipy import interpolate  
+
+    bgimg    = img.copy()
+    nx = bgimg.shape[1]  # number of points in direction of dispersion
+    ny = bgimg.shape[0]  # width of the image
+   
+    # look at the summed rows of the image
+    u_ysum = []
+    for i in range(ny):
+       u_ysum.append(bgimg[i,:].mean())
+    u_ysum = np.asarray(u_ysum)   
+    u_ymask = sigclip1d_mask(u_ysum, 2.5, badval=badval, conv=1e-5, maxloop=30)
+    u_ymean = u_ysum[u_ymask].mean()
+   
+    # look at the summed columns after filtering bad rows
+    u_yindex = np.where(u_ymask)[0]
+    u_xsum = []
+    u_std  = []
+    for i in range(nx): 
+        u_x1 = bgimg[u_yindex, i].squeeze()
+        # clip u_x1 
+        u_x1mask = sigclip1d_mask(u_x1, 2.5, badval=None, conv=1e-5, maxloop=30)
+        u_xsum.append(u_x1[u_x1mask].mean())
+        u_std.append(u_x1[u_x1mask].std())
+	#print u_x1[u_x1mask]
+        #if np.isfinite(u_x1mask.mean()) & len(u_x1[u_x1mask])>0:
+	#  print "%8.2f   %8.2f   %8.2f "%(u_x1[u_x1mask].mean(),u_x1[u_x1mask].std(),u_x1[u_x1mask].max())
+    # the best background estimate of the typical row is now u_xsum
+    # fit a smooth spline through the u_xsum values (or boxcar?)
+    #print "u_x means "
+    #print u_xsum
+    u_xsum = np.asarray(u_xsum) 
+    u_std = np.asarray(u_std)
+    u_xsum_ok = np.isfinite(u_xsum)
+    bg_tcp = interpolate.splrep(np.arange(nx)[u_xsum_ok],
+             np.asarray(u_xsum)[u_xsum_ok], s=smo1)  
+    # representative background profile in column 	       
+    u_x = interpolate.splev(np.arange(nx), bg_tcp, ) 
+    return u_xsum, u_x, u_std 
+   
+
+
 def findBackground(extimg,background_lower=[None,None], background_upper=[None,None],yloc_spectrum=100, 
     smo1=None, smo2=None, chatter=2):
    '''Extract the background from the image slice containing the spectrum.
@@ -1654,8 +1865,13 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
 
    The two background images can be computed 2 ways:
    
-     1. 'splinefit': sigma clip image, then fit a smoothing spline to each row, then average in y for each background region
-     2. 'boxcar':   select the background from the smoothed image created by method 1 below.
+     1. 'splinefit': sigma clip image, then fit a smoothing spline to each 
+         row, then average in y for each background region
+     2. 'boxcar':   select the background from the smoothed image created 
+         by method 1 below.
+     3. 'sigmaclip': do sigma clipping on rows and columns to get column 
+         profile background, then clip image and mask, interpolate over masked 
+	 bits.  
      
    extimg  is the image containing the spectrum in the 1-axis centered in 0-axis
    `ank` is the position of the anchor in the image 
@@ -1668,7 +1884,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
 	    replace out-of-image pixels with mean of whole image (2-sigma clipped)
 	    smooth with a boxcar by the smoothing factor
 	 2. compute the background in two regions upper and lower 
-	    linearly interpolate in Y between the two regions to create a background image   
+	    linearly interpolate in Y between the two regions to create a background image    
       
       bg1 = lower background; bg2 = upper background
       
@@ -1681,13 +1897,17 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    -  13 Aug 2012: possible problem was seen of very bright sources not getting masked out properly 
           and causing an error in the background that extends over a large distance due to the smoothing.
 	  The cause is that the sources are more extended than can be handled by this method. 
-	  A solution would be to derive a global background 	      		 
+	  A solution would be to derive a global background 	
+   -  30 Sep 2014: background fails in visible grism e.g., 57977004+1 nearby bright spectrum 
+          new method added (4x slower processing) to screen the image using sigma clipping	        		 
       '''
    import numpy as np   
    try:
      from convolve import boxcar
    except:
      from stsci.convolve import boxcar
+   from scipy import interpolate  
+   import stsci.imagestats as imagestats    
      
    # initialize parameters
    
@@ -1695,7 +1915,38 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    out    = np.where( (np.abs(bgimg-cval) <= 1e-6) )
    in_img = np.where( (np.abs(bgimg-cval) >  1e-6) & np.isfinite(bgimg) )
    nx = bgimg.shape[1]  # number of points in direction of dispersion
-   ny = bgimg.shape[0]  # width of the image
+   ny = bgimg.shape[0]  # width of the image     
+   
+   # sigma screening of background taking advantage of the dispersion being 
+   # basiacally along the x-axis 
+   bg, u_x, bg_sig = background_profile(bgimg, smo1=30, badval=cval)
+   u_mask = np.zeros((ny,nx),dtype=bool)
+   for i in range(ny):
+      u_mask[i,(bgimg[i,:].flatten() < u_x) & 
+                np.isfinite(bgimg[i,:].flatten())] = True
+   		
+   bkg_sc = np.zeros((ny,nx),dtype=float)
+   # the following leaves larger disps in the dispersion but less noise; 
+   # tested but not implemented, as it is not as fast and the mean results 
+   # are comparable: 
+   #for i in range(ny):
+   #    uf = interpolate.interp1d(np.where(u_mask[i,:])[0],bgimg[i,u_mask[i,:]],bounds_error=False,fill_value=cval)
+   #    bkg_sc[i,:] = uf(np.arange(nx))
+   #for i in range(nx):
+   #    ucol = bkg_sc[:,i]
+   #    if len(ucol[ucol != cval]) > 0:
+   #        ucol[ucol == cval] = ucol[ucol != cval].mean()   
+   for i in range(nx):
+       ucol = bgimg[:,i]
+       if len(ucol[u_mask[:,i]]) > 0: 
+           ucol[np.where(u_mask[:,i] == False)[0] ] = ucol[u_mask[:,i]].mean()
+       bkg_sc[:,i] = ucol                        
+   if background_method == 'sigmaclip':
+      return bkg_sc  
+   else:
+      # continue now with the with screened image
+      bgimg = bkg_sc    
+   
    kx0 = 0 ; kx1 = nx # default limits for valid lower background  
    kx2 = 0 ; kx3 = nx # default limits for valid upper background  
    ny4 = int(0.25*ny) # default width of each default background region 
@@ -1703,18 +1954,23 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    sig1 = 1 # unit for background offset, width
    bg_limits_used = [0,0,0,0]  # return values used 
 
-   # here we replace the > 2.5 sigma peaks with the mean  
-   # after subdividing the image strip to allow for the 
-   # change in background level which can be > 2 over the 
-   # image. Off-image parts are set to image mean. 
-      
+   ## in the next section I replace the > 2.5 sigma peaks with the mean  
+   ## after subdividing the image strip to allow for the 
+   ## change in background level which can be > 2 over the 
+   ## image. Off-image parts are set to image mean. 
+   # this works most times in the absence of the sigma screening,but 
+   # can lead to overestimates of the background.  
+   # the call to the imagestats package is only done here, and should 
+   # consider replacement. Its not critical for the program.
+   #   
    xlist = np.linspace(0,bgimg.shape[1],80)
    xlist = np.asarray(xlist,dtype=int)
    imgstats = imagestats.ImageStats(bgimg[in_img[0],in_img[1]],nclip=3)   
    bg = imgstats.mean
    bgsig  = imgstats.stddev
+   
    if chatter > 1:
-      print 'background statistics: mean , sigma : ',bg, bgsig
+      print 'background statistics: mean , sigma : ',imgstats.mean, imgstats.stddev
       
    # create boolean image flagging good pixels
    img_good = np.ones(extimg.shape,dtype=bool)
@@ -1724,6 +1980,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    # replace high values in image with estimate of mean  and flag them as not good   
    
    for i in range(78):
+      # after the sigma screening this is a bit of overkill, leave in for now 
       sub_bg = boxcar(bgimg[:,xlist[i]:xlist[i+2]] , (5,5), mode='reflect', cval=cval)
       sub_bg_use = np.where( np.abs(sub_bg - cval) > 1.0e-5 ) # list of coordinates
       imgstats = None
@@ -1731,10 +1988,14 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
          imgstats = imagestats.ImageStats(sub_bg[sub_bg_use],nclip=3)
 	 # patch values in image (not out of image) with mean if outliers
 	 aval = 2.0*imgstats.stddev
-         img_clip_ = (np.abs(bgimg[:,xlist[i]:xlist[i+2]]-cval) < 1e-6) | (np.abs(sub_bg - imgstats.mean) > aval) | (sub_bg <= 0.) | np.isnan(sub_bg)
+         img_clip_ = (
+            (np.abs(bgimg[:,xlist[i]:xlist[i+2]]-cval) < 1e-6) | 
+            (np.abs(sub_bg - imgstats.mean) > aval) | 
+            (sub_bg <= 0.) | np.isnan(sub_bg) )
 	 bgimg[:,xlist[i]:xlist[i+2]][img_clip_] = imgstats.mean  # patch image
 	 img_good[:,xlist[i]:xlist[i+2]][img_clip_] = False       # flag patches 
 
+   # the next section selects the user-selected or default background for further processing
    if chatter > 1: 
       if background_method == 'boxcar': 
          print "BACKGROUND METHOD:",background_method, "background smoothing =",background_smoothing
@@ -1862,9 +2123,8 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    for i in range(ny):
       bgimg_lin[i,:] = bg1 + dbgdy*i
       
-   if background_method != '0123':   # always
-     # interpolate background
-     if ( (background_lower[0] == None) & (background_upper[0] == None)):
+   # interpolate background and generate smooth interpolation image 
+   if ( (background_lower[0] == None) & (background_upper[0] == None)):
         # default background region
         dbgdy = (bg2-bg1)/150.0 # assuming height spectrum 200 and width extraction regions 30 pix each
         for i9 in range(bgimg.shape[0]):
@@ -1872,17 +2132,17 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
 	   bgimg[i9,0:kx0] = bg2[0:kx0]
 	   bgimg[i9,kx1:nx] = bg2[kx1:nx]
 	print "1..BACKGROUND DEFAULT from BG1 and BG2"   
-     elif ((background_lower[0] != None) & (background_upper[0] == None)):
+   elif ((background_lower[0] != None) & (background_upper[0] == None)):
      # set background to lower background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg1 
 	print "2..BACKGROUND from lower BG1 only"   
-     elif ((background_upper[0] != None) & (background_lower[0] == None)):
+   elif ((background_upper[0] != None) & (background_lower[0] == None)):
      # set background to that of upper background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg2
 	print "3..BACKGROUND from upper BG2 only"   
-     else:
+   else:
      # linear interpolation of the two background regions  
         dbgdy = (bg2-bg1)/(background_upper[0]+0.5*background_upper[1]+background_lower[0]+0.5*background_lower[1]) 
         for i9 in range(bgimg.shape[0]):
@@ -2697,10 +2957,18 @@ def spec_curvature(wheelpos,anchor,order=1,):
       print 'spec_curvature: illegal wheelpos value'
       raise (ValueError)   
       
+def get_coi_box(wheelpos):
+    # provide half-width, length coi-box and factor 
+    #  typical angle spectrum varies with wheelpos
+    #  29,27,31,28 3x8/cos([144.5,151.4,140.5,148.1]) for wheelpos = 160,200,955,1000
+    coistuff = {'160':(7.5,29,1.11),
+                '200':(7.5,27,1.12),
+		'955':(7.0,31,1.13),
+	        '1000':(6.5,28,1.09),}
+    return coistuff[str(wheelpos)]
 
-   	   
 def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
-    anker0=None, anker2=None, anker3=None, angle=None, \
+    anker0=None, anker2=None, anker3=None, angle=None, offsetlimit=None, \
     background_lower=[None,None], background_upper=[None,None],background_template=None,\
     trackonly=False, trackfull=False, caldefault=True, curved="noupdate", \
     poly_1=None,poly_2=None,poly_3=None, set_offset=False, \
@@ -2725,15 +2993,22 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       override curvature polynomial coefficients with poly_1,poly_2,poly_3
       i.e., after a call to updateFitorder()
 
+      output new array of sum across fixed number of pixels across spectrum for coincidence loss
+      width of box depends on parameter coi_half_width
+
    NPMK, 2010-07-09 initial version  
          2012-02-20 There was a problem with the offset/track y1 position/borderup,borderdown consistency
 	            when using a prescribed offset. Changing handling. Always make a fine yank adjustment < 3 pix. 
 		    disabled for now the set_offset (it does not do anything). 
          2012-02-20 moved the call to updateFitorder() to curved_extraction. The result is that the 
-	            spectrum will be extracted using the updated track parameters.		    
+	            spectrum will be extracted using the updated track parameters.	
+	 2014-06-02 add support for fixed box extraction coincidence loss.	
+	 2014-08-04 add parameter curved_extraction to limit y-positioning extraction slit with list option  
+	 2014-08-06 changed code to correctly adjust y1 position  
+	 2014-08-25 fixed error in curve of location orders except first one 	    
    '''
    import pylab as plt
-   from numpy import array,arange,where, zeros,ones, asarray
+   from numpy import array,arange,where, zeros,ones, asarray, abs
    from uvotplot import plot_ellipsoid_regions
    import uvotmisc
    
@@ -2743,17 +3018,20 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    anchor2 = anchor1
    
    if test == 'cal': 
-    from cal3 import get_1stOrderFit, get_2ndOrderFit ,get_3rdOrderFit, get_0thOrderFit
-    from cal3 import nominaluv, clockeduv
-    if wheelpos == 160: 
-       curves = clockeduv
-    elif wheelpos == 200:
-       curves = nominaluv 
-    else: 
-       print "use straight extraction for V grism modes"
-       return 
-    if wheelpos > 300:
-       return      
+      from cal3 import get_1stOrderFit, get_2ndOrderFit ,get_3rdOrderFit, get_0thOrderFit
+      from cal3 import nominaluv, clockeduv
+      if wheelpos == 160: 
+         curves = clockeduv
+      elif wheelpos == 200:
+         curves = nominaluv 
+      else: 
+         print "use straight extraction for V grism modes"
+         return 
+      if wheelpos > 300:
+         return      
+   
+   # coincidence loss box
+   coi_half_width,coilength,coifactor = get_coi_box(wheelpos)
    
    # read the table of coefficients/get the coeeficients of the Y(dis) offsets and limits[]
    # stored with array of angles used. 
@@ -2774,7 +3052,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
      coef1 = get_1stOrderFit(xin=anchor2[0],yin=anchor2[1],curvedata=curves)
    else:  
      coef1 = spec_curvature(wheelpos,anchor2,order=1)
-   dlim1L=-374
+   dlim1L=-400
    dlim1U=1150
    present1=True
    if (xstart > dlim1L): dlim1L = xstart
@@ -2887,13 +3165,14 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       quality[:] = qflag['unknown']     
 
 
-   # tracks   
+   # tracks - defined as yi (delta) = 0 at anchor position (ankx,anky)  
+   # shift to first order anchor  
    x = array(arange(nx))-ankx
    y = zeros(nx)+anky 
-   y0 = zeros(nx)+anky 
-   y1 = zeros(nx)+anky
-   y2 = zeros(nx)+anky 
-   y3 = zeros(nx)+anky   
+   y0 = zeros(nx)+anky - polyval(coef1,0)
+   y1 = zeros(nx)+anky - polyval(coef1,0)
+   y2 = zeros(nx)+anky - polyval(coef1,0) 
+   y3 = zeros(nx)+anky - polyval(coef1,0)   
    q0 = where((x >= dlim0L) & (x <= dlim0U))
    x0 = x[q0]
    if present0:  y0[q0] += polyval(coef0,x[q0])
@@ -2910,11 +3189,19 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    # refine the offset by determining where the peak in the 
    # first order falls. 
    # We NEED a map to exclude zeroth orders that fall on/near the spectrum 
-   
+      
    ny = int(ny)
    cp2 = zeros(ny)
    delpix = 20
    if wheelpos == 200: delpix=25  # the accuracy for the nominal uv anchor is not as good.
+   offsetset = False    
+   if type(offsetlimit) == list: 
+       offsetval = offsetlimit[0]
+       delpix = array([abs(offsetlimit[1]),1],dtype=int).max() # at least 1
+       if offsetlimit[1] < 1.:
+           offsetset = True
+       else:	   
+           print 'curved_extraction: offsetlimit=',offsetlimit,'  delpix=',delpix
    eo = int(anky-100)
    if set_offset: 
       eo = int(offset-100)
@@ -2924,35 +3211,39 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
         try:
           m0 = 0.5*ny-delpix + eo #int( (ny+1)/4) 
           m1 = 0.5*ny+delpix + eo #int( 3*(ny+1)/4)+1
-          yoff = y1[q] - anky   # this is just the offset from the anchor since y1 was set to anky
+          yoff = y1[q] - anky   # this is just the offset from the anchor since y1[x=0] was set to anky
           cp2[int(m0-yoff):int(m1-yoff)] += spimg[m0:m1,q].flatten()
         except:
 	  print "skipping slice %5i in adjusting first order y-position"%(q)
           pass 
       	  
-   y1_ank = anky + polyval(coef1,0)   
-   (p0,p1), ier = leastsq(Fun1b, (cp2.max(),y1_ank), args=(cp2,arange(200),3.2) )
-   yof = (y1_ank - p1) 
-   print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
-   print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction is %5.1f" % (p1,yof)
+   if offsetset: 
+       yof = offsetval - anky
+       print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
+       msg += "spectrum location set with input parameter to: y=%5.1f\n"%(offsetval)
+   else:    
+       (p0,p1), ier = leastsq(Fun1b, (cp2.max(),anky), args=(cp2,arange(200),3.2) )
+       yof = (p1-anky) 
+       print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
+       print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
    #### should also estimate the likely wavelength error from the offset distance p1 and print
-   msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
-   msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction is %5.1f\n" % (p1,yof)
+       #msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
+       #msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction was %5.1f\n" % (p1,yof)
    
    # so now shift the location of the curves to match the first order uv part.
    if set_offset: 
-         print "curve_extraction: used input parameter offset as a value to set offset y1(anchor) to ",anky +offset
+         # ignore computed offset and offsetlimit [,] but used passed offset argument  
          y0 += offset
          y1 += offset
          y2 += offset
          y3 += offset 
-   else:   
-      print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction is %5.1f" % (p1,yof)
-      y0 -= yof
-      y1 -= yof
-      y2 -= yof
-      y3 -= yof
-
+	 print "shifting the y-curve with offset passed by parameter"
+   else: 
+      # assuming the relative position of the orders is correct, just shift the whole bunch  
+      y0 += yof
+      y1 += yof
+      y2 += yof
+      y3 += yof
 
 
 # OUTPUT PARAMETER  spectra, background, slit init - full dimension retained 
@@ -2969,15 +3260,22 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    bg_first  = zeros(nx) + cval   # curved extraction 
    bg_second = zeros(nx) + cval   # curved extraction 
    bg_third  = zeros(nx) + cval   # curved extraction 
+   co_zeroth = zeros(nx) + cval
+   co_first  = zeros(nx) + cval
+   co_second = zeros(nx) + cval
+   co_third  = zeros(nx) + cval
+   co_back   = zeros(nx) + cval
    
    apercorr   = zeros(5*nx).reshape(5,nx) + cval 
    borderup   = zeros(5*nx).reshape(5,nx) + cval 
    borderdown = zeros(5*nx).reshape(5,nx) + cval 
    
-   fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), \
-              (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-              (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	      (x,xstart,xend,sp_all,quality)  
+   fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3),(
+               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	       y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+               y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	       y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
+	       x,xstart,xend,sp_all,quality,co_back)  
 	       
 	     
    if trackonly:   # output the coordinates on the extimg image which specify the lay of 
@@ -2997,16 +3295,29 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	    C_1=C_1, C_2=C_2, d12=dist12, chatter=chatter)	      
           msg += "updated the curvature and width fit parameters\n"
    
-          (present0,present1,present2,present3),(q0,q1,q2,q3), \
-              (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-              (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	      (x,xstart,xend,sp_all,quality)  = fitorder2
+          (present0,present1,present2,present3),(q0,q1,q2,q3), (
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	      y1,dlim1L,dlim1U,sig1coef,sp_first,co_first  ),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	      y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
+	      x,xstart,xend,sp_all,quality,co_back)  = fitorder2
 	      
           # update the anchor y-coordinate	      
           ank_c[0] = y1[ank_c[1]]	      
         #except:
 	#  msg += "WARNING: fit order curvature update has failed\n"
-	#  curved = "curve"	      
+	#  curved = "curve"
+      if offsetset: 
+         mess = "%s\nWARNING Using offsetlimit with parameter  *curved = 'update'* \n"\
+	 "WARNING Therefore we updated the curvature, and besides the curvature, the\n"\
+	 "Y-position of the extraction region was updated to y1[ankx]=%5.1f and \n"\
+	 "does not equal the offsetlimit value of  %5.1f \n%s"%(30*"=*=",
+	 y1[int(ankx)],offsetlimit[0],30*"=*=")
+	 print mess
+         mess = "Updated the curvature, and besides the curvature, the Y-position \n"\
+	 "  of the extraction region was updated to y1[ankx]=%5.1f and does\n"\
+	 "  not equal the offsetlimit value of  %5.1f \n"%(y1[int(ankx)],offsetlimit[0])
+	 msg += mess+"\n"
 
 
       # default single track extraction 
@@ -3019,6 +3330,10 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       borderup[4,:]   = splim2
       borderdown[4,:] = splim1
 
+      # background for coi-loss box - using a 3x larger sampling region
+      k1 = int(anky-3*coi_half_width+0.5)
+      co_back = bgimg[k1:k1+int(6*coi_half_width),:].sum(axis=0)/3.0
+
       if present0:
          for i in range(nx): 
             sphalfwid = trackwidth*polyval(sig0coef,x[i])
@@ -3028,7 +3343,10 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #k1 = splim1+y0[i]-anky
 	    k1 = int(y0[i] - sphalfwid + 0.5)
             k2 = k1 + int(spwid+0.5)
+	    k3 = int(y0[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)	    
             if i in q0[0]: 
+               co_zeroth[i] = extimg[k3:k4,i].sum()
                sp_zeroth[i] = extimg[k1:k2,i].sum()
                bg_zeroth[i] = bgimg[k1:k2,i].sum()
                borderup[0,i]   = k2
@@ -3047,7 +3365,10 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #k1 = int(splim1+y1[i]-anky+0.5)   
 	    k1 = int(y1[i] - sphalfwid + 0.5)   
             k2 = k1 + int(spwid+0.5) 	    
+	    k3 = int(y1[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)	    
             if i in q1[0]: 
+               co_first[i] = extimg[k3:k4,i].sum()
                sp_first[i] = extimg[k1:k2,i].sum()
                bg_first[i] = bgimg[k1:k2,i].sum()
                borderup[1,i]   = k2
@@ -3071,7 +3392,10 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #k1 = int(splim1+y2[i]-anky+0.5)
 	    k1 = int(y2[i] - sphalfwid +0.5)
             k2 = k1 + int(spwid+0.5)
+	    k3 = int(y2[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)	    
             if i in q2[0]: 
+	       co_second[i] = extimg[k3:k4,i].sum()
 	       sp_second[i] = extimg[k1:k2,i].sum()
 	       bg_second[i] = bgimg[k1:k2,i].sum()
                borderup[2,i]   = k2
@@ -3093,7 +3417,10 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #k1 = int(splim1+y3[i]-anky+0.5)
 	    k1 = int(y3[i] - sphalfwid +0.5)
             k2 = k1 + int(spwid+0.5)
+	    k3 = int(y3[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)	    
             if i in q3[0]: 
+	       co_third[i] = extimg[k3:k4,i].sum(axis=0)
 	       sp_third[i] = extimg[k1:k2,i].sum(axis=0)
 	       bg_third[i] = bgimg[k1:k2,i].sum(axis=0)
                borderup[3,i]   = k2
@@ -3102,16 +3429,11 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
                if len(expmap) == 1: expospec[3,i] = expmap[0]
 	       else: expospec[3,i] = expmap[k1:k2,i].mean()
 
-   
-      if set_offset:   # correct this 
-         y0 += offset
-         y1 += offset
-         y2 += offset
-         y3 += offset 
+      # y0,y1,y2,y3 now reflect accurately the center of the slit used.
       
       # update mask for zeroth orders in the way 
       if ((not skip_field_sources) & (ZOpos != None) & (angle != None)):
-	 splim1 = y1_ank/2
+	 splim1 = anky/2
          if ny > 20: 
             # weak and strong sources within 
 	    at1 = where(map_all[:,splim1-10:splim1+10].mean(1) != 1.)[0]
@@ -3121,10 +3443,12 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	    at2 = where(map_strong[:,splim1-20:splim1+20].mean(1) != 1.)[0]
             quality[at2] = qflag.get('zeroth')		 
       
-      fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), \
-              (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-              (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	      (x,xstart,xend,sp_all,quality)  
+      fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), (
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	      y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	      y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
+	      x,xstart,xend,sp_all,quality,co_back)  
   
       if outfull:
          return fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,
@@ -3236,16 +3560,40 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       return fitorder, gfit, (bgimg,)
 
 def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wheelpos=None):
-   '''Give the aperture correction factor for given sigcoef and position x 
-      
-      Using the measured cumulative profile normal to the dispersion 
+   '''Returns the aperture correction factor 
    
-   2012-02-20  Split out in preparation of non-gaussian aperture correction factor
+      parameters
+      ----------
+      k1,k2 : int
+         k1 edge of track, k2 opposite track edge 
+	 in pixel coordinates
+      sigcoef : list
+         polynomial coefficient of the fit to the track width
+	 so that sigma = polyval(sigcoef,x)
+      x : float
+         pixel/channel position
+      norder: int
+         order of the spectrum
+      mode : 'best'|'gaussian'
+         'gaussian' option causes first order to be treated as a gaussian PSF
+      coi : None
+         not implemented
+      wheelpos : 160|200|955|1000
+         filter wheel position
+	 
+      Notes
+      -----
+      The aperture correction is returned for given sigcoef and position x       
+      Using the measured cumulative profile normal to the dispersion for the
+      first order (faint spectrum) or gaussians for orders zero,second, third. 
    
-   2012-10-06  Dependence on coi-factor identified as a likely parameter 
+      History:
+      2012-02-20  Split out in preparation of non-gaussian aperture correction factor
+   
+      2012-10-06  Dependence on coi-factor identified as a likely parameter 
                changing the PSF (no further action)
 	       
-   2013-12-15  revised aperture functions, one for each grism (low coi)
+      2013-12-15  revised aperture functions, one for each grism (low coi)
    '''
    import uvotmisc
    import scipy
@@ -3258,7 +3606,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
    if norder == 0:       
       apercorr = 1.0/uvotmisc.GaussianHalfIntegralFraction( 0.5*(k2-k1)/np.polyval(sigcoef,x) )
    if norder == 1:  
-   # low coi apertures (normalised to 1 at aperture with half-width 2.5 sigma
+      # low coi apertures (normalised to 1 at aperture with half-width 2.5 sigma
 
       # low coi apertures (normalised to 1 at aperture with half-width 2.5 sigma
       # fitted polynomials to the aperture (low-coi) 
@@ -3277,34 +3625,34 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
       polycoef955 = np.array([ 0.00213156, -0.03953134,  0.28146284, -0.96044626,  1.58429093,
        -0.02412411]) # for aperture < 4 sig
  
-   # best curves for the apertures (using aperture.py plots WD1657+343)   
+      # best curves for the apertures (using aperture.py plots WD1657+343)   
       aper_160_low = { 
-   # half-width in units of sig
-   "sig": [0.00,0.30,0.51,0.700,0.90,1.000,1.100,1.200,1.400,
-           1.600,1.800,2.000,2.20,2.5,2.900,3.31,4.11,6.00], 
-   # aperture correction, normalised 
-   "ape": [0.00,0.30,0.52,0.667,0.77,0.818,0.849,0.872,0.921,
-           0.947,0.968,0.980,0.99,1.0,1.008,1.01,1.01,1.01]
+      # half-width in units of sig
+       "sig": [0.00,0.30,0.51,0.700,0.90,1.000,1.100,1.200,1.400,
+               1.600,1.800,2.000,2.20,2.5,2.900,3.31,4.11,6.00], 
+      # aperture correction, normalised 
+       "ape": [0.00,0.30,0.52,0.667,0.77,0.818,0.849,0.872,0.921,
+               0.947,0.968,0.980,0.99,1.0,1.008,1.01,1.01,1.01]
       }   
       aper_200_low = {
-   "sig": [0.0,0.300,0.510,0.700,0.800,0.900,1.000,1.10,1.20,
-           1.40, 1.60, 1.80, 2.0,  2.2,  2.5, 2.7, 3.0,4.0,6.0],
-   "ape": [0.0,0.308,0.533,0.674,0.742,0.780,0.830,0.86,0.89,
-           0.929,0.959,0.977,0.986,0.991,1.0,1.002,1.003,1.004,1.005 ]
+       "sig": [0.0,0.300,0.510,0.700,0.800,0.900,1.000,1.10,1.20,
+               1.40, 1.60, 1.80, 2.0,  2.2,  2.5, 2.7, 3.0,4.0,6.0],
+       "ape": [0.0,0.308,0.533,0.674,0.742,0.780,0.830,0.86,0.89,
+               0.929,0.959,0.977,0.986,0.991,1.0,1.002,1.003,1.004,1.005 ]
       }
       aper_1000_low = {
-   "sig": [0.0, 0.3, 0.5, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6,  2.0,2.2,2.5,3.0  ,4.0 ,6.0 ],
-   "ape": [0.0,0.37,0.55,0.68,0.74,0.80,0.85,0.91,0.96,0.98,0.995,1. ,1. ,1.004,1.01,1.01]	   
+       "sig": [0.0, 0.3, 0.5, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6,  2.0,2.2,2.5,3.0  ,4.0 ,6.0 ],
+       "ape": [0.0,0.37,0.55,0.68,0.74,0.80,0.85,0.91,0.96,0.98,0.995,1. ,1. ,1.004,1.01,1.01]	   
       }
       aper_955_med = {
-   "sig": [0.0,0.30,0.60,0.80,1.00,1.30,1.60,1.80,2.00,2.50,3.00, 4.00,6.00],
-   "ape": [0.0,0.28,0.47,0.64,0.75,0.86,0.93,0.96,0.97,1.00,1.013,1.02,1.02]
+       "sig": [0.0,0.30,0.60,0.80,1.00,1.30,1.60,1.80,2.00,2.50,3.00, 4.00,6.00],
+       "ape": [0.0,0.28,0.47,0.64,0.75,0.86,0.93,0.96,0.97,1.00,1.013,1.02,1.02]
       }
       aper_1000_med = {
-   "sig": [0.0,0.30,0.50,0.70,0.80,0.90,1.00,1.20,1.40,1.60,
-           1.80,2.00,2.20,2.50,3.00,4.00,6.00],
-   "ape": [0.0,0.34,0.46,0.63,0.68,0.73,0.76,0.87,0.90,0.94,
-           0.96,0.98,0.99,1.00,1.015,1.027,1.036]
+       "sig": [0.0,0.30,0.50,0.70,0.80,0.90,1.00,1.20,1.40,1.60,
+               1.80,2.00,2.20,2.50,3.00,4.00,6.00],
+       "ape": [0.0,0.34,0.46,0.63,0.68,0.73,0.76,0.87,0.90,0.94,
+               0.96,0.98,0.99,1.00,1.015,1.027,1.036]
       }
       renormal = 1.0430 # calibration done with aperture correction 1.043 (sig=2.5)
       sig = np.polyval(sigcoef,x)  # half width parameter sig in pixels
@@ -3331,6 +3679,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
 	         apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
 	         apercorr = renormal / apercf4(xx)                   	 
       else: 
+       # when xx<4.5, mode !gaussian, wheelpos==None use the following
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
        # the function does not rise as steeply so has more prominent wings
         tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
@@ -3995,7 +4344,7 @@ def quality_flags():
    weakzeroth=4,   # weak zeroth order too close to/overlaps spectrum
    first=8,        # other first order overlaps and brighter than BG + 5 sigma of noise 
    overlap=16,     # orders overlap to close to separate (first, second) or (first second and third)
-   unknown=32      # quality could not be determined   
+   too_bright=32   # the counts per frame are too large    
    )   
    return flags
    
@@ -4714,7 +5063,7 @@ def fit1(p, fjac=None, x=None, y=None, err=None):
    model = bg0 + bg1*x + amp1 * np.exp( - ((x-pos1)/sig1)**2 ) 
    
    status = 0
-   return [status, (y-model)/err]
+   return  [status, 1e8*(y-model)]  
 
 
 def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
@@ -5235,37 +5584,29 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       
    kwargs : dict
    
-      - **wheelpos** : int, {160,200,955,1000}
-      
+      - **wheelpos** : int, {160,200,955,1000}      
         grism filter selected in filter wheel
 	 
-      - **lfilter**, **lfilt2** : str, {'uvw2','uvm2','uvw1','u','b','v'}
-      
+      - **lfilter**, **lfilt2** : str, {'uvw2','uvm2','uvw1','u','b','v'}      
         lenticular filter name before and after grism exposure
 	
-      - **lfilter_ext**, **lfilt2_ext** : int
-      
+      - **lfilter_ext**, **lfilt2_ext** : int   
         lenticular filter extension before and after grism exposure 
 	
       - **method** : str, {'grism_only'}
-      
         if set to `grism_only`, create a temporary header to compute the 
 	target input angles, otherwise use the lenticular file image.
       
       - **attfile** : str, path 
-      
         full path+filename of attitude file
 	
       - **catspec** : path
-      
         optional full path to catalog spec file to use with uvotgraspcorr
 	
       - **indir** : str, path
-      
         data directory path
 	
       - **chatter** : int
-      
         verbosity
 
    Returns
@@ -5635,10 +5976,12 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
    if (anchor[0] < 1400) & (anchor[1] < 800) : top = False
    
    try:
-      (present0,present1,present2,present3),(q0,q1,q2,q3), \
-      (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-      (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-      (x,xstart,xend,sp_all,quality)  = fitorder
+      (present0,present1,present2,present3),(q0,q1,q2,q3), (
+      y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+      y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+      y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+      y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
+      x,xstart,xend,sp_all,quality,co_back)  = fitorder
       x0 = x1 = x2 = x3 = x 
    except RuntimeError:
      print "get_cuspectrum: input parameter fitorder is not right\n ABORTING . . . "
@@ -6206,10 +6549,12 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
    sig2 = 4.3
    sig3 = 4.9
       
-   try:  (present0,present1,present2,present3),(q0,q1,q2,q3), \
-      (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-      (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-      (x,xstart,xend,sp_all,quality)  = fitorder1
+   try:  (present0,present1,present2,present3),(q0,q1,q2,q3),(
+         y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	 y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+	 y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	 y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
+	 x,xstart,xend,sp_all,quality,co_back)  = fitorder1
 
    except RuntimeError:
      print "updateFitorder: input parameter fitorder is not right\n ABORTING . . . "
@@ -6586,10 +6931,12 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
    #y2[q2] = np.polyval(fcoef2,x[q2]) + 100.
    #y3[q3] = np.polyval(fcoef3,x[q3]) + 100.
    
-   fitorder = (present0,present1,oldpres2,oldpres3),(q0,q1,q2,q3), \
-      (y0,dlim0L,dlim0U,fsig0coef,sp_zeroth),(y1,dlim1L,dlim1U,fsig1coef,sp_first),\
-      (y2,dlim2L,dlim2U,fsig2coef,sp_second),(y3,dlim3L,dlim3U,fsig3coef,sp_third),\
-      (x,xstart,xend,sp_all,quality)
+   fitorder = (present0,present1,oldpres2,oldpres3),(q0,q1,q2,q3), (
+      y0,dlim0L,dlim0U,fsig0coef,sp_zeroth,co_zeroth),(
+      y1,dlim1L,dlim1U,fsig1coef,sp_first ,co_first ),(
+      y2,dlim2L,dlim2U,fsig2coef,sp_second,co_second),(
+      y3,dlim3L,dlim3U,fsig3coef,sp_third, co_third ),(
+      x,xstart,xend,sp_all,quality,co_back)
   
    if full:   return fitorder, values, errors
    else:      return fitorder
@@ -7176,7 +7523,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       if chatter > 1 : print "merging spectra "
       # create the summed spectrum
       result = None
-      # find wavelength range
+      # find wavelength range 
       wmin = 7000; wmax = 1500
       f = []    #  list of open fits file handles
       for fx in phafiles:
@@ -7534,13 +7881,13 @@ def coi_func2(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[2.6,4.0], trackwidth = 1.0, ccc = [0.,-0.,0.40],
    ccb = [0.,-0.67,1.0], debug=False,chatter=1):
-   return coi_func(pixno,wave,countrate,bkgrate,sig1coef=[4.5],option=1,
+   return oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[4.5],option=1,
    fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[3.0,7.5], trackwidth = 1.0, ccc = [0.,-0.,0.40],
    ccb = [0.,-0.67,1.0], debug=False,chatter=1)
 
    
-def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
+def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
    sigma1_limits=[2.6,4.0], trackwidth = 2.5, ccc = [-1.5,+1.5,-1.5,+1.5,-1.5,+1.5,+0.995],
    ccb = [+0.72,-0.72,0.995], ca=[0,0,3.2],cb=[0,0,3.2],debug=False,chatter=1):
@@ -7792,6 +8139,211 @@ def coi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    elif background: return coi_bg_func 
    elif (not background): return coi_func
 
+def coi_func(pixno,wave,countrate,bkgrate,
+       frametime=0.0110329,
+       background=False,
+       wheelpos=160,    
+   # testing/calibration parameters     
+   area=414,
+   option=1,
+   fudgespec=1.,
+   coi_length=29,
+   sig1coef=[],
+   trackwidth = 0., 
+   sigma1_limits=[2.6,4.0], 
+   ccc = [], ccb = [], ca=[],cb=[],
+   debug=False,
+   chatter=5):
+   '''Compute the coincidence loss correction factor to the (net) count rate 
+   as a function of wavelength  
+   
+   Parameters
+   ----------
+   pixno : array-like
+      pixel number with origen at anchor
+   wave : array-like
+      wavelength in A, *must be monotonically increasing*
+   countrate : array-like
+      input total count rate for the coi aperture (default 16 pixels wide)
+   bkgrate : array-like
+      background rate for the coi aperture (default 16 pixels wide)
+   kwargs : dict
+   	
+      - **frametime** : float
+      
+        CCD frame time in seconds
+		
+      - **option** : int 
+      
+        . option = 1 : (default) classic coi-loss, for box 16 pixels wide, 
+	               414 pix^2 area 	
+		     
+      - **background** : bool
+      
+        if the background is `True` an interpolated function for the coi 
+	correction factor in the background count rate is returned
+        
+	if the background is `False` an interpolated function for the 
+	coi correction factor in the net target count rate is returned
+      		       
+      - **wheelpos** : [160,200,955,1000]
+         filter wheel position, one of these values.
+   
+   Returns
+   -------
+       coi_func : scipy.interpolate.interpolate.interp1d
+          if **background** is `True` an interpolated function for the coi correction 
+          factor in the background count rate while if **background** is `False` an 
+          interpolated function for the coi correction factor in the net target 
+          count rate is returned 
+       v : bool 
+          only for spectrum. v=True points are valid, False points mean 
+	  observed rate per frame is too large. 	  
+   
+   Notes
+   -----   
+   defaults to the background coincidence loss equivalent to an area of 
+   "area=414" sub-pixels.  
+
+   Both the sprate and bgrate are required, as the points in sprate that are not valid
+   are used to mask the bgrate.    
+   
+   - 2012-03-21 NPMK initial version
+   - 2014-06-02 NPMK start using a fixed coi-area,remove old options, 
+        change meaning parameters    
+   - 2014-07-23 NPMK use calibrated values of coi-box and factor	
+   '''   
+   import uvotmisc
+   import numpy as np
+   try:
+     from uvotpy import uvotgetspec as uvotgrism
+   except:  
+     import uvotgrism
+   try:
+      from convolve import boxcar
+   except:
+      from stsci.convolve import boxcar   
+   from scipy import interpolate
+   
+   # backwards compatibility for testing
+   if option != 1: 
+       return oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
+   fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
+   sigma1_limits=[2.6,4.0], trackwidth = 2.5, ccc = [-1.5,+1.5,-1.5,+1.5,-1.5,+1.5,+0.995],
+   ccb = [+0.72,-0.72,0.995], ca=[0,0,3.2],cb=[0,0,3.2],debug=False,chatter=1)
+   
+   if not do_coi_correction:   # global - use when old CALDB used for fluxes.
+      # set factor to one:
+      return interpolate.interp1d(wave,wave/wave,kind='nearest',bounds_error=False,fill_value=1.0 ) 
+      
+   alpha = (frametime - 0.000171)/frametime
+   
+   
+   # coincidence loss box
+   coi_half_width,coi_length,coifactor = get_coi_box(wheelpos)
+   
+   # mask bad and problematic data  (required is sprate for mask)
+   vv = np.isfinite(countrate) & np.isfinite(bkgrate) & (countrate > 1e-8) & (bkgrate > 1e-8) 
+   countrate = countrate[vv]
+   bkgrate   = bkgrate[vv]
+   pixno     = pixno[vv]
+   wave      = wave[vv]
+   
+   # reset v
+   v = np.ones(len(countrate),dtype=bool)
+      
+   # scaling the uncorrected counts per frame ; boxcar average over coi_length
+   factor = coifactor*coi_length  # coi_area (pix^2), divided by its width (since rates integrate over width) 
+   if not background: 
+      tot_cpf = obs_countsperframe = boxcar( countrate * frametime, (coi_length,))
+   else: tot_cpf = None   
+   bkg_cpf = bkg_countsperframe = bkgrate * frametime   # background was already smoothed
+   
+   if chatter > 3: 
+       print "alpha  = ",alpha
+       print "number of data points ",len(countrate),"  printing every 100th"
+       print " i    countrate    obs total counts/frame "
+       for ix in range(0,len(countrate),10):
+	   if background: print "%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix])
+	   else: print "%4i %12.5f  %12.5f" % (ix, countrate[ix],tot_cpf[ix])
+	   
+   try:
+	 	 
+       bkg_cpf_incident = (-1.0/alpha) * np.log(1.0 - factor*bkg_cpf)/(factor)
+       
+       if not background:
+           # classic coi formula with appropriate coi-area
+           yy = 1.0 - factor*tot_cpf
+           v[ yy < 1e-6 ] = False
+           yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+           obs_cpf_incident = (-1.0/alpha) * np.log(yy)/factor
+	 
+       yy = 1.0 - factor*bkg_cpf
+       v[ yy < 1e-6 ] = False
+       yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+       bkg_cpf_incident = (-1.0/alpha) * np.log(yy)/factor         
+
+   except:
+       print "ERROR: Not sure why this happened."
+       print "WARNING: Continuing but NOT applying coi loss correction."
+       print 'alpha',alpha
+       print 'factor',factor
+       print 'bkg',bkg_cpf
+       print 'tot',tot_cpf
+       print 'v',v
+       print 'background',background
+       if not background:
+           obs_cpf_incident = obs_countsperframe
+       else:
+           obs_cpf_incident = bkg_cpf	 
+   
+   # notify user that some points were flagged bad ; limit in wave
+   w8,w9 = {'160':(1700,5800),'200':(1700,5800),"955":(2950,5800),"1000":(2950,5800)}[str(wheelpos)]
+   test = np.where(v & (wave > w8) & (wave < w9))[0]
+   #if v.all() != True: 
+   if (not background) & (len(test) < len(wave[((wave > w8) & (wave < w9))]) ):
+       ngood = len( np.where(v & (wave > w8) & (wave < w9))[0] )
+       print "WARNING uvotgetspec.coi_func(): Some data were ignored\n"+\
+             "        in the determination of the COI factor, since they\n"+\
+	     "        exceeded the theoretical limit. total number = ",len(wave[((wave > w8) & (wave < w9))])
+       print "                  number of good points used = ",ngood
+   
+   # compute the coi-correction factor
+   if not background: 
+       coi_factor = (obs_cpf_incident - bkg_cpf_incident) / (obs_countsperframe - bkg_countsperframe)
+   bg_coi_factor = (bkg_cpf_incident)/(bkg_countsperframe)
+   
+   # debug info
+   if (chatter > 4) & (not background):
+       print "bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor"
+       for i in range(len(obs_cpf_incident)):
+           print "%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,
+	      bkg_countsperframe[i],bkg_cpf_incident[i], 
+	      obs_countsperframe[i],obs_cpf_incident[i],
+	      bg_coi_factor[i],coi_factor[i])
+   
+   # calibrate
+   if chatter > 0: 
+      if not background: 
+          print "spectrum: coi factor stats (min, mean, max): ",(
+	      np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor) )
+      else:
+          print "background: coi factor stats (min, mean, max): ",(
+              np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor) )
+   
+   # assume wave is monotonically increasing: 
+   if not background: 
+       coi_func = interpolate.interp1d(wave[v],coi_factor[v],kind='nearest',
+                   bounds_error=False,fill_value=1.0 ) 
+   coi_bg_func = interpolate.interp1d(wave,bg_coi_factor,kind='nearest',
+                   bounds_error=False,fill_value=1.0 )
+   if debug:   
+       return coi_func, coi_bg_func, (coi_factor,coi_bg_factor,
+                     factor,obs_cpf_incident,bkg_cpf_incident)
+   elif background: return coi_bg_func 
+   elif (not background): 
+       vv[vv]=v
+       return coi_func, vv
 
    
 def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False, obsfile=None,grism='uv'):

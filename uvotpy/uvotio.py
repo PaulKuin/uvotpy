@@ -1,6 +1,39 @@
 # -*- coding: iso-8859-15 -*-
+#
+# This software was written by N.P.M. Kuin (Paul Kuin) 
+# Copyright N.P.M. Kuin 
+# All rights reserved
+# This software is licenced under a 3-clause BSD style license
+# 
+#Redistribution and use in source and binary forms, with or without 
+#modification, are permitted provided that the following conditions are met:
+#
+#Redistributions of source code must retain the above copyright notice, 
+#this list of conditions and the following disclaimer.
+#
+#Redistributions in binary form must reproduce the above copyright notice, 
+#this list of conditions and the following disclaimer in the documentation 
+#and/or other materials provided with the distribution.
+#
+#Neither the name of the University College London nor the names 
+#of the code contributors may be used to endorse or promote products 
+#derived from this software without specific prior written permission.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+#THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+#PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+#CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+#EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+#PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+#OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+#WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+#OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+#ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 
-__version__ = "1.5.5"
+from __future__ import division
+__version__ = "1.5.7"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -20,6 +53,10 @@ __version__ = "1.5.5"
 #               changed error computation, aperture corrected, and assume background error negligible
 # version 1.5.4 February 27, 2014 updated effective area files, updated write_rmf_file 
 # version 1.5.5 May 1, 2014, update of coi-computation 
+# version 1.5.6 June 3, 2014, use fixed coi-area width
+# version 1.5.7 July 23, 2014, use coi-box and factor as calibrated
+#               changed rate2flux api to pass boolean for points not too bright 
+
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -34,10 +71,21 @@ def get_uvot_observation(coordinate=None,name=None,obsid=None,chatter=0):
    # Under development
    return
 
-def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0],\
-    arf1=None, arf2=None, effarea1=None, effarea2=None,
-    spectralorder=1, trackwidth = 1.0, anker=None, test=None, respfunc=False,\
-    swifttime=None, option=1, fudgespec=1.322, frametime=0.0110329, debug=False, chatter=1):
+def rate2flux(wave, rate, wheelpos, 
+    bkgrate=None, pixno=None, 
+    co_sprate = None,
+    co_bgrate = None,
+    arf1=None, arf2=None, 
+    effarea1=None, effarea2=None,
+    spectralorder=1, 
+    #trackwidth = 1.0,  obsoleted uvotpy version 2.0.2
+    anker=None, test=None, 
+    respfunc=False,
+    swifttime=None, option=1, 
+    fudgespec=1., 
+    frametime=0.0110329, 
+    #sig1coef=[3.2], sigma1_limits=[2.6,4.0],  obsoleted uvotpy version 2.0.2
+    debug=False, chatter=1):
    ''' 
    Convert net count rate to flux 
    
@@ -57,24 +105,22 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    wave	: float ndarray
    	wavelength in A
 	
-   rate	: float ndarray
-   	net count rate/bin in spectrum, aperture corrected
+   rate, bkrate	: float ndarray
+   	net and background count rate/bin in spectrum, aperture corrected
+	
+   co_sprate, co_bgrate : ndarray
+   	total of spectrum+background and background rate/bin for the 
+	coincidence area of constant width (default set to 16 pixels) 
 	
    wheelpos : int
    	filter wheel position
       
-   bkgrate : ndarray
-   	background rate for spectrum (corrected to 2.5 sigma half-width)
-	
    pixno : ndarray
    	pixel coordinate (zero = anchor; + increasing wavelengths)
 	
-   sig1coef : list
-   	polynomial coefficient for spectrum halfwidth
-	
-   sigma1_limits : list
-   	sigma will be truncated at the limits
-	
+   co_sprate, cp_bgrate : ndarray
+        rates for calculating the coincidence loss 
+   
    arf1, arf2 : path or "CALDB", optional 
 			
    effarea1, effarea2 : FITS HDU[, interpolating function]
@@ -95,12 +141,6 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    swifttime : int
         swift time of observation in seconds for calculating the sensitivity loss 	
 	
-   option : int
-   	when =2 sets the method for the coi-correction [development]
-	
-   fudgespec : float
-   	possible correction for the coi-correction  [development]
-	
    debug : bool
    	 for development
 	
@@ -112,7 +152,10 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
               
    Returns
    -------
-   flux, coi-corrected 
+   (flux, wave, coi_valid) : tuple
+       coi-corrected flux type interp1d, 
+       array wave, and matching boolean array for points not too bright 
+       for coincidence loss correction  
    
    Notes
    -----
@@ -134,7 +177,7 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
    
    # assume uv grism
    if pixno == None:      
-      dis = np.arange(len(wave)) - 370
+      dis = np.arange(len(wave)) - 400  # see uvotgetspec.curved_extraction()
       if spectralorder == 2: dis -= 260
    else:
       dis = pixno   
@@ -233,22 +276,33 @@ def rate2flux(wave, rate, wheelpos, bkgrate=None, pixno=None, sig1coef=[3.2], si
       if chatter > 0: print "performing the COI correction "
           # do the coi-correction
 	  
-      fcoibg = coi_func(pixno,wave,rate,bkgrate,sig1coef=sig1coef,option=option,
-        fudgespec=fudgespec,coi_length=29,frametime=frametime, background=True,
-        sigma1_limits=sigma1_limits, trackwidth = trackwidth,
-        debug=debug,chatter=chatter)
-      fcoi = coi_func(pixno,wave,rate,bkgrate,sig1coef=sig1coef,option=option,
-        fudgespec=fudgespec,coi_length=29,frametime=frametime, background=False,
-        sigma1_limits=sigma1_limits, trackwidth = trackwidth,
-        debug=debug,chatter=chatter)
+      fcoi, coi_valid = uvotgetspec.coi_func(pixno,wave,
+           co_sprate,
+           co_bgrate,
+           wheelpos = wheelpos,
+           fudgespec=fudgespec,
+           frametime=frametime, 
+	   background=False, 
+           debug=False,chatter=1)
+      bgcoi = uvotgetspec.coi_func(pixno,wave,
+           co_sprate,
+           co_bgrate,
+           wheelpos = wheelpos,
+           fudgespec=fudgespec,
+           frametime=frametime, 
+           background=True, \
+           debug=False,chatter=1)
+       
       netrate = rate*fcoi(wave)
       flux = hnu*netrate*senscorr/specrespfunc(wave)/binwidth   # [erg/s/cm2/angstrom]
    else:   
-      if chatter > 0: print "WARNING rate2flux: Flux calculated without a COI-correction"
+      if chatter > 0: 
+          print "WARNING rate2flux: Flux calculated without a COI-correction for spectral order = ",spectralorder
       # no coi correction
       flux = hnu*rate*senscorr/specrespfunc(wave)/binwidth   # [erg/s/cm2/angstrom]
+      coi_valid = np.ones(len(wave),dtype=bool)
         
-   return flux
+   return (flux, wave, coi_valid)
    
    
 def sensitivityCorrection(swifttime,sens_rate=0.01):
@@ -367,12 +421,17 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
    vvgrism = True
    uvgrism = True
    if wheelpos != None:
-      if wheelpos < 500: vvgrism = False
-      else: uvgrism = False
+      if wheelpos < 500: 
+         vvgrism = False
+         specfile =  directory+filestub+'ugu_dt.img'
+      else: 
+         specfile =  directory+filestub+'ugv_dt.img'
+	 uvgrism = False
    
    if (not directory.endswith('/')) : 
       directory += '/' 
    auxildir = directory+'../../auxil/'
+   attfile = None
       
    # test if u or v grism file and set variable 
    specfile = ' *filename not yet initialised (directory wrong?)* '
@@ -391,6 +450,7 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
 	os.system( 'gunzip '+specfile+'.gz' )
 	if chatter > 1: print 'reading ',specfile
    else:
+        print "on call fileinfo(sw+obsid="+filestub+",ext=",ext,",lfilt1=",lfilt1,", directory="+directory,",wheelpos=",wheelpos,")"
         raise IOError("FILEINFO: cannot find %s: DET file not found - pls check directory/file provided  is correct" % specfile )
 		
    #    attitude file:
@@ -487,12 +547,15 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
       lfilt2 = None
       lfilt1_ext = lfilt2_ext
       lfilt2_ext = None
-   #   
+   #  
+   if attfile == None: 
+       raise IOError("The attitude file could not be found.") 
    return specfile, lfilt1, lfilt1_ext, lfilt2, lfilt2_ext, attfile	
 
 
 def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
-       anker=None,dxy_anker=None,fileversion='999',todir="./",clobber=False):
+       anker=None,dxy_anker=None,fileversion='999',todir="./",rebin=True,
+       clobber=False):
    ''' create an ARF file 
    
    Parameters
@@ -520,7 +583,11 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
        version for this EA (spectral response) file.
        
    todir: path
-       directory to place the file into    
+       directory to place the file into   
+       
+   rebin : bool
+      When true (old behaviour) bin 1 A in wavelength
+      When False, make one bin for each point in array wave.     
 
    Returns
    -------
@@ -544,6 +611,11 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    - Renamed 28 Dec 2013
    first extension assumed 1-spaced wavelengths. Relaxed to allow variable wavelengths.
    
+   - changed to reflect use of full coi-solution 2014-08-20. Paul Kuin
+   - added no rebinning as option. It actually will rebin slightly by calculating 
+     the minimum value of the bin from the distance of its neighbors, and the maximum
+     value is chosen to have no gaps between bins.
+     
    '''
    try:
      from astropy.io import fits
@@ -554,7 +626,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    from scipy import interpolate
    import os
    
-   version = '20131228'
+   version = '20140820'
    a = now = datetime.date.today()
    datestring = a.isoformat()[0:4]+a.isoformat()[5:7]+a.isoformat()[8:10]
    rnu = now.day*1.2+now.month*0.99+now.year*0.3
@@ -607,8 +679,10 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
          outfile = todir+'swugv1000'+of2+of0+of1
       filtername = 'VGRISM'        
       
-   specrespfunc = interpolate.interp1d(wave, specresp, kind='linear', bounds_error=False )    
-   specresp_errfunc = interpolate.interp1d(wave, specresp_err, kind='linear', bounds_error=False )    
+   specrespfunc = interpolate.interp1d(wave, specresp, kind='linear', bounds_error=False, 
+                  fill_value=0. )    
+   specresp_errfunc = interpolate.interp1d(wave, specresp_err, kind='linear', 
+                  bounds_error=False, fill_value=0.  )    
    
    hdu = fits.PrimaryHDU()
    hdulist=fits.HDUList([hdu])
@@ -618,11 +692,27 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    
    #  first extension SPECRESP
    
-   binwidth = 1.0 # scalar
-   ax = np.arange(int(min(wave)),int(max(wave)),binwidth)
-   NW = len(ax)
-   wavmin = (ax-0.5*binwidth)
-   wavmax = (ax+0.5*binwidth)
+   if rebin:
+      binwidth = 1.0 # scalar 1A binning
+      ax = np.arange(int(min(wave)),int(max(wave)),binwidth)
+      NW = len(ax)
+      wavmin = (ax-0.5*binwidth)
+      wavmax = (ax+0.5*binwidth)
+   else:
+      NW = len(wave)
+      ax = np.empty(NW,dtype=float)
+      binw = np.empty(NW,dtype=float)
+      binw[1:-1] = 0.5*(wave[2:]-wave[:-2])
+      wavmin = np.empty(NW,dtype=float)
+      wavmin[1:-1] = wave[1:-1]-0.5*binw[1:-1]
+      wavmin[0] = wave[0]-0.5*binw[1]
+      wavmin[-1] = wave[-1]-0.5*binw[-2]
+      wavmax = np.empty(NW,dtype=float)
+      wavmax[:-1] = wavmin[1:]
+      wavmax[-1] = wavmax[-2] + binw[-2] 
+   # note: if there is a mix of small and big steps in wave, then this scheme will 
+   # find bins with the center outside the bin. The result is a grid closer to regular.   
+   
    binwidth = wavmax-wavmin # array
    midwave = 0.5*(wavmax+wavmin)
    energy_lo = angstrom2kev(wavmax)
@@ -649,7 +739,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
    tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
    tbhdu1.header.update('FILTER',filtername)
-   tbhdu1.header.update('ORIGIN','MSSL/UCL','source of FITS file')
+   tbhdu1.header['ORIGIN']=('UCL/MSSL','source of FITS file')
    tbhdu1.header.update('CREATOR','uvotio.py','uvotpy python library')
    tbhdu1.header.update('COMMENT','uvotpy sources at www.github.com/PaulKuin/uvotpy')
    tbhdu1.header.update('VERSION',fileversion)
@@ -659,7 +749,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    tbhdu1.header.update('HDUCLAS2','SPECRESP','type of calibration data')   
    tbhdu1.header.update('CCLS0001','CPF','dataset is a calibration product file')
    tbhdu1.header.update('CCNM0001','SPECRESP','Type of calibration data')
-   tbhdu1.header.update('CDES0001',filtername+' SPECTRAL RESPONSE AT ANCHOR POSITION','Description')
+   tbhdu1.header.update('CDES0001',filtername+' SPECTRAL RESPONSE','Description')
    tbhdu1.header.update('CDTP0001','DATA','Calibration file contains data')
    tbhdu1.header.update('CVSD0001','2004-11-20','UTC date when calibration should first be used')
    tbhdu1.header.update('CVST0001','00:00:00','UTC time when calibration should first be used')
@@ -671,15 +761,17 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    tbhdu1.header.update('CBD60001','ORDER('+str(spectralorder)+')','spectral order')  
    if (anker != None) & (dxy_anker != None):
       tbhdu1.header.update('CBD70001','ANCHOR('+str(anker[0])+','+str(anker[1])+')','anchor in pix (1100.5,1100.5)pix=(0,0)mm')  
-      tbhdu1.header.update('CBD80001','ANCHOR_RANGE('+str(dxy_anker[0])+','+str(dxy_anker[1])+')','calibrared range dx,dy around anchor')  
+      tbhdu1.header.update('CBD80001','ANCHOR_RANGE('+str(dxy_anker[0])+','+str(dxy_anker[1])+')','cal sources used in range dx,dy from anchor')  
       tbhdu1.header.update('CBD90001','COIAWARE('+'T'+')','pile-up effect taken out')  
-      tbhdu1.header.update('COIVERS','1','ad-hoc solution')  
+      tbhdu1.header.update('COIVERS','2','full solution')  
    
    tbhdu1.header.update('TTYPE1','ENERG_LO','[keV] Lower boundary of energy bin')
    tbhdu1.header.update('TTYPE2','ENERG_HI','[keV] Upper boundary of energy bin')
    tbhdu1.header.update('TTYPE5','SPECRESP','[cm**2] Effective Area')
-   tbhdu1.header.update('COMMENT','created '+datestring)
+   tbhdu1.header['COMMENT']= 'The effective area was determined using version 2 of the '
+   tbhdu1.header['COMMENT']= 'coincidence loss'
    tbhdu1.header.update('COMMENT','uvotpy.writeEffAreaFile() version='+version)
+   tbhdu1.header.update('COMMENT','created '+datestring)
    if specresp_err != None:
       tbhdu1.header.update('TTYPE6','SPRS_ERR','[cm**2] 1-sigma error effective area')
    hdulist.append(tbhdu1)
@@ -1077,19 +1169,19 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,arf=No
    # latest update:   
    if spectralorder == 1: 
           if wheelpos == 200:          
-             calfile = 'swugu0200_20041120v103.arf'
+             calfile = 'swugu0200_20041120v105.arf'
 	     extname = "SPECRESPUGRISM200"
 	     model   = "ZEMAXMODEL_200"
           elif wheelpos == 160:
-             calfile = 'swugu0160_20041120v102.arf'
+             calfile = 'swugu0160_20041120v105.arf'
 	     extname = "SPECRESPUGRISM160"
 	     model   = "ZEMAXMODEL_160"
           elif wheelpos == 955: 
-             calfile = 'swugv0955_20041120v102.arf'
+             calfile = 'swugv0955_20041120v104.arf'
 	     extname = "SPECRESPVGRISM0955"
 	     model   = "ZEMAXMODEL_955"
           elif wheelpos == 1000: 
-             calfile = 'swugv1000_20041120v102.arf'
+             calfile = 'swugv1000_20041120v105.arf'
 	     extname = "SPECRESPVGRISM1000"
 	     model   = "ZEMAXMODEL_1000"
           else:   
@@ -1214,7 +1306,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,arf=No
             x[-1] = 7000.
 	    y[-1] = y[-2]
 	    y[ y < 0 ] = 0.0
-            fnorm = interpolate.interp1d(x,y,)	    
+            fnorm = interpolate.interp1d(x,y,bounds_error=False, fill_value=0.)	    
 	    return cal, fnorm
 	 except RuntimeError:
 	     pass
@@ -1257,7 +1349,7 @@ def getZmxFlux(x,y,model,ip=1):
 	  raise IOError("getZmxFlux model parameter is not a proper FITS HDU bintable type")
 	  
    n3     = 28*28
-   n2     = model.header['NAXIS2']/n3
+   n2     = int(model.header['NAXIS2']/n3)
    if not ((n2 == 12) | (n2 == 16)):
       raise IOError("getZmxFlux: size of array in MODEL not correct; perhaps file corrupt?") 
    
@@ -1501,7 +1593,7 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
 
 def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None, 
     arf1=None, arf2=None, fit_second=True, write_rmffile=True,
-    used_lenticular=True, fileversion=1,
+    used_lenticular=True, fileversion=2, calibration_mode=True,
     history=None, chatter=1, clobber=False ) :
     
    '''Write a standard UVOT output file - Curved extraction only, not optimal extraction.
@@ -1561,8 +1653,11 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
   For details, see the output file format description.
   
        Main header: 
+       -----------
           wheelpos, filter, orders, author
    
+       First extension
+       ---------------
        For fileversion=1:
          The first extension is named  SPECTRUM (future: 'FIRST_ORDER_PHA_SPECTRUM') and 
          contains the standard input for XSPEC, 
@@ -1576,7 +1671,9 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 	    sensitivity, coincidence-loss) 
           - errors, including aperture correction, coincidence-loss 
 	    correction (non-poissonian).
-	 
+
+       Second extension
+       ----------------	 
        The second extension is named CALSPEC  (future: 'FIRST_ORDER_NET_SPECTRUM') 
        contains the standard input for IDL/PYTHON with 
        
@@ -1600,6 +1697,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 	 - qual2, 
 	 - aper2corr
          - coincidence-loss factor as applied to the flux listed. 
+	 
        Modifications for fileversion=2: 
          The first extension now containts the corrected 
          count rates, so the uncorrected count rates are now put in the second extension.
@@ -1610,7 +1708,11 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          - bg1rate and bg2rate (count/s/pix) are the mean rates measured 
 	   in the two backgrounds and need to be multiplied by the spectra track 
 	   width in pixels for comparison to the background rate.
+	   
+       Further modifications happeb when the calibration_mode is set.	   
        
+       Third extension
+       ---------------
        The third extension named 'SPECTRUM_IMAGE' contains the image of the total spectrum
        
        A fourth extension may exist for spectra from summed images 
@@ -1661,10 +1763,13 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       hdr       = Y['hdr']
       wheelpos  = Y['wheelpos']
       offset    = Y['offset']
+      co_first  = Yfit['co_first']
       sp_first  = Yfit['sp_first']
       bg_first  = Yfit['bg_first']
+      co_second = Yfit['co_second']
       sp_second = Yfit['sp_second']
       bg_second = Yfit['bg_second']
+      co_back   = Yfit['co_back']
       apercorr  = Yfit['apercorr']
       qquality  = Yfit['quality']
       expospec  = Yfit['expospec']
@@ -1712,11 +1817,15 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       background_strip1 = bg1
       background_strip2 = bg2
 	   
-      ((present0,present1,present2,present3),(q0,q1,q2,q3), \
-       (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-       (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-       (x,xstart,xend,sp_all,qquality) ), (coef0,coef1,coef2,coef3), \
-       (bg_zeroth,bg_first,bg_second,bg_third), (borderup,borderdown),apercorr, expospec  = Y2
+      ((present0,present1,present2,present3),(q0,q1,q2,q3), (
+        y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
+        y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
+        x,xstart,xend,sp_all,qquality,co_back) ), (
+	coef0,coef1,coef2,coef3), (
+        bg_zeroth,bg_first,bg_second,bg_third), (
+	borderup,borderdown),apercorr, expospec  = Y2
 
       if Y4 != None: 
          wav2p, dis2p, rate2p, qual2p, dist12p = Y4[0]
@@ -1781,14 +1890,33 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 	 *(1+apcorr_errf(trackwidth,wheelpos)))  # error in aperture correction
 	       )/expospec1                       # neglects coi-error in rate error 
    bg1rate = bkg/expospec1*2.5/trackwidth        # background counts for 2.5 sigma width at spectrum
+   co_sp1rate = (co_first[q1[0]][qwave]/expospec1).flatten()
+   co_bgrate = (co_back [q1[0]][qwave]/expospec1).flatten()
    
-   
-   fcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=1,\
-       fudgespec=1.322,coi_length=29,frametime=hdr['framtime'], background=False, \
-       sigma1_limits=[2.6,4.0], trackwidth = 2.5,debug=False,chatter=1)
-   bgcoi = uvotgetspec.coi_func(dis,wave,sprate,bg1rate,sig1coef=sig1coef,option=1,\
-       fudgespec=1.322,coi_length=29,frametime=hdr['framtime'], background=True, \
-       sigma1_limits=[2.6,4.0], trackwidth = 2.5, debug=False,chatter=1)
+   print "writing output file: computing coincidence loss spectrum, frametime=", hdr['framtime']   
+   # calculate coincidence correction for coi box   
+   fcoi, coi_valid1 = uvotgetspec.coi_func(dis,wave,
+       co_sp1rate,
+       co_bgrate,
+       area = 414.,
+       wheelpos = wheelpos,
+       frametime=hdr['framtime'], 
+       background=False, 
+       debug=False,chatter=1)
+   print "writing output file: computing coincidence loss background"    
+   bgcoi = uvotgetspec.coi_func(dis,wave,
+       co_sp1rate,
+       co_bgrate,
+       area = 414.,
+       wheelpos = wheelpos,
+       frametime=hdr['framtime'], 
+       background=True, \
+       debug=False,chatter=1)
+
+   if len(coi_valid1) == len(quality):
+       quality[coi_valid1 == False] =  qflags["too_bright"]
+   else:
+      raise RuntimeError("the quality and coi_valid1 arrays are of different length")
        
    sprate = sprate*senscorr
    bg1rate = bg1rate*senscorr    
@@ -1799,11 +1927,24 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    else:
       # position dependent response function [ should get more from rate2flux - too 
       #  much duplication right now ! 
-      specresp1func = rate2flux(wave, sprate, wheelpos, bkgrate=bg1rate, 
-          pixno=None, sig1coef=[3.2], sigma1_limits=[2.6,4.0], respfunc=True, 
-          arf1=None, arf2=None, effarea1=effarea1, effarea2=effarea2, 
-	  spectralorder=1, trackwidth = trackwidth, anker=anker, test=None, 
-          option=1, fudgespec=1.32, frametime=hdr['framtime'], debug=False, chatter=1)
+      specresp1func = rate2flux(wave, sprate, wheelpos, 
+          bkgrate=bg1rate, 
+          pixno=None, 
+	      respfunc=True, 
+          arf1=None, 
+          arf2=None, 
+          effarea1=effarea1, 
+          effarea2=effarea2, 
+	      spectralorder=1, 
+	      anker=anker, 
+	      test=None, 
+          option=1, 
+	      fudgespec=1., 
+	      frametime=hdr['framtime'], 
+	      co_sprate = (co_first[q1[0]][qwave]/expospec1),
+	      co_bgrate = (co_back[q1[0]][qwave]/expospec1),
+	      debug=False, 
+	      chatter=1)
       #specresp1func = XYSpecResp(wheelpos=hdr['wheelpos'],spectralorder=1, Xank=anker[0], Yank=anker[1]) 
       
    hnu = h_c_ang/(wave)
@@ -1841,7 +1982,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 			 quality[rc] )
        back_first = (channel, bg1rate[rc], 0.1*np.sqrt(bg1rate)[rc],
           quality[rc],aper1corr[rc], expospec1[rc])
-       calspec_first = (dis,wave,
+       if not calibration_mode:	  
+          calspec_first = (dis,wave,
           (counts-bkg)/expospec1, bkg/expospec1,   # uncorrected counts in the spectrum
           [back1rate,back2rate],
           flux, flux_err,  # fully corrected flux
@@ -1850,6 +1992,18 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 	  expospec1,
 	  fcoi(wave),
 	  bgcoi(wave))
+       else:	  
+          calspec_first = (dis,wave,
+          (counts-bkg)/expospec1, bkg/expospec1,   # uncorrected counts in the spectrum
+          [back1rate,back2rate],
+          flux, flux_err,  # fully corrected flux
+	  quality,   
+	  aper1corr,
+	  expospec1,
+	  fcoi(wave),
+	  bgcoi(wave),
+	  co_sp1rate, co_bgrate
+	  )
            
    ############### second order
    # predicted second order
@@ -1882,12 +2036,30 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          binwidth2 = np.polyval(C_2,dis2+0.5) - np.polyval(C_2,dis2-0.5)
 	 pix2      = x[q2[0]]                                           # pixel number to align with first order
 	 
-         fcoi_2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=1,\
-            fudgespec=1.32,coi_length=29,frametime=hdr['framtime'], background=False, \
-            sigma1_limits=[2.6,6.0], trackwidth = 2.5,debug=False,chatter=1)
-         bgcoi2 = uvotgetspec.coi_func(pix2,wave2,sp2rate,bg_2rate,sig1coef=sig2coef,option=1,\
-            fudgespec=1.32,coi_length=29,frametime=hdr['framtime'], background=True, \
-            sigma1_limits=[2.6,6.0], trackwidth = 2.5, debug=False,chatter=1)
+         fcoi_2, coi_valid2 = uvotgetspec.coi_func(pix2,wave2,
+	        (co_second[q2[0]]/expospec2).flatten(),
+                (co_back  [q2[0]]/expospec2).flatten(),
+                area = 414.,
+ 		    wheelpos=wheelpos,
+		    coi_length=29,
+		    frametime=hdr['framtime'], 
+		    background=False, 
+		    debug=False,chatter=1)
+         bgcoi2 = uvotgetspec.coi_func(pix2,wave2,
+	        (co_second[q2[0]]/expospec2).flatten(),
+                (co_back[q2[0]]/expospec2).flatten(),
+                area = 414.,
+		    wheelpos=wheelpos,
+		    coi_length=29,
+		    frametime=hdr['framtime'], 
+		    background=True, 
+   		    debug=False,chatter=1)
+
+
+         if len(coi_valid2) == len(qual2):
+           qual2[coi_valid2 == False] =  qflags["too_bright"]
+         else:
+          raise RuntimeError("the qual2 and coi_valid2 arrays are of different length")
 
          sp2rate = sp2rate * senscorr    # perform sensitivity loss correction
          bg_2rate = bg_2rate * senscorr
@@ -2010,7 +2182,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       expmap=expmap, spectrum_second = spectrum_second, 
       back_second = back_second, calspec_second=calspec_second, 
       present2=(present2 & fit_second), fileversion=fileversion,
-      zeroxy=zeroxy,
+      zeroxy=zeroxy, calmode=calibration_mode,
       clobber=clobber, chatter=chatter)
       
    if write_rmffile: 
@@ -2038,7 +2210,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    history, spectrum_first, back_first, calspec_first, extimg, outfile1, 
    backfile1, rmffile1, outfile2=None, backfile2=None, rmffile2=None, expmap=None,   
    spectrum_second = None, back_second = None, calspec_second=None, present2=False, 
-   fileversion = 1, zeroxy=[1000,1000],
+   fileversion = 1, zeroxy=[1000,1000], calmode=False,
    clobber=False, chatter=0 ):
    '''performs the actual creation of the output file (mostly FITS stuff) 
    
@@ -2053,13 +2225,17 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    from scipy import interpolate
    import os
    from pylab import polyval
+   from uvotgetspec import get_coi_box
 
-   version = '140101'
+   version = '140723'
    
    now = datetime.date.today()
    datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
    rnu = int(now.day*1.2+now.month*0.99+now.year*0.3)   # some number
 
+   # coincidence loss box
+   coi_half_width,coi_length,coifactor = get_coi_box(hdr['wheelpos'])
+   
    orders = '1'
    if present2: orders='12'
    
@@ -2069,6 +2245,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    #   
    #                 ============= main spectrum pha file =======
    #
+   if chatter>4: print "uvotio: write main header"
    # create primary header 
    #
    hdu0 = fits.PrimaryHDU()
@@ -2095,6 +2272,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
    hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
+   if chatter>4: print "uvotio: write first header"
    #  first extension: first order spectrum ; add extname everywhere
    #
    if fileversion == 1:
@@ -2117,8 +2295,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       tbhdu1.header.update('comment','COUNTS are observed, uncorrected counts')
    elif fileversion == 2:
       tbhdu1.header.update('comment','RATE are the fully corrected count rates')
-      
-   tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+   try:   
+      tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+   except:
+      pass   
    tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
    tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
    tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
@@ -2179,6 +2359,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
    tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
    tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
+   tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
    tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
    tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -2192,11 +2373,17 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu1)
    #
+   if chatter>4: print "uvotio: write second header"
    #  second extension first order
    # 
    if fileversion == 2:
-       (dis,wave,sprate,bg1rate,bck_strips,flux,flux_err,
-        quality,aper1corr,expospec1,coi_sp1,bgcoi_sp1)  = calspec_first
+       if calmode:
+           (dis,wave,sprate,bg1rate,bck_strips,flux,flux_err,
+           quality,aper1corr,expospec1,coi_sp1,bgcoi_sp1,
+	   co_sp1rate,co_bgrate)  = calspec_first
+       else:
+           (dis,wave,sprate,bg1rate,bck_strips,flux,flux_err,
+           quality,aper1corr,expospec1,coi_sp1,bgcoi_sp1)  = calspec_first
    
        col23  = fits.Column(name='BKGRATE1',format='E',array=bg1rate,unit='c/s')
        col24A = fits.Column(name='BG_L   ',format='E',array=bck_strips[0],unit='c/s')
@@ -2243,7 +2430,14 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
 	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
 		   col37,col38,col38A,col24B])      
       elif fileversion == 2:
-          cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,col28,
+          if calmode:
+	      colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
+	      colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
+              cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,col28,
+	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
+		   col37,col38A,col38B,col24A,col24B,colcoA,colcoB])
+	  else:
+              cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,col28,
 	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
 		   col37,col38A,col38B,col24A,col24B])
    else: # not present2
@@ -2251,7 +2445,13 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           cols2 = fits.ColDefs([col20,col21,col22,col24A,col25,col26,col27,
 	          col28,col29,col29A,col29B,col24B]) 
       elif fileversion == 2:
-          cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
+          if calmode:
+	      colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
+	      colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
+              cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
+	          col28,col29,col29A,col29B,col24A,col24B,colcoA,colcoB])
+	  else:
+              cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
 	          col28,col29,col29A,col29B,col24A,col24B])
       
    tbhdu2 = fits.new_table(cols2)
@@ -2263,7 +2463,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    if history != None:
       msg1 = history.split('\n')
       for msg in msg1: tbhdu1.header.add_history(msg)
-   tbhdu2.header.update('EXPID',hdr['expid'])
+   try:   
+      tbhdu2.header.update('EXPID',hdr['expid'])
+   except:
+      pass   
 #   tbhdu2.header.update('EXTNAME','FIRST_ORDER_NET_SPECTRUM')
    tbhdu2.header.update('EXTNAME','CALSPEC')
    tbhdu2.header.update('FILETAG',filetag,'unique set id')
@@ -2300,7 +2503,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       tbhdu2.header.update('STALLOSS',hdr['STALLOSS'])
       tbhdu2.header.update('TOSSLOSS',hdr['TOSSLOSS'])
    except:
-      pass   
+      print "WARNING problem found in uvotio line 2440 try update XXXXLOSS keywords"
+      pass 
+   if calmode:     
+      tbhdu2.header['COIWIDTH'] = 2*coi_half_width   
    tbhdu2.header.update('HDUCLASS','OGIP')
    tbhdu2.header.update('HDUCLAS1','SPECTRUM')
    if fileversion == 1:
@@ -2311,11 +2517,15 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu2.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu2)
    #
+   if chatter>4: print "uvotio: write third header"
    #  THIRD extension: extracted image
    #
    hdu3 = fits.ImageHDU(extimg)
    hdu3.header.update('EXTNAME','SPECTRUM_IMAGE')
-   hdu3.header.update('EXPID',hdr['expid'])
+   try:
+      hdu3.header.update('EXPID',hdr['expid'])
+   except:
+      pass   
    hdu3.header.update('ANKXIMG',ank_c[1],'Position anchor in image')
    hdu3.header.update('ANKYIMG',ank_c[0],'Position anchor in image')
    hdu3.header.update('FILETAG',filetag,'unique set id')
@@ -2326,7 +2536,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    if len(expmap) > 1: 
       hdu4 = fits.ImageHDU(expmap)
       hdu4.header.update('EXTNAME','EXPOSURE_MAP')
-      hdu4.header.update('EXPID',hdr['expid'])
+      try: 
+         hdu4.header.update('EXPID',hdr['expid'])
+      except:
+         pass	 
       hdu4.header.update('ANKXIMG',ank_c[1],'Position anchor in image')
       hdu4.header.update('ANKYIMG',ank_c[0],'Position anchor in image')
       hdu4.header.update('FILETAG',filetag,'unique set id')
@@ -2341,6 +2554,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    ################ ============= second order spectrum pha file ======= ###############
    if present2:
      #
+     if chatter>4: print "uvotio: write 2nd order 0 header"
      # create primary header 
      #
      hdu0 = fits.PrimaryHDU()
@@ -2384,7 +2598,12 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
         col24 = fits.Column(name='QUALITY ',format='I',array=qual2 )
         cols1 = fits.ColDefs([col21,col22,col23,col24])
      tbhdu1 = fits.new_table(cols1)
-     tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+     try:
+        tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+     except:
+        pass	
+     if chatter>4: print "uvotio: write 2nd order 1 header"
+
      tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
      tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
      tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
@@ -2442,6 +2661,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
      tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
      tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
+     tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
      tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
      tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
 #   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
@@ -2463,6 +2683,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    #
    # ================= background PHA files ============================
    #
+       if chatter>4: print "uvotio: write bkg 0 order header"
    #   first order background PHA file
    #
    # create primary header 
@@ -2489,6 +2710,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
        hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
+       if chatter>4: print "uvotio: write bkg 1 order header"
    #  first extension: first order spectrum ; add extname everywhere
    #
        channel = back_first[0]
@@ -2503,7 +2725,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        col15 = fits.Column(name='EXPOSURE',format='E',array=expospec1 ,unit='s' )
        cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
        tbhdu1 = fits.new_table(cols1)
-       tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+       try:
+           tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+       except:
+          pass	   
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
        tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
        tbhdu1.header.update('FILETAG',filetag,'unique set id')
@@ -2583,6 +2808,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        if back_second != None:
       # create primary header 
       #
+          if chatter>4: print "uvotio: write bck 2nd order header"
           hdu0 = fits.PrimaryHDU()
           hdu0.header.update('CREATED','written by uvotio.py '+version)
           hdu0.header.update('DATE',str(now))
@@ -2619,7 +2845,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           col15 = fits.Column(name='EXPOSURE',format='E',array=expospec2 ,unit='s' )
           cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
           tbhdu1 = fits.new_table(cols1)
-          tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+	  try:
+              tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+	  except:
+	      pass    
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
           tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
           tbhdu1.header.update('FILETAG',filetag,'unique set id')
@@ -2796,11 +3025,16 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       ( (dis,spnet,angle,anker,anker2,anker_field,ank_c), (bg,bg1,bg2,extimg,spimg,spnetimg,offset), 
            (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )	= Y1
 	   
-      ((present0,present1,present2,present3),(q0,q1,q2,q3), \
-              (y0,dlim0L,dlim0U,sig0coef,sp_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first),\
-              (y2,dlim2L,dlim2U,sig2coef,sp_second),(y3,dlim3L,dlim3U,sig3coef,sp_third),\
-	      (x,xstart,xend,sp_all,qquality) ), (coef0,coef1,coef2,coef3), \
-	      (bg_zeroth,bg_first,bg_second,bg_third), (borderup,borderdown), apercorr,expospec  = Y2
+      fit, (coef0,coef1,coef2,coef3), (
+	      bg_zeroth,bg_first,bg_second,bg_third), (
+	      borderup,borderdown), apercorr,expospec  = Y2
+	      
+      (present0,present1,present2,present3),(q0,q1,q2,q3),(
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+	      y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+	      y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
+	      x,xstart,xend,sp_all,qquality, co_back) = fit
 	      
       opcounts, variance, borderup, borderdown, (fractions,cnts,vars,newsigmas) = Y3 
 
@@ -3324,7 +3558,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    
    # output arrays
    n_grp = np.ones(NN)
-   f_chan = np.zeros(NN)
+   f_chan = np.ones(NN)
    n_chan = np.ones(NN) * NN
    matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
    
@@ -3418,6 +3652,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
 	 else:
 	    matrix[NN-k-1] =  np.zeros(NN)
 
+   # remove channels that have zero response
 
    # for output
    if wheelpos < 500: 
@@ -3455,7 +3690,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
    tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
-   tbhdu1.header.update('DATE',datestring, 'File creation date')                           
+   tbhdu1.header.update('DATE',now.isoformat(), 'File creation date') 
+   #tbhdu1.header['null'] = 0.                          
    hdulist.append(tbhdu1)
    
    col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
@@ -3475,6 +3711,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
    tbhdu2.header.update('TLMIN1', 1, 'First legal channel number')                           
    tbhdu2.header.update('TLMAX1',NN, 'Last legal channel number')                              
-   tbhdu2.header.update('DATE',datestring, 'File creation date')                           
+   tbhdu2.header.update('DATE',now.isoformat(), 'File creation date')                           
    hdulist.append(tbhdu2)     
    hdulist.writeto(rmffilename,clobber=clobber)
