@@ -21,3 +21,6 @@ setenv UVOTPY <installation directory>
 so that $UVOTPY/calfiles/ contains the calibration files.
 
 This software is subject to a 3-clause BSD licence.  
+
+This source code can be referenced using the Astrophysics
+Source Code Library code ascl:1410.004
