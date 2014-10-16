@@ -1,11 +1,11 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='2.0.1',
+      version='2.0.2',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images
       taken with the Ultraviolet and Optical Telescope on the Swift spacecraft.
-      See http://www.swift.ac.uk or http://swift.gsfc.nasa.gov for details.
+      See http://www.swift.ac.uk/ or http://swift.gsfc.nasa.gov for details.
       
       The Swift spacecraft observes faint objects in the sky that usually cannot 
       be seen by the naked eye, concentrating mostly on variables, like 
@@ -18,18 +18,20 @@ setup(name='uvotpy',
       is part of the HEADAS software distributed by HEASARC at Goddard Space Flight 
       Center (NASA). That software is required to be installed and operational 
       for the spectral extraction to work. WCStools, written by Doug Mink at SAO
-      are also required, as well as an active internet connection in order to 
-      query the USNO-B1 catalogue. 
+      are also required, as well as an active internet connection. 
       
       The spectral extraction will locate the spectrum in the image based on 
       the provided sky coordinates which must be provided in RA, Dec (J2000). 
       The output is in the form of plots and FITS formatted files compatible
       with XSPEC.         
+
+      This code has been registered with the Astrophysics Source Code Library as
+      ascl:1410.004
                        """,
       author='Paul Kuin',
       author_email='npkuin@gmail.com',
       url='http://www.mssl.ucl.ac.uk/www_astro/uvot/',
-      platforms=['MacOS X 10.6-10.9','linux Debian'],
+      platforms=['MacOS X 10.6.8+','linux Debian'],
       license='Releases under a 3-clause BSD style license',
       packages = ['uvotpy'],
       package_dir  = {'' : ''}, 
@@ -42,11 +44,10 @@ setup(name='uvotpy',
 			     'calfiles/*.fits',
                              'calfiles/superseded/*',
                              'README',
-			     'RELEASE_NOTES.txt',
-                             'uvotgrism/*'
+			     'README.sum_spectra',
 			     'doc/*']}, 			      
       requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve','stsci.imagestats'],
       # requires HEADAS, WCStools, internet connection
       # environment setup  requires UVOTPY to point to the installed uvotpy library and calfiles.
-      scripts=['uvotpy/scripts/uvotgrism','uvotpy/scripts/fileinfo','uvotpy/scripts/grismpipe'],		   
+      scripts=['uvotpy/scripts/uvotgrism','uvotpy/scripts/fileinfo'],		   
       )
