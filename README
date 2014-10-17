@@ -22,5 +22,7 @@ so that $UVOTPY/calfiles/ contains the calibration files.
 
 This software is subject to a 3-clause BSD licence.  
 
-This source code can be referenced using the Astrophysics
-Source Code Library code ascl:1410.004
+Please reference this code as follows:
+
+Kuin, N.P.M., 2014, Astrophysics Source Code Library, record ascl:1410.004.
+
