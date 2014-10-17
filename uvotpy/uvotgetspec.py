@@ -2963,8 +2963,8 @@ def get_coi_box(wheelpos):
     #  29,27,31,28 3x8/cos([144.5,151.4,140.5,148.1]) for wheelpos = 160,200,955,1000
     coistuff = {'160':(7.5,29,1.11),
                 '200':(7.5,27,1.12),
-		'955':(7.0,31,1.13),
-	        '1000':(6.5,28,1.09),}
+		'955':(6.5,31,1.09),
+	        '1000':(7.0,28,1.13),}
     return coistuff[str(wheelpos)]
 
 def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
