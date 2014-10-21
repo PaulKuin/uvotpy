@@ -99,7 +99,8 @@ if __name__ != '__main__':
       background_source_mag = 18.0
       zeroth_blim_offset = 1.0
       coi_half_width = None
-
+      _PROFILE_BACKGROUND_ = False # start with severe sigma-clip f background, before going to smoothing 
+       
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
 fileversion=2
@@ -1919,13 +1920,15 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    
    # sigma screening of background taking advantage of the dispersion being 
    # basiacally along the x-axis 
-   bg, u_x, bg_sig = background_profile(bgimg, smo1=30, badval=cval)
-   u_mask = np.zeros((ny,nx),dtype=bool)
-   for i in range(ny):
-      u_mask[i,(bgimg[i,:].flatten() < u_x) & 
+   
+   if _PROFILE_BACKGROUND_:
+      bg, u_x, bg_sig = background_profile(bgimg, smo1=30, badval=cval)
+      u_mask = np.zeros((ny,nx),dtype=bool)
+      for i in range(ny):
+          u_mask[i,(bgimg[i,:].flatten() < u_x) & 
                 np.isfinite(bgimg[i,:].flatten())] = True
    		
-   bkg_sc = np.zeros((ny,nx),dtype=float)
+      bkg_sc = np.zeros((ny,nx),dtype=float)
    # the following leaves larger disps in the dispersion but less noise; 
    # tested but not implemented, as it is not as fast and the mean results 
    # are comparable: 
@@ -1936,16 +1939,16 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    #    ucol = bkg_sc[:,i]
    #    if len(ucol[ucol != cval]) > 0:
    #        ucol[ucol == cval] = ucol[ucol != cval].mean()   
-   for i in range(nx):
-       ucol = bgimg[:,i]
-       if len(ucol[u_mask[:,i]]) > 0: 
-           ucol[np.where(u_mask[:,i] == False)[0] ] = ucol[u_mask[:,i]].mean()
-       bkg_sc[:,i] = ucol                        
-   if background_method == 'sigmaclip':
-      return bkg_sc  
-   else:
+      for i in range(nx):
+          ucol = bgimg[:,i]
+          if len(ucol[u_mask[:,i]]) > 0: 
+              ucol[np.where(u_mask[:,i] == False)[0] ] = ucol[u_mask[:,i]].mean()
+          bkg_sc[:,i] = ucol                        
+      if background_method == 'sigmaclip':
+          return bkg_sc  
+      else:
       # continue now with the with screened image
-      bgimg = bkg_sc    
+          bgimg = bkg_sc    
    
    kx0 = 0 ; kx1 = nx # default limits for valid lower background  
    kx2 = 0 ; kx3 = nx # default limits for valid upper background  
@@ -8164,9 +8167,9 @@ def coi_func(pixno,wave,countrate,bkgrate,
    wave : array-like
       wavelength in A, *must be monotonically increasing*
    countrate : array-like
-      input total count rate for the coi aperture (default 16 pixels wide)
+      input total count rate for the coi aperture (default coi_width pixels wide)
    bkgrate : array-like
-      background rate for the coi aperture (default 16 pixels wide)
+      background rate for the coi aperture (default coi_width pixels wide)
    kwargs : dict
    	
       - **frametime** : float
@@ -8213,6 +8216,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
         change meaning parameters    
    - 2014-07-23 NPMK use calibrated values of coi-box and factor	
    '''   
+   import sys
    import uvotmisc
    import numpy as np
    try:
@@ -8236,7 +8240,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
       # set factor to one:
       return interpolate.interp1d(wave,wave/wave,kind='nearest',bounds_error=False,fill_value=1.0 ) 
       
-   alpha = (frametime - 0.000171)/frametime
+   alpha = 0.984500901848 # (frametime - 0.000171)/frametime
    
    
    # coincidence loss box
@@ -8249,87 +8253,94 @@ def coi_func(pixno,wave,countrate,bkgrate,
    pixno     = pixno[vv]
    wave      = wave[vv]
    
-   # reset v
+   # mask v for problems on remaining points
    v = np.ones(len(countrate),dtype=bool)
       
    # scaling the uncorrected counts per frame ; boxcar average over coi_length
-   factor = coifactor*coi_length  # coi_area (pix^2), divided by its width (since rates integrate over width) 
+   
+   # define *factor* as the coi_length times the coifactor, not the coi-area 
+   # since the coi-area should be divided by its width since rates already are
+   # integrated over the width coi_width of the track 
+   
+   factor = coifactor*coi_length 
+   
+   # convert to counts per frame
+   
    if not background: 
-      tot_cpf = obs_countsperframe = boxcar( countrate * frametime, (coi_length,))
-   else: tot_cpf = None   
+       tot_cpf = obs_countsperframe = boxcar( countrate * frametime, (coi_length,))
+   else: 
+       tot_cpf = None   
+       
    bkg_cpf = bkg_countsperframe = bkgrate * frametime   # background was already smoothed
    
    if chatter > 3: 
-       print "alpha  = ",alpha
-       print "number of data points ",len(countrate),"  printing every 100th"
-       print " i    countrate    obs total counts/frame "
-       for ix in range(0,len(countrate),10):
-	   if background: print "%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix])
-	   else: print "%4i %12.5f  %12.5f" % (ix, countrate[ix],tot_cpf[ix])
+       sys.stderr.write("alpha  = %f\nnumber of data points %i  printing every 25th"%
+          (alpha,len(countrate)))
+       sys.stderr.write(" i    countrate    obs total counts/frame \n")
+       for ix in range(0,len(countrate),25):
+	   if background: 
+	       sys.stderr.write("%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix]))
+	   else: 
+	       sys.stderr.write("%4i %12.5f  %12.5f" % (ix, countrate[ix],tot_cpf[ix]))
 	   
    try:
-	 	 
-       bkg_cpf_incident = (-1.0/alpha) * np.log(1.0 - factor*bkg_cpf)/(factor)
-       
+   	 	 
        if not background:
-           # classic coi formula with appropriate coi-area
+           #  spectrum plus background       
            yy = 1.0 - factor*tot_cpf
-           v[ yy < 1e-6 ] = False
+           v[ yy < 1e-6 ] = False    # corresponds to incident rate > 14 cpf
            yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
            obs_cpf_incident = (-1.0/alpha) * np.log(yy)/factor
-	 
+
+       # background only	 
        yy = 1.0 - factor*bkg_cpf
        v[ yy < 1e-6 ] = False
-       yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+       yy[ yy < 1e-6 ] = 1e-6 
        bkg_cpf_incident = (-1.0/alpha) * np.log(yy)/factor         
 
    except:
-       print "ERROR: Not sure why this happened."
-       print "WARNING: Continuing but NOT applying coi loss correction."
-       print 'alpha',alpha
-       print 'factor',factor
-       print 'bkg',bkg_cpf
-       print 'tot',tot_cpf
-       print 'v',v
-       print 'background',background
-       if not background:
-           obs_cpf_incident = obs_countsperframe
-       else:
-           obs_cpf_incident = bkg_cpf	 
+       sys.stderr.write("alpha=%f\nfactor=%f\nbkg_cpf=%s\ntot_cpf=%s\nvalid=%s\nbackground=%s\n"%
+          (alpha,factor,bkg_cpf,tot_cpf,v,background))
+       raise RuntimeError("An unexpected error in computing the coi-factor was not trapped. Aborting.\nContact the Paul Kuin\n")
+       #if not background:
+       #    obs_cpf_incident = obs_countsperframe
+       #else:
+       #    obs_cpf_incident = bkg_cpf	 
    
    # notify user that some points were flagged bad ; limit in wave
-   w8,w9 = {'160':(1700,5800),'200':(1700,5800),"955":(2950,5800),"1000":(2950,5800)}[str(wheelpos)]
+   w8,w9 = {'160':(1700,5200),'200':(1700,5200),"955":(2850,6600),"1000":(2850,6600)}[str(wheelpos)]
    test = np.where(v & (wave > w8) & (wave < w9))[0]
-   #if v.all() != True: 
+
    if (not background) & (len(test) < len(wave[((wave > w8) & (wave < w9))]) ):
        ngood = len( np.where(v & (wave > w8) & (wave < w9))[0] )
-       print "WARNING uvotgetspec.coi_func(): Some data were ignored\n"+\
-             "        in the determination of the COI factor, since they\n"+\
-	     "        exceeded the theoretical limit. total number = ",len(wave[((wave > w8) & (wave < w9))])
-       print "                  number of good points used = ",ngood
+       sys.stderr.write("WARNING uvotgetspec.coi_func(): Some data were ignored\n"\
+             "        in the determination of the COI factor, since they\n"\
+	     "        exceeded the theoretical limit. total number = %i "\
+             "                  number of good points used = %i \n"%
+	     (len(wave[((wave > w8) & (wave < w9))]) ,ngood))
    
-   # compute the coi-correction factor
+   # compute the coi-correction factor for the net spectrum and the background (these are pixel/wavelength position specific) 
    if not background: 
        coi_factor = (obs_cpf_incident - bkg_cpf_incident) / (obs_countsperframe - bkg_countsperframe)
    bg_coi_factor = (bkg_cpf_incident)/(bkg_countsperframe)
    
    # debug info
    if (chatter > 4) & (not background):
-       print "bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor"
+       sys.stderr.write("bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor\n")
        for i in range(len(obs_cpf_incident)):
-           print "%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,
+           sys.stderr.write( "%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,
 	      bkg_countsperframe[i],bkg_cpf_incident[i], 
 	      obs_countsperframe[i],obs_cpf_incident[i],
-	      bg_coi_factor[i],coi_factor[i])
+	      bg_coi_factor[i],coi_factor[i]))
    
-   # calibrate
+   # statistics
    if chatter > 0: 
       if not background: 
-          print "spectrum: coi factor stats (min, mean, max): ",(
-	      np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor) )
+          sys.stderr.write( "spectrum: coi factor stats (min=%5.3f, mean=%5.3f, max=%5.3f)\n"%(
+	      np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor) ))
       else:
-          print "background: coi factor stats (min, mean, max): ",(
-              np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor) )
+          sys.stderr.write( "background: coi factor stats (min=%5.3f, mean=%5.3f, max=%5.3f)\n"%(
+              np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor) ))
    
    # assume wave is monotonically increasing: 
    if not background: 
