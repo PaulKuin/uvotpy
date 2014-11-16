@@ -3165,7 +3165,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    else:
       map = None
       print "no zeroth order contamination quality information available "
-      quality[:] = qflag['unknown']     
+      quality[:] = qflag['good']     
 
 
    # tracks - defined as yi (delta) = 0 at anchor position (ankx,anky)  
@@ -4347,7 +4347,8 @@ def quality_flags():
    weakzeroth=4,   # weak zeroth order too close to/overlaps spectrum
    first=8,        # other first order overlaps and brighter than BG + 5 sigma of noise 
    overlap=16,     # orders overlap to close to separate (first, second) or (first second and third)
-   too_bright=32   # the counts per frame are too large    
+   too_bright=32,  # the counts per frame are too large  
+   unknown=-1      
    )   
    return flags
    
@@ -7459,8 +7460,10 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
 
 def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], 
       ignore_flags=True, use_flags=['bad'], 
-      interactive=True, outfile=None, figno=[14], ylim=[],chatter=1, clobber=True):
-   '''Read a list of phafiles. Sum the spectra after applying optional wave_shifts. 
+      interactive=True, outfile=None, returnout = False,
+      figno=[14], ylim=[-0.2e-14,5e-13],chatter=1, clobber=True):
+   '''Read a list of phafiles. Sum the spectra after applying optional wave_shifts.
+   The sum is weighted by the errors.  
    
    Parameters
    ----------
@@ -7470,6 +7473,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       list of shifts to add to the wavelength scale; same length as phafiles
    exclude_wave : list
       list of lists of exclude regions; same length as pha files; one list per file
+      for an indivisual file the the list element is like [[1600,1900],[2700,2750],] 
    ignore_flags : bool
       do not automatically convert flagged sections of spectrum to exclude_wave regions 
    use_flags : list
@@ -7478,7 +7482,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    interactive : bool
       if False, the program will only use the given wave_shifts, and exclude_regions
    outfile : str
-      name for output file. If "None" then an array of data for debug is returned
+      name for output file. If "None" then write to 'sumpha.txt'
    ylim : list
       force limits of Y-axis figure      
    figno : int, or list
@@ -7487,6 +7491,18 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    Returns
    -------
    debug information when `outfile=None`.
+   
+   example
+   -------
+   phafiles = ['sw00031935002ugu_1ord_1_f.pha',
+               'sw00031935002ugu_1ord_2_f.pha',
+               'sw00031935002ugu_1ord_3_f.pha',
+               'sw00031935002ugu_1ord_4_f.pha',]
+   
+   sum_PHAspectra(phafiles)
+   
+   This will interactively ask for changes to the wavelengths of one spectra compared 
+   to one chosen as reference. 
    
    Notes
    -----
@@ -7498,6 +7514,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       wave_shifts=[0,0,..], use interactive=F
    ** not yet implemented:  selection on flags using use-flags 
    '''
+   import os, sys
    try:
       from astropy.io import fits as pyfits
    except:   
@@ -7511,15 +7528,29 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    # first create the wave_shifts and exclude_wave lists; then call routine again to 
    # create output file (or if None, return result)
    
+   if outfile == None: 
+      outfile = 'sumpha.txt'
+      returnout = True
+   
    nfiles = len(phafiles)
-   # assume phafiles are all valid paths
+   
+   # check  phafiles are all valid paths
+   for phafile in phafiles:
+      if not os.access(phafile,os.F_OK):
+         raise IOError("input file : %s not found \n"%(phafile))
+	 
+   # check wave_shifts and exclude_wave are lists
+   if (type(wave_shifts) != list) | (type(exclude_wave) != list):
+      raise IOError("parameters wave_list and exclude_wave must be a list")	 
+
    if chatter > 2:
-      print " INPUT ============================================================================="
-      print "sum_PHAspectra(\nphafiles;%s,\nwave_shifts=%s,\nexclude_wave=%s,\nignore_flags=%s\n" %(
-           phafiles,wave_shifts,exclude_wave,ignore_flags)
-      print "interactive=%s, outfile=%s, \nfigno=%s, chatter=%i, clobber=%s)\n" % (
-           interactive,outfile,figno,chatter,clobber)
-      print "===================================================================================="
+      sys.stderr.write(" INPUT =============================================================================\n")
+      sys.stderr.write("sum_PHAspectra(\nphafiles;%s,\nwave_shifts=%s,\nexclude_wave=%s,\nignore_flags=%s\n" %(
+           phafiles,wave_shifts,exclude_wave,ignore_flags))
+      sys.stderr.write("interactive=%s, outfile=%s, \nfigno=%s, chatter=%i, clobber=%s)\n" % (
+           interactive,outfile,figno,chatter,clobber) )
+      sys.stderr.write("====================================================================================\n")
+      
    exclude_wave_copy = copy.deepcopy(exclude_wave)  
 
    if (interactive == False) & (len(wave_shifts) == nfiles) & (len(exclude_wave) == nfiles):
@@ -7533,10 +7564,8 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
          f.append( pyfits.open(fx) )
       for fx in f:	 
 	 q = np.isfinite(fx[2].data['flux'])
-	 w1 = np.min(fx[2].data['lambda'][q])
-	 w2 = np.max(fx[2].data['lambda'][q])
-	 wmin = np.min([wmin, w1] ) 
-	 wmax = np.max([wmax, w2] )
+	 wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
+	 wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
       if chatter > 1: 
 	    print 'wav min ',wmin
 	    print 'wav max ',wmax
@@ -7632,37 +7661,37 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       	 	 
       for fx in f:		# cleanup
          fx.close()
- 
-      if outfile == None:
-         return D 
-      else: 
-         if chatter > 1: print "writing output to file: ",outfile
+        
+      if chatter > 1: print "writing output to file: ",outfile
          #if not clobber:
 	    # TBD test presence outfile first
 	    
-         fout = open(outfile,'w')
-	 fout.write("#merged fluxes from the following files\n")
-	 for i in range(nfiles): 	      
+      fout = open(outfile,'w')
+      fout.write("#merged fluxes from the following files\n")
+      for i in range(nfiles): 	      
 	    fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
-	 fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
+      fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
 	    +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
 	    +"#          flux error (mean noise), number of data summed, sector\n")
-	 if chatter > 4: 
+      if chatter > 4: 
 	    print "len arrays : %i\nlen (q) : %i"%(nw,len(q[0]))   
-	 for i in range(len(q[0])):
+      for i in range(len(q[0])):
 	    if np.isfinite(wf[q][i]): 
                fout.write( ("%8.2f %12.5e %12.5e %12.5e %12.5e %12.5e %4i %3i\n") % \
 	            (wave[q][i],wf[q][i],wvar[q][i],
 		     mf[q][i],svar[q][i],serr[q][i],
 		     nsummed[q][i],sector[q][i]))
-         fout.close()		       
+      fout.close()		       
+      
+      if returnout:
+         return D 
 	 
-   else:
+   else:  # interactive == True OR (len(wave_shifts) == nfiles) OR (len(exclude_wave) == nfiles)
       # build exclude_wave from data quality ? 
       if len(wave_shifts)  != nfiles: wave_shifts = []
       if len(exclude_wave) != nfiles: exclude_wave = []
       if not interactive:
-         if chatter > 1: print "Determine valid ranges for each spectrum; determine shifts"
+         if chatter > 1: print "use passed valid ranges for each spectrum; and given shifts"
 	 exwave = []
          for i in range(nfiles):
 	    if len(wave_shifts)  != nfiles: wave_shifts.append(0)
@@ -7708,10 +7737,16 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	    interactive=False, 
 	    outfile=outfile, figno=figno, 
 	    chatter=chatter, clobber=clobber)
-		 	
+	          		 	
       else:    # interactively adjust wavelength shifts and clipping ranges
+      
          # first flag the bad ranges for each spectrum
          if chatter > 1: print "Determine valid ranges for each spectrum; determine shifts"
+	 
+	 if (len(exclude_wave) != nfiles):
+	    exclude_wave = []
+	    for i in range(nfiles): exclude_wave.append([])
+	 
          for i in range(nfiles):
 	    if chatter > 1: 
 	       print "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
@@ -7730,12 +7765,14 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	       do_COI = False  
 	    q = np.isfinite(F)
 
-	    if figno != None: plt.figure(figno[0])
-	    plt.clf()
+	    if figno != None: fig=plt.figure(figno[0])
+	    fig.clf()
 	    OK = True
 	    
 	    excl_ = exclude_wave[i]
-	    if len(excl_) != 0: print "exclusions passed by argument for file %s are: %s"%(phafiles[i],excl_)
+	    if len(excl_) != 0: 
+	       sys.stderr.write( "exclusions passed by argument for file %s are: %s\n"%
+	       (phafiles[i],excl_) )
             if (not ignore_flags) & (len(use_flags) > 1) : 
                 quality_range = quality_flags_to_ranges(quality)
                 for flg in use_flags:
@@ -7744,36 +7781,41 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 		      for pixes in pixranges:
 			  waverange=W[pixes]
       	                  excl_.append(list(waverange))
-		print "exclusions including those from selected quality flags for file %s are: %s"%(phafiles[i],excl_)      
+		sys.stderr.write(
+		"exclusions including those from selected quality flags for file %s are: %s\n"%
+		(phafiles[i],excl_))      
 
-	    if len(exclude_wave) == nfiles:
-	       print "wavelength exclusions for this file are: ",excl_
+	    if len(excl_) > 0:
+	       sys.stdout.write( "wavelength exclusions for this file are: %s\n"%(excl_))
      	       ans = raw_input(" change this ? (y/N) : ")
 	       if ans.upper()[0] == 'Y' :  OK = True
 	       else: OK = False
+	    else: OK = True   
          
-            if chatter > 1: print "update exclude wave OK = ",OK	       
+            if chatter > 1: sys.stderr.write("update wavelength exclusions\n")	       
 	    nix1 = 0
 	    while OK:     # update the wavelength exclusions
 	       try:
 	          nix1 += 1
 		  OK = nix1 < 10
-	          excl = []
+	          excl = []  # note different from excl_
 		  #   consider adding an image panel (resample image on wavelength scale)
 		  #
-		  plt.clf()
-	          plt.subplot(2,1,1)
-	          plt.fill_between(W[q],F[q]-E[q],F[q]+E[q],color='y',alpha=0.4, )
-	          plt.plot(W[q],F[q],label='current spectrum + error' ) 
-	          plt.title(phafiles[i]+' FLAGGING BAD PARTS ')
-		  plt.legend(loc=0)
-		  if len(ylim) == 2: plt.ylim=ylim
-		  plt.xlabel('wavelength in $\AA$')
-	          plt.subplot(2,1,2)
-	          plt.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
-	          if do_COI: plt.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
-		  plt.legend(loc=0)
-		  plt.xlabel('wavelength in $\AA$')
+		  fig.clf()
+	          ax1 = fig.add_subplot(2,1,1)
+	          ax1.fill_between(W[q],F[q]-E[q],F[q]+E[q],color='y',alpha=0.4,)
+	          ax1.plot(W[q],F[q],label='current spectrum + error' ) 
+	          ax1.set_title(phafiles[i]+' FLAGGING BAD PARTS ')
+		  ax1.legend(loc=0)
+		  ax1.set_ylim(ylim)
+		  ax1.set_xlabel('wavelength in $\AA$')
+		  
+	          ax2 = fig.add_subplot(2,1,2)
+	          ax2.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
+	          if do_COI: ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
+		  ax2.legend(loc=0)
+		  ax2.set_xlabel('wavelength in $\AA$')
+		  
 	       	  
 		  EXCL = True
 		  nix0 = 0
@@ -7789,21 +7831,26 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 			if len(lans) != 2: 
 			   print "input either the range like: 20,30  or: [20,30] "
 			   continue
-		        excl.append(lans)
-		  excl_.append( excl )
+		        excl_.append(lans)	
 		  OK = False
 	       except:
 	          print "problem encountered with the selection of exclusion regions"
 	          print "try again"
-	         	  
+	    exclude_wave[i] = excl_
+	    
+         if chatter > 0: 
+	     sys.stderr.write("new exclusions are %s\n"%(exclude_wave))
+	            	  
          # get wavelength shifts for each spectrum
 	    # if already passed as argument:  ?
-	 
+	 sys.stdout.write(" number  filename \n")
 	 for i in range(nfiles):
-	    print " number  filename "
-	    print " %2i --- %s\n" % (i,phafiles[i])
+	    sys.stdout.write(" %2i --- %s\n" % (i,phafiles[i]))
 	 try:   
-	    fselect = input(" give the number of the file to use as reference, or 0 : ")	  
+	    fselect = input(" give the number of the file to use as reference, or 0 : ")
+	    if (fselect < 0) | (fselect >= nfiles):
+	       sys.stderr.write("Error in file number, assuming 0\n")
+	       fselect=0	  
 	    ref = pyfits.open(phafiles[fselect])   
          except: 
 	    fselect = 0
@@ -7812,13 +7859,21 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	 refF = ref[2].data['flux']
 	 refE = ref[2].data['fluxerr']
 	 refexcl = exclude_wave[fselect]   
-	 #q = np.ones(len(refW),dtype=bool)
-	 q = np.isfinite(refF) & (refW > 1600.)
-	 for ex in refexcl:
-            q[ (refW > ex[0]) & (refW < ex[1]) ] = False
+
+	 wheelpos = ref[1].header['wheelpos']
+         if wheelpos < 500:
+     	    q = np.isfinite(refF) & (refW > 1700.) & (refW < 5400)
+	 else:   
+     	    q = np.isfinite(refF) & (refW > 2850.) & (refW < 6600)
+	 if len(refexcl) > 0:   
+	    if chatter > 0: print "refexcl:",refexcl
+  	    for ex in refexcl:
+               q[ (refW > ex[0]) & (refW < ex[1]) ] = False
 
 	 if figno != None: 
-	    if len(figno) > 1: plt.figure(figno[1]) 
+	    if len(figno) > 1: fig1=plt.figure(figno[1]) 
+	    else: fig1 = plt.figure(figno[0])
+	 else: fig1 = plot.figure()      
 	 for i in range(nfiles):
 	    if i == fselect:
 	       wave_shifts.append( 0 )
@@ -7828,27 +7883,36 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 	       F = f[2].data['flux']
 	       E = f[2].data['fluxerr']
 	       excl = exclude_wave[i]
-	       #p = np.ones(len(W),dtype=bool)
-	       p = np.isfinite(F) & (W > 1600.)
-	       for ex in excl:
-	          p[ (W > ex[0]) & (W < ex[1]) ] = False
-
+	       print "lengths W,F:",len(W),len(F)
+               if wheelpos < 500:
+     	          p = np.isfinite(F) & (W > 1700.) & (W < 5400)
+	       else:   
+     	          p = np.isfinite(F) & (W > 2850.) & (W < 6600)
+	       if len(excl) > 0:  
+	          if chatter > 1: print "excl:",excl
+	          for ex in excl:
+		     if len(ex) == 2:
+  	                p[ (W > ex[0]) & (W < ex[1]) ] = False
+               if chatter > 0:
+	           print "length p ",len(p)
+	           sys.stderr.write("logical array p has  %s  good values\n"%( p.sum() ))
 	       OK = True
 	       sh = 0
 	       while OK: 
-		  plt.clf()
-	          plt.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference') 	  
-	          plt.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.2) 
+		  fig1.clf()
+		  ax = fig1.add_subplot(111)
+	          ax.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference') 	  
+	          ax.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.1) 
 		  
-	          plt.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift') 	  
-	          plt.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.2)
+	          ax.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift') 	  
+	          ax.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.1)
 	          
-		  plt.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum') 	  		  
+		  ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum') 	  		  
 		  
-		  plt.title('file %i applied shift of %e' % (i,sh))
-		  plt.xlabel('wavelength $\AA$')
-		  if len(ylim) == 2: plt.ylim=ylim
-		  plt.legend(loc=0)
+		  ax.set_title('file %i applied shift of %e' % (i,sh))
+		  ax.set_xlabel('wavelength $\AA$')
+		  if len(ylim) == 2: ax.set_ylim(ylim)
+		  ax.legend(loc=0)
 		  try:
   		     sh1 = input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : ")  
                      if np.abs(sh1) < 1e-3:
@@ -7858,21 +7922,14 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
 		     print "input problem. No shift applied"
 		     sh1 = 0
 		  
+		  if chatter > 0: sys.stderr.write("current wave_shifts = %s \n"%(wave_shifts))
 		  if not OK: print 'should have gone to next file'      
 	          sh += sh1
 		  if chatter > 1: print "total shift = ",sh," A" 
-		  #plt.clf()
-	          #plt.plot(refW[q],refF[q],'k',ls='steps',label='wavelength reference') 	  
-	          #plt.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.2) 
-	          #plt.plot(W[p],F[p],'m',alpha=0.5,ls='steps',label='original unshifted spectrum') 	  		  
-	          #plt.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift') 	  
-	          #plt.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.2)
-		  #plt.title('file %i applied shift of %e' % (i,sh))
-		  #plt.legend(loc=0)
-		  #plt.xlabel('wavelength $\AA$')
 	 if chatter > 1: 
 	    print "selected shifts = ",wave_shifts
-	    print "selected exclude wavelengths = ",exclude_wave     
+	    print "selected exclude wavelengths = ",exclude_wave    
+	    print "computing weighted average of spectrum" 
 	 #
 	 #  TBD use mean of shifts instead of reference spectrum ?
 	 #       
