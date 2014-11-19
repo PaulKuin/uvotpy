@@ -348,8 +348,12 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
 	# replot 
 	spectrum.set_color('c')
         f = fits.open(file)
-        w = f[extname].data['lambda']
-        flx = f[extname].data['flux']
+	if extname == 'SUMMED_SPECTRUM':
+            w = f[extname].data['wave']
+            flx = f[extname].data['flux']
+        else:
+            w = f[extname].data['lambda']
+            flx = f[extname].data['flux']
         spectrum, = ax.plot(w, flx,color='darkblue',label='fixed spectrum' )
         ax.set_title(filename) 
 	ax.legend()
