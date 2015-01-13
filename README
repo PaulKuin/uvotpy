@@ -7,22 +7,29 @@ and flux calibrated spectra from Swift Ultraviolet and
 Optical Grism images. The software has been tested on 
 Mac and Linux.
 
+The Swift UVOT grism calibration has been described in 
+ http://arxiv.org/abs/1501.02433
+
 For detailed documentation, visit the grism calibration 
 website available from: 
 
    http://www.mssl.ucl.ac.uk/www_astro/uvot/ 
 
-In the initial release of the software, the grism 
+In the current release of the software, the grism 
 calibration files are included in the package, but 
 require the definition of en environment variable, 
 
 setenv UVOTPY <installation directory>
 
-so that $UVOTPY/calfiles/ contains the calibration files.
+so that $UVOTPY/calfiles/ which contains the calibration 
+files can be found by the software.
 
 This software is subject to a 3-clause BSD licence.  
 
 Please reference this code as follows:
 
 Kuin, N.P.M., 2014, Astrophysics Source Code Library, record ascl:1410.004.
+
+
+
 
