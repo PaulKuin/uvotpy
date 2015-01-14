@@ -33,7 +33,7 @@
 #
 
 from __future__ import division
-__version__ = "1.5.7"
+__version__ = "1.5.8"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -56,6 +56,8 @@ __version__ = "1.5.7"
 # version 1.5.6 June 3, 2014, use fixed coi-area width
 # version 1.5.7 July 23, 2014, use coi-box and factor as calibrated
 #               changed rate2flux api to pass boolean for points not too bright 
+# version 1.5.8 November 2014, updated fits "new_table" to "BinTableHDU.from_columns" This breaks probably 
+#               for the old pyfits and older astropy versions, but "new_table" will be discontinued soon.
 
 
 try:
@@ -734,7 +736,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
       col16 = fits.Column(name='SPRS_ERR',format='E',array=specresp_err[ix],unit='cm**2' )
       cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
       
-   tbhdu1 = fits.new_table(cols1)
+   tbhdu1 = fits.BinTableHDU.from_columns(cols1)
    tbhdu1.header.update('EXTNAME',EXTNAME,'Name of this binary table extension')
    tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
    tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
@@ -1158,11 +1160,17 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,arf=No
    except:
      import pyfits as fits
    import os 
+   import sys
    import numpy as np
    from scipy import interpolate
 
    grismname = "UGRISM"
    if wheelpos > 500: grismname  = "VGRISM"
+   if (anchor != None):
+      if (len(anchor) != 2):
+         sys.stderr.write("input parameter named anchor is not of length 2")
+      elif type(anchor) == str: 
+         anchor = np.array(anchor, dtype=float)	 
 
    check_extension = False
    # here the "latest" version of the calibration files has been hardcoded    
@@ -2290,7 +2298,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       #col14 = fits.Column(name='SYS_ERR',format='E',array=spectrum_first[2],unit='counts/s')
       col15 = fits.Column(name='QUALITY ',format='I',array=spectrum_first[3] )
       cols1 = fits.ColDefs([col11,col12,col13,col15])
-   tbhdu1 = fits.new_table(cols1)
+   tbhdu1 = fits.BinTableHDU.from_columns(cols1)
    if fileversion == 1:
       tbhdu1.header.update('comment','COUNTS are observed, uncorrected counts')
    elif fileversion == 2:
@@ -2454,7 +2462,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
               cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
 	          col28,col29,col29A,col29B,col24A,col24B])
       
-   tbhdu2 = fits.new_table(cols2)
+   tbhdu2 = fits.BinTableHDU.from_columns(cols2)
    if fileversion == 1:
        tbhdu2.header.update('HISTORY','coi-loss, aperture - corrected flux and rates')
    elif fileversion == 2: 
@@ -2597,7 +2605,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
         col23 = fits.Column(name='STAT_ERR',format='E',array=rate_err,unit='COUNTS/S')
         col24 = fits.Column(name='QUALITY ',format='I',array=qual2 )
         cols1 = fits.ColDefs([col21,col22,col23,col24])
-     tbhdu1 = fits.new_table(cols1)
+     tbhdu1 = fits.BinTableHDU.from_columns(cols1)
      try:
         tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
      except:
@@ -2724,7 +2732,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        col14 = fits.Column(name='QUALITY ',format='I',array=bgquality )
        col15 = fits.Column(name='EXPOSURE',format='E',array=expospec1 ,unit='s' )
        cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
-       tbhdu1 = fits.new_table(cols1)
+       tbhdu1 = fits.BinTableHDU.from_columns(cols1)
        try:
            tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
        except:
@@ -2844,7 +2852,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           col14 = fits.Column(name='QUALITY ',format='I',array=bgquality   )
           col15 = fits.Column(name='EXPOSURE',format='E',array=expospec2 ,unit='s' )
           cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
-          tbhdu1 = fits.new_table(cols1)
+          tbhdu1 = fits.BinTableHDU.from_columns(cols1)
 	  try:
               tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
 	  except:
@@ -3424,8 +3432,10 @@ def make_rmf(phafile,rmffile=None,clobber=False,chatter=1):
     
     Notes
     -----
+    The response file can be used with the PHA file (SPECTRUM extension)
+    to analyse the spectrum using SPEX or XSPEC. 
     
-        
+    This is inappropriate for summed spectra made using sum_PHAspectra.     
     """
     import numpy as np
     from astropy.io import fits
@@ -3433,16 +3443,18 @@ def make_rmf(phafile,rmffile=None,clobber=False,chatter=1):
     
     if rmffile == None: rmffile=phafile.split(".pha")[0]+".rmf"
     f = fits.open(phafile)
-    wave = f[2].data['lambda']
-    wheelpos = f[1].header['wheelpos']
-    hdr = f[1].header
-    disp = uvotmisc.get_dispersion_from_header(hdr, order=1)
-    hist = hdr['history']
-    anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
-    anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
-    write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
+    try:
+       wave = f['CALSPEC'].data['lambda']
+       wheelpos = f['SPECTRUM'].header['wheelpos']
+       hdr = f['SPECTRUM'].header
+       disp = uvotmisc.get_dispersion_from_header(hdr, order=1)
+       hist = hdr['history']
+       anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
+       anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
+       write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
        chatter=chatter,clobber=clobber)
-       
+    except:
+       raise RuntimeError("The file is not a correct PHA file")   
 
 def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], 
     effarea1=None, effarea2=None, chatter=1, clobber=False  ):
@@ -3508,7 +3520,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    
    # get the effective area for the grism mode, anchor position and order at each wavelength
    if effarea1 != None:
-      if len(effarea1 == 2):
+      if len(effarea1) == 2:
           hdu, fnorm = effarea1          
           w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
 	  fnorm = fnorm(w)    
@@ -3672,7 +3684,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    col15 = fits.Column(name='N_CHAN',format='1I',array=n_chan,unit='None' )
    col16 = fits.Column(name='MATRIX',format='PE(NN)',array=matrix,unit='cm**2' )
    cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
-   tbhdu1 = fits.new_table(cols1)    
+   tbhdu1 = fits.BinTableHDU.from_columns(cols1)    
    tbhdu1.header.update('EXTNAME','MATRIX','Name of this binary table extension')
    tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
    tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
@@ -3698,7 +3710,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    col22 = fits.Column(name='E_MIN',format='E',array=energy_lo,unit='keV')
    col23 = fits.Column(name='E_MAX',format='E',array=energy_hi,unit='keV')
    cols2 = fits.ColDefs([col21,col22,col23])
-   tbhdu2 = fits.new_table(cols2)    
+   tbhdu2 = fits.BinTableHDU.from_columns(cols2)    
    tbhdu2.header.update('EXTNAME','EBOUNDS','Name of this binary table extension')
    tbhdu2.header.update('TELESCOP','Swift','Telescope (mission) name')
    tbhdu2.header.update('INSTRUME','UVOTA','Instrument name')
