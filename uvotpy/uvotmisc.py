@@ -624,7 +624,7 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    import numpy as np
    if chatter > 1: print year, type(year), month, type(month), day,type(day), hour,type(hour), minute, type(minute), second, type(second), millisecond, type(millisecond)
    swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
-   if type(month) == string:
+   if type(month) == str:
       defmonths={'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12} 
       imon = defmonths[month.upper()]   
       if chatter > 1: print imon, type(imon)
