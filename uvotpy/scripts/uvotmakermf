@@ -1,0 +1,142 @@
+#!/sciencesoft/Ureka/variants/common/bin/python
+# -*- coding: iso-8859-15 -*-
+#
+# This software was written by N.P.M. Kuin (Paul Kuin) 
+# Copyright N.P.M. Kuin 
+# All rights reserved
+# This software is licenced under a 3-clause BSD style license
+# 
+#Redistribution and use in source and binary forms, with or without 
+#modification, are permitted provided that the following conditions are met:
+#
+#Redistributions of source code must retain the above copyright notice, 
+#this list of conditions and the following disclaimer.
+#
+#Redistributions in binary form must reproduce the above copyright notice, 
+#this list of conditions and the following disclaimer in the documentation 
+#and/or other materials provided with the distribution.
+#
+#Neither the name of the University College London nor the names 
+#of the code contributors may be used to endorse or promote products 
+#derived from this software without specific prior written permission.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+#THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+#PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+#CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+#EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+#PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+#OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+#WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+#OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+#ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+__version__ = '0.1 20150127' 
+
+'''
+.. _uvotmakermf:
+
+Create an RMF file to go with the PHA file. 
+===========================================
+
+This is part of the UVOTPY package.
+
+http://github/PaulKuin/uvotpy
+
+'''
+
+import sys
+#import re
+#import warnings
+import optparse
+#import numpy as np
+#import pylab as plt
+import datetime
+#import os
+
+status = -1
+
+try:
+   from uvotpy import uvotio
+   status = 0
+except:    
+   import uvotio
+   status = 0
+            
+if __name__ == '__main__':
+   #in case of called from the OS
+
+   if status == 0:
+      usage = "usage: %prog [options] <phafile>"
+
+      epilog = '''Given the first order PHA spectral file (output from uvotgetspec.getSpec(), \n
+      the response matrix file (RMF) is computed for that spectrum. The rmf depends on the 
+      specific wavelength bins in the spectrum.''' 
+
+      parser = optparse.OptionParser(usage=usage,epilog=epilog)
+      
+      parser.add_option("", "--rmffile", dest = "rmffile",
+                  help = "RMF file name (optional) [default: PHA file name with .rmf extension instead of .pha]",
+                  default = None)
+
+      parser.add_option("", "--spectral_order", dest = "spectral_order",
+                  help = "spectral order ( only order = 1 implemented ) [default: 1]",
+                  default = 1)
+
+
+     # parser.add_option("", "--dir", dest = "indir",
+     #             help = "source directory [default: %default]",
+     #             default = './')
+		  
+      parser.add_option("", "--clobber", action="store_true",
+                  dest = "clobber",
+                  help = "overwrite output file [default: %default]",
+                  default = False)
+		  
+      parser.add_option("", "--chatter", dest = "chatter",
+                  help = "verbosity [default: %default]",
+                  default = 0)
+		  
+   (options, args) = parser.parse_args()
+
+   #print "options",options
+   #print "args",args
+
+   phafile = args[0]
+
+   if (len(sys.argv) == 1):
+      # no arguments given 
+      program_name = sys.argv[0]
+      print program_name," no phafile found"
+      status = 1
+      parser.print_help()
+
+
+   if (len(args) > 1):
+       #        parser.print_help()
+       parser.error("Too many argument(s) found on command line: "+str(args))
+
+   if options.chatter > 0:
+       print "uvotio.make_rmf(",phafile,",rmffile=",options.rmffile,\
+       ",spectral_order=",options.spectral_order,",clobber=",options.clobber,\
+       ",chatter=",options.chatter,")"
+
+   uvotio.make_rmf(phafile,
+                   rmffile=options.rmffile,
+                   spectral_order=options.spectral_order,
+                   clobber=options.clobber,
+                   chatter=options.chatter)
+     
+else:
+    
+   print "uvotmakermf-"+__version__+"   script cannot be called from within (i)Python"
+   print "use instead uvotpy.uvotio.make_rmf()"
+   
+if options.chatter > 0:   
+    today_ = datetime.date.today()   
+    datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
+    print today_
+    print datestring
+    print "(c) NPMK 2013 - Mullard Space Science Lab, University College London"

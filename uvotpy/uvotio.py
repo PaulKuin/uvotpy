@@ -58,7 +58,7 @@ __version__ = "1.5.8"
 #               changed rate2flux api to pass boolean for points not too bright 
 # version 1.5.8 November 2014, updated fits "new_table" to "BinTableHDU.from_columns" This breaks probably 
 #               for the old pyfits and older astropy versions, but "new_table" will be discontinued soon.
-
+#               Jan 2015 fixed a typo (bracket) in write_rmf_file
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -3418,7 +3418,7 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    hdulist.flush()
    hdulist.close()
 
-def make_rmf(phafile,rmffile=None,clobber=False,chatter=1):
+def make_rmf(phafile,rmffile=None,spectral_order=1,clobber=False,chatter=1):
     """
     Make the rmf file after writing the extracted spectrum file.
     
@@ -3443,11 +3443,19 @@ def make_rmf(phafile,rmffile=None,clobber=False,chatter=1):
     
     if rmffile == None: rmffile=phafile.split(".pha")[0]+".rmf"
     f = fits.open(phafile)
+    if len(f) < 4: 
+       raise IOError("The pha input file seems not correct.\n"+
+       "The input file needs to be that for order 1, even to compute the rmf for order 2\n")
     try:
-       wave = f['CALSPEC'].data['lambda']
+       if spectral_order == 1:
+           wave = f['CALSPEC'].data['lambda']
+       elif spectral_order == 2:
+           wave = f['CALSPEC'].data['lambda2']
+           print "THE RMF for the second order are DUMMY values taken from first order"
+       else: raise IOError("Illegal value for spectral_order")    
        wheelpos = f['SPECTRUM'].header['wheelpos']
        hdr = f['SPECTRUM'].header
-       disp = uvotmisc.get_dispersion_from_header(hdr, order=1)
+       disp = uvotmisc.get_dispersion_from_header(hdr, order=spectral_order)
        hist = hdr['history']
        anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
        anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
@@ -3674,8 +3682,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
 
    hdu = fits.PrimaryHDU()
    hdulist=fits.HDUList([hdu])
-   hdulist[0].header.update('TELESCOP','SWIFT   ','Telescope (mission) name')                       
-   hdulist[0].header.update('INSTRUME','UVOTA   ','Instrument Name')   
+   hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name')                       
+   hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name')   
     
    col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo,unit='KeV')
    col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi,unit='KeV') 
@@ -3685,24 +3693,24 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    col16 = fits.Column(name='MATRIX',format='PE(NN)',array=matrix,unit='cm**2' )
    cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
    tbhdu1 = fits.BinTableHDU.from_columns(cols1)    
-   tbhdu1.header.update('EXTNAME','MATRIX','Name of this binary table extension')
-   tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
-   tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
-   tbhdu1.header.update('FILTER',filtername)
-   tbhdu1.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
-   tbhdu1.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
-   tbhdu1.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
-   tbhdu1.header.update('HDUCLAS2','RSP_MATRIX','contains response matrix')   
-   tbhdu1.header.update('HDUCLAS3','FULL','type of stored matrix')   
-   tbhdu1.header.update('HDUVERS','1.3.0','version of the file format')      
-   tbhdu1.header.update('ORIGIN','MSSL/UCL','source of FITS file')
-   tbhdu1.header.update('TLMIN4', 1, 'First legal channel number')                           
-   tbhdu1.header.update('TLMAX4',NN, 'Last legal channel number')                           
-   tbhdu1.header.update('NUMGRP',NN, 'Sum of the N_GRP column')                           
-   tbhdu1.header.update('NUMELT',NN, 'Sum of the N_CHAN column')                           
-   tbhdu1.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
-   tbhdu1.header.update('LO_THRES',1.0E-10, 'Minimum value in MATRIX column to apply')                           
-   tbhdu1.header.update('DATE',now.isoformat(), 'File creation date') 
+   tbhdu1.header['EXTNAME'] =('MATRIX','Name of this binary table extension')
+   tbhdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
+   tbhdu1.header['INSTRUME']=('UVOTA','Instrument name')
+   tbhdu1.header['FILTER']  =(filtername,'filter name')
+   tbhdu1.header['CHANTYPE']=('PI', 'Type of channels (PHA, PI etc)')
+   tbhdu1.header['HDUCLASS']=('OGIP','format conforms to OGIP standard')
+   tbhdu1.header['HDUCLAS1']=('RESPONSE','RESPONSE DATA')
+   tbhdu1.header['HDUCLAS2']=('RSP_MATRIX','contains response matrix')   
+   tbhdu1.header['HDUCLAS3']=('FULL','type of stored matrix')   
+   tbhdu1.header['HDUVERS'] =('1.3.0','version of the file format')      
+   tbhdu1.header['ORIGIN']  =('MSSL/UCL','source of FITS file')
+   tbhdu1.header['TLMIN4']  =( 1, 'First legal channel number')                           
+   tbhdu1.header['TLMAX4']  =(NN, 'Last legal channel number')                           
+   tbhdu1.header['NUMGRP']  =(NN, 'Sum of the N_GRP column')                           
+   tbhdu1.header['NUMELT']  =(NN, 'Sum of the N_CHAN column')                           
+   tbhdu1.header['DETCHANS']=(NN, 'Number of raw detector channels')                           
+   tbhdu1.header['LO_THRES']=(1.0E-10, 'Minimum value in MATRIX column to apply')                           
+   tbhdu1.header['DATE']    =(now.isoformat(), 'File creation date') 
    #tbhdu1.header['null'] = 0.                          
    hdulist.append(tbhdu1)
    
@@ -3711,18 +3719,18 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    col23 = fits.Column(name='E_MAX',format='E',array=energy_hi,unit='keV')
    cols2 = fits.ColDefs([col21,col22,col23])
    tbhdu2 = fits.BinTableHDU.from_columns(cols2)    
-   tbhdu2.header.update('EXTNAME','EBOUNDS','Name of this binary table extension')
-   tbhdu2.header.update('TELESCOP','Swift','Telescope (mission) name')
-   tbhdu2.header.update('INSTRUME','UVOTA','Instrument name')
-   tbhdu2.header.update('FILTER',filtername)
-   tbhdu2.header.update('CHANTYPE','PI', 'Type of channels (PHA, PI etc)')
-   tbhdu2.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
-   tbhdu2.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
-   tbhdu2.header.update('HDUCLAS2','EBOUNDS','type of stored matrix')   
-   tbhdu2.header.update('HDUVERS','1.2.0','version of the file format')      
-   tbhdu2.header.update('DETCHANS',NN, 'Number of raw detector channels')                           
-   tbhdu2.header.update('TLMIN1', 1, 'First legal channel number')                           
-   tbhdu2.header.update('TLMAX1',NN, 'Last legal channel number')                              
-   tbhdu2.header.update('DATE',now.isoformat(), 'File creation date')                           
+   tbhdu2.header['EXTNAME'] =('EBOUNDS','Name of this binary table extension')
+   tbhdu2.header['TELESCOP']=('Swift','Telescope (mission) name')
+   tbhdu2.header['INSTRUME']=('UVOTA','Instrument name')
+   tbhdu2.header['FILTER']  =(filtername,'filter name')
+   tbhdu2.header['CHANTYPE']=('PI', 'Type of channels (PHA, PI etc)')
+   tbhdu2.header['HDUCLASS']=('OGIP','format conforms to OGIP standard')
+   tbhdu2.header['HDUCLAS1']=('RESPONSE','RESPONSE DATA')
+   tbhdu2.header['HDUCLAS2']=('EBOUNDS','type of stored matrix')   
+   tbhdu2.header['HDUVERS'] =('1.2.0','version of the file format')      
+   tbhdu2.header['DETCHANS']=(NN, 'Number of raw detector channels')                           
+   tbhdu2.header['TLMIN1']  =( 1, 'First legal channel number')                           
+   tbhdu2.header['TLMAX1']  =(NN, 'Last legal channel number')                              
+   tbhdu2.header['DATE']    =(now.isoformat(), 'File creation date')                           
    hdulist.append(tbhdu2)     
    hdulist.writeto(rmffilename,clobber=clobber)
