@@ -341,7 +341,8 @@ def angstrom2kev(lamb,unit='angstrom'):
    -------  
    The photon energy in keV.
    """
-   return  12.3984191/lamb
+   import numpy 
+   return  12.3984191/numpy.asarray(lamb)
 
 
 def kev2angstrom(E,unit='keV'):
@@ -357,7 +358,8 @@ def kev2angstrom(E,unit='keV'):
    -------
    The photon wavelength in angstroms 
    """
-   return  12.3984191/E
+   import numpy
+   return  12.3984191/numpy.asarray(E)
    
 
 def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, twait=40.0):
@@ -3418,7 +3420,9 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    hdulist.flush()
    hdulist.close()
 
-def make_rmf(phafile,rmffile=None,spectral_order=1,clobber=False,chatter=1):
+def make_rmf(phafile,rmffile=None,spectral_order=1,
+    lsfVersion='001', 
+    clobber=False,chatter=1):
     """
     Make the rmf file after writing the extracted spectrum file.
     
@@ -3459,15 +3463,32 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,clobber=False,chatter=1):
        hist = hdr['history']
        anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
        anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
+       if chatter > 2: 
+           print "call write_rmf_file parameters are :"
+           print "rmffile=",rmffile,"  wheelpos=", wheelpos,"  disp=", disp
+           print "lsfVersion=",lsfVersion," anchor=",anchor
+           print "wave : ", wave
        write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
+       lsfVersion=lsfVersion, 
        chatter=chatter,clobber=clobber)
     except:
+       print "ERROR in call write_rmf_file. Trying again ... "
+       write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
+       lsfVersion=lsfVersion, 
+       chatter=chatter,clobber=clobber)
        raise RuntimeError("The file is not a correct PHA file")   
 
-def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000], 
-    effarea1=None, effarea2=None, chatter=1, clobber=False  ):
+   
+   
+def write_rmf_file (rmffilename, wave, wheelpos, disp, 
+    flux = None,
+    anchor=[1000,1000], # only that one is currently available 
+    spectralorder = 1,  # not possible for second order yet
+    effarea1=None, effarea2=None, 
+    lsfVersion='001', 
+    chatter=1, clobber=False  ):
    '''
-   Write the RMF file for the first order spectrum
+   Write the RMF file for the first order spectrum 
    
    Parameters
    ----------
@@ -3475,7 +3496,11 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
          file name output file
 	 
       wave : ndarray
-         wavelengths of the bins
+         mid-wavelengths of the bins in the spectrum
+         
+      flux : ndarray [default None]
+         when flux values are given, invalid flux values 
+         at start and end are used to clip the rmf 
 	 
       wheelpos : int
          filter wheel position 	 
@@ -3483,12 +3508,10 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
       disp : ndarray
          dispersion coefficients 
       
-      kwargs : dict
-      ------
-       - **chatter** : int
+      chatter : int
          verbosity
 	 
-       - **clobber** : bool
+      clobber : bool
          if true overwrite output file if it already exists
 	 
    Returns
@@ -3497,12 +3520,28 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    
    Notes
    -----
+   
+   The count rate has been corrected for coincidence loss (version 2 SPECTRUM extension).
+   The spectral response varies in the clocked grisms, is nearly constant in the 
+   nominal grisms. Therefore, in the clocked grisms, the rmf file needs 
+   to be created specifically for the specific spectrum. 
+   
+   The rmf files have also energy bins corresponding to the wavelength 
+   bins in the spectrum. These also show some variation from spectrum to
+   spectrum.       
+         
    The line spread function from the uv grism at default position is
    currently used for all computations. Since the RMF file encodes also
    the effective area, this version presumes given anchor position. 
    
    2014-02-27 code cleaned up. Speed depends on number of points
-   
+   2015-02-02 versioning lsf introduced; changed instrument FWHM values
+   2015-02-04 error found which affects the longer wavelengths (> 3500A)
+   2015-02-04 verified the LSF with a calibration spectrum, which shows 
+              instrumental broadening of 10+-1 Angstrom and at long 
+              wavelengths (6560) the same broadening predicted by the 
+              Zemax optical model. 
+              
    ''' 
 #
 #   *** needs to be sampled better to properly to it speed up ***	 		
@@ -3519,11 +3558,21 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    from scipy import interpolate
    import datetime
    
-   version = '140227'
+   version = '150202'
+   
+   if not ((lsfVersion == '001') | (lsfVersion == '002') | (lsfVersion == '003') ):
+      raise IOError("please update the calfiles directory with new lsf file.")
+   
    now = datetime.date.today()
    datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
    if chatter > 0: print "computing RMF file. This takes ~40 sec or more on older machines"
    
+   # telescope and image intensifier broadening   
+   if wheelpos < 500:
+      instrument_fwhm = 2.7 # Angstroms in units of pix
+   else:    
+      instrument_fwhm = 5.8 # Angstroms in units of pix
+
    spectralorder = 1  # not possible for second order yet
    
    # get the effective area for the grism mode, anchor position and order at each wavelength
@@ -3540,139 +3589,127 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
        hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,spectralorder=spectralorder,chatter=chatter)
        w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])   
        fnorm = fnorm(w)  
+       
    r = hdu.data['SPECRESP']
    ii = range(len(w)-1,-1,-1)
    w = w[ii]
    r = r[ii]
    r = r * fnorm
    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=0.0 )
-   resp = specrespfunc(wave) 
-   hdu = ""           # cleanup
-   fnorm = ""
-   specrespfunc = ""
    
-   NN = len(wave)  # number of channels
+   # exclude channels that have bad data
+   if flux != None:
+       wave = wave[(np.isfinite(flux) & (flux >= 0.))]            
+                   
+   NN = len(wave)  # number of channels in spectrum (backward since we will use energy)
    if NN < 20:
-      print "write_rmf_file: not enough valid data points. No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
+      print "write_rmf_file: not enough valid data points.\n"+\
+      " No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
       return
    
-   #iNL = range(0,5) 
-   #for k in range(8,NN-9,NN/40): iNL.append(k) # index of sample of channels (every hundred Angstrom)
-   #for k in range(NN-6,NN,1): iNL.append(k)
-   #iNL = np.array(iNL,dtype=int)
-   iNL = np.arange(NN,dtype=int)
+   # edit here to further restrict the number of channels, ie, every 5th or so.
+   iNL = np.arange(0,NN,1,dtype=int)  # index energy array spectrum
    NL = len(iNL)   # number of sample channels
    
    aa = uvotgetspec.pix_from_wave(disp, wave, spectralorder=spectralorder)  # slow !
    tck_Cinv = interpolate.splrep(wave,aa,)  # B-spline coefficients to look up pixel position (wave)
    
    channel = range(NN)
-   aarev   = range(NN-1,-1,-1)
-   channel = np.array(channel) + 1
-   # wavelengths bounding a pixel (no relation to wave spacing!, there can be gaps or overlap)
+   aarev   = range(NN-1,-1,-1)  # reverse channel numbers (not 1-offset)
+   channel = np.array(channel) + 1  # start channel numbers with 1 
+
+   # spectral response as function of energy
+   resp = specrespfunc(wave[aarev]) 
+   #print "spectral response = ",resp
+
+   # wavelengths bounding a pixel 
    wave_lo = np.polyval(disp,aa-0.5)  # increasing
-   wave_hi = np.polyval(disp,aa+0.5)  # increasing
+   wave_hi = np.polyval(disp,aa+0.5)
+   
+   # corresponding energy channels
    energy_lo = uvotio.angstrom2kev(wave_hi[aarev]) # increasing energy channels (index reverse)
    energy_hi = uvotio.angstrom2kev(wave_lo[aarev])
-   energy_mid = uvotio.angstrom2kev(wave[aarev])
+   #energy_mid = uvotio.angstrom2kev(wave[aarev])
+   e_mid = 0.5*(energy_lo+energy_hi)  # increasing energy 
+
+   # channel (integer) pixel positions (spectrum)
+   d_lo = np.array(interpolate.splev(wave_lo, tck_Cinv,) + 0.5,dtype=int)
+   d_hi = np.array(interpolate.splev(wave_hi, tck_Cinv,) + 0.5,dtype=int)
+   d_mid = np.array(interpolate.splev(wave[aarev], tck_Cinv,) + 0.5,dtype=int) # increasing energy
    
    # output arrays
    n_grp = np.ones(NN)
    f_chan = np.ones(NN)
    n_chan = np.ones(NN) * NN
    matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
-   
+# chose one representation   
    # low resolution arrays
    _matrix = np.zeros( NL*NN, dtype=float).reshape(NL,NN)
    
-   # assuming first order
+   # (only for original version pre-2015-02-05) instrumental profile gaussian assuming first order
    # second order needs attention: instrument + LSF
-
-   # telescope and image intensifier broadening   
-   if wheelpos < 500:
-      instrument_fwhm = 2.7/0.54 # pix
-   else:    
-      instrument_fwhm = 5.8/0.54 # pix
-   ww = uvotgetspec.singlegaussian(np.arange(-12,12),1.0,0.,instrument_fwhm)
-   ww = ww/ww.sum().flatten()  # normalised gaussian 
-            
-   UVOTPY = os.getenv('UVOTPY')
-   if UVOTPY == '': 
-      raise IOError( 'The UVOTPY environment variable has not been set; aborting RMF generation [write_rmf_file-]'+version)
-
-   lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' )  
-   if wheelpos < 500: 
-      lsfextension = 1
-   else:
-      print "using the LSF model of the UV grism for the Visible grism until such time as it can be incorporated"   
-   lsfchan = lsffile[1].data['channel'][0:15]   # energy value 
-   epix    = lsffile[1].data['epix'][0,:]       # 158 values - offset in half pixels (to be converted to wave(wave))
-   lsfdata = lsffile[1].data['lsf'][:15,:]      # every half pixel a value
-   lsfwav = uvotio.kev2angstrom(lsfchan)
-   lsffile.close()
+   if lsfVersion == '001':
+      ww = uvotgetspec.singlegaussian(np.arange(-12,12),1.0,0.,instrument_fwhm)
+      ww = ww/ww.sum().flatten()  # normalised gaussian 
       
-   e_mid = 0.5*(energy_lo+energy_hi)  # increasing energy 
-
-   d_lo = np.array(interpolate.splev(wave_lo, tck_Cinv,) + 0.5,dtype=int)
-   d_hi = np.array(interpolate.splev(wave_hi, tck_Cinv,) + 0.5,dtype=int)
+   # get the LSF data for selected wavelengths/energies   
+   lsfwav,lsfepix,lsfdata,lsfener = _read_lsf_file(lsfVersion='003',wheelpos=160,)
+                  
+   # provide a spectral response for NL energies 
    
-   for k in range(NL):
-         if (chatter > 0) & (k == (NL/10)*10):  
-    	      print "RMF : ",(NL/10),"% ..."
-         ii = iNL[k]
-         #  find index e in lsfchan and interpolate lsf
-         w = wave[ii]
-         j = lsfwav.searchsorted(w)
-         if j == 0: 
-            lsf = lsfdata[0,:].flatten()
-         elif ((j > 0) & (j < 15) ):
-            e1 = lsfchan[j-1]
- 	    e2 = lsfchan[j]
- 	    frac = (e_mid[k]-e1)/(e2-e1)
-            lsf1 = lsfdata[j-1,:]
-	    lsf2 = lsfdata[j,:]
-	    lsf = ((1-frac) * lsf1 + frac * lsf2).flatten()	 	 
-         else:
-            # j = 15
-	    lsf = lsfdata[14,:].flatten()
+   ##matzero=[] # list of zero LSF rows
 
-         # convolution lsf with instrument_fwhm and multiply with response 
-         lsf_con = convolve(lsf,ww.copy(),)
-	 qpos = (lsf_con != 0.)
+   ##from pylab import figure,plot
+   ##figure(22)
       
+   for k in iNL:   # increasing energy
+              
+         # find the LSF for the current energy channel     
+         lsf = _interpolate_lsf(e_mid[k],lsfener,lsfdata,lsfepix,)
+
+         # convolution lsf with instrument_fwhm 
+         if lsfVersion == '001':
+            print "convolving with instrumental broadening..."
+            lsf = convolve(lsf,ww.copy(),)
+         
+         # lsf should already be normalised normalised to one
          # assign wave to lsf array relative to w at index k in matrix (since on diagonal)   
-         # rescale lsfcon from half-pixels to channels 
+         # rescale lsf from half-pixels (centre is on a boundary) to channels 
 
-         d  = (np.where(qpos)[0]-79)*0.5 + interpolate.splev(w, tck_Cinv,)  
-         #d   = np.arange(-79,79)*0.5 + interpolate.splev(w, tck_Cinv,)
-         wave1 = np.polyval(disp,d)  
-         ener = uvotio.angstrom2kev(wave1)
-         # now each pixel has a wave (wave1), energy(keV) (ener) and lsf_con value 
+         # find the range in pixels around the e_mid pixel at index k
+         pdel = len(lsfepix)/2/2  # one-way difference; half->whole pixels
+         # where to put in matrix row ?
+         qrange = np.arange(
+            np.max([k-pdel,0]),
+            np.min([k+pdel,NN]),
+            1,dtype=int)
+         # skipping by lsfepix twos so that we can add neighboring half-pixel LSF 
+         qpix = np.arange(0,pdel*4,2,dtype=int)
+         
+         ##print "len(qrange)=",len(qrange)
+         ##print "len(qpix)  = ",len(qpix)
+         ##print "check e_mid [k], wave [k]",e_mid[k],"   ",uvotio.kev2angstrom(e_mid[k])
+         ##print "and -............d_mid[k]",d_mid[k]
+         ##print qrange
+         ##print qpix
 
-         # new array to fill 
-         lsfnew   = np.zeros(NN)
-	 ener_ = list(ener)
-	 lsf_con_ = list(lsf_con[qpos])
-	 ener_.reverse()
-	 lsf_con_.reverse()
-	 # now we have ener as an increasing function - if not, the interpolating function fails.
-         inter = interpolate.interp1d(ener_, lsf_con_,bounds_error=False,fill_value=0.0)
-	 
-         for i in range(NN):
-	    lsfnew[i] = np.abs(inter( e_mid[i] )) 
-	 
-	 q = np.isfinite(lsfnew)
-	 qx = np.isnan(lsfnew)
-	 if np.array(qpos,dtype=int).sum() > 0:   
-	    lsfnew_norm = lsfnew[q].sum() 
-	    if (np.isnan(lsfnew_norm)) | (lsfnew_norm <= 0.0): lsfnew_norm = 5.0e9     
-            lsfnew[q] = ( lsfnew[q] / lsfnew_norm) * resp[ii]
-	    if np.array(qx,dtype=int).sum() >0: lsfnew[qx[0]] = 0.	 
-            matrix[NN-k-1] =  lsfnew 
-	 else:
-	    matrix[NN-k-1] =  np.zeros(NN)
+         ##if len(qrange) != len(qpix):
+         ##   print "===> these should be equal to fit into matrix"
+         ##   print "trimming qrange"
+
+         matrixrow   = np.zeros(NN)	 
+         matrixrow[qrange] = lsf[qpix]+lsf[qpix+1]
+	 # now centre is in middle of a channel
+
+         ##print matrixrow 
+         ##print "plotting matrixrow for index k=",k
+         ##plot(matrixrow)
+         ##print "response[k=%i]=%f"%(k,resp[k])
+         matrix[k,:] = matrixrow*resp[k]
+
 
    # remove channels that have zero response
+   #if chatter > 3: print "zero matrix entries [index]:",matzero
 
    # for output
    if wheelpos < 500: 
@@ -3680,10 +3717,13 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    else:
       filtername = "VGRISM"
 
+   if chatter > 0 : print "writing RMF file"
+
    hdu = fits.PrimaryHDU()
    hdulist=fits.HDUList([hdu])
    hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name')                       
-   hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name')   
+   hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name')  
+   hdulist[0].header['COMMENT'] ="revision 2015-02-05" 
     
    col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo,unit='KeV')
    col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi,unit='KeV') 
@@ -3694,7 +3734,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
    tbhdu1 = fits.BinTableHDU.from_columns(cols1)    
    tbhdu1.header['EXTNAME'] =('MATRIX','Name of this binary table extension')
-   tbhdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
+   tbhdu1.header['TELESCOP']=('SWIFT','Telescope (mission) name')
    tbhdu1.header['INSTRUME']=('UVOTA','Instrument name')
    tbhdu1.header['FILTER']  =(filtername,'filter name')
    tbhdu1.header['CHANTYPE']=('PI', 'Type of channels (PHA, PI etc)')
@@ -3720,7 +3760,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    cols2 = fits.ColDefs([col21,col22,col23])
    tbhdu2 = fits.BinTableHDU.from_columns(cols2)    
    tbhdu2.header['EXTNAME'] =('EBOUNDS','Name of this binary table extension')
-   tbhdu2.header['TELESCOP']=('Swift','Telescope (mission) name')
+   tbhdu2.header['TELESCOP']=('SWIFT','Telescope (mission) name')
    tbhdu2.header['INSTRUME']=('UVOTA','Instrument name')
    tbhdu2.header['FILTER']  =(filtername,'filter name')
    tbhdu2.header['CHANTYPE']=('PI', 'Type of channels (PHA, PI etc)')
@@ -3734,3 +3774,91 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp, anchor=[1000,1000],
    tbhdu2.header['DATE']    =(now.isoformat(), 'File creation date')                           
    hdulist.append(tbhdu2)     
    hdulist.writeto(rmffilename,clobber=clobber)
+
+
+
+def _interpolate_lsf(en,lsfener,lsfdata,lsfepix,):
+    """
+    interpolate the LSF data for a different energy 
+    
+    parameters
+    ===========
+    en : float (not a list/array)
+       energy (keV) for wavelength for which LSF is desired
+    lsfwav : numpy array
+       list of wavelengths at which we have LSF
+    lsfepix : numpy array      
+       for given wavelength, give LSF value for a channel 
+       the size of each channel is 0.5 pixel
+    lsfdata : numpy array
+       2-d array. first index relates to lsfwav, second to channels
+       
+    returns
+    =======
+    lsf[channels] for wavelength w
+    
+    method
+    ========
+    the LSF data near w are linearly interpolated for each channel
+        
+    """
+    import numpy as np
+    if  not ((type(en) == float) | (type(en) == np.float32)):  
+        print "en = ",en
+        print "type en = ", type(en)
+        raise IOError("_interpolate_lsf only works on one *en* element at a time")
+    #  find index of the nearest LSF
+    indx = np.argsort(lsfener) # indices  
+    jj = lsfener.searchsorted(en,sorter=indx)
+    j = indx[jj-1] 
+    k = lsfener.shape[0]
+    if j == 0: 
+            lsf = lsfdata[0,:].flatten()
+    elif ((j > 0) & (j < k) ):
+            e1 = lsfener[j-1]
+ 	    e2 = lsfener[j]
+ 	    frac = (en-e1)/(e2-e1)
+            lsf1 = lsfdata[j-1,:].flatten()
+	    lsf2 = lsfdata[j,:].flatten()
+	    lsf = ((1-frac) * lsf1 + frac * lsf2) 	 
+    else:
+	    lsf = lsfdata[k-1,:].flatten()
+            
+    return lsf
+
+
+def _read_lsf_file(lsfVersion='003',wheelpos=160,):
+    """
+
+    """
+    import os
+    from astropy.io import fits
+    import uvotio
+    
+    UVOTPY = os.getenv('UVOTPY')
+    if UVOTPY == '': 
+        raise IOError( 'The UVOTPY environment variable has not been set; aborting RMF generation ')
+
+    if lsfVersion == '001':
+        try:  
+            lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf0160_v001.fit' ) 
+        except:
+            print "WARNING: the oldest zemaxlsf calfile has been read in (= wheelpos 160; version 001)"
+            lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' ) 
+    else:
+          # in later versions the instrumental broadening is already included in the Line Spread Function
+          lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf0160_v'+lsfVersion+'.fit' ) 
+               
+    if wheelpos < 500: 
+        lsfextension = 1
+    else:
+        print "using the LSF model of the UV grism for the Visible grism until such time as it can be incorporated" 
+        
+    lsfener = lsffile[1].data['channel'][0:15]   # energy value (keV)
+    lsfepix = lsffile[1].data['epix'][:,0]         # 156 or 158 values - offset in half pixels (to be converted to wave(wave))
+    lsfdata = lsffile[1].data['lsf'][:15,:]      # every half pixel a value - - to resolve at shortest wavelengths 
+    lsfwav = uvotio.kev2angstrom(lsfener)        # LSF wavelength
+    lsflen = lsfdata.shape[1]
+    lsffile.close()
+   
+    return lsfwav,lsfepix,lsfdata,lsfener
