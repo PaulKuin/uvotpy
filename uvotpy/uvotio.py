@@ -3307,11 +3307,13 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
        -----
        2011-09-02 Initial version NPMK (UCL/MSSL) 
        2011-12-16 Uncorrected error: LSF is inverted in energy scale.
+       2015-02-09 This routine is considered OBSOLETE now
        
        Notes
        -----
        The same algorithm was implemented in the write_rmf_file() routine which does not
-       need the input rmf file produced by the "Ftool" *rmfgen*.
+       need the input rmf file produced by the "Ftool" *rmfgen*. 
+       write_rmf_file was rewritten 2015-02-08
    """
    try:
       from astropy.io import fits
@@ -3439,7 +3441,9 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
     The response file can be used with the PHA file (SPECTRUM extension)
     to analyse the spectrum using SPEX or XSPEC. 
     
-    This is inappropriate for summed spectra made using sum_PHAspectra.     
+    This is inappropriate for summed spectra made using sum_PHAspectra. 
+    but a future revision of that routine is planned to write the 
+    correct extension for this process.     
     """
     import numpy as np
     from astropy.io import fits
@@ -3499,15 +3503,30 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
          mid-wavelengths of the bins in the spectrum
          
       flux : ndarray [default None]
-         when flux values are given, invalid flux values 
-         at start and end are used to clip the rmf 
+         used to omit channels of invalid (NaN) or negative 
+         flux values from the response file   
 	 
       wheelpos : int
          filter wheel position 	 
 	 
       disp : ndarray
          dispersion coefficients 
-      
+         
+      anchor : 2-element list
+         The anchor position is used to select the correct 
+         effective area (important for the clocked grism modes).
+         
+      spectralorder : 1 
+         ** Do not change **
+         Only for the first order the RMF can currently be 
+         computed. 
+         
+      effarea1, effarea2 : hdu, interpolating function
+         do not use unless you know what you're doing
+           
+      lsfVersion : ['001','003']
+         version number of the LSF file to be used.
+         
       chatter : int
          verbosity
 	 
@@ -3541,11 +3560,10 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
               instrumental broadening of 10+-1 Angstrom and at long 
               wavelengths (6560) the same broadening predicted by the 
               Zemax optical model. 
+   2015-02-09 There was a major overhaul of this routine, which is now 
+              much improved.           
               
    ''' 
-#
-#   *** needs to be sampled better to properly to it speed up ***	 		
-#
    try:
       from astropy.io import fits
    except:   
@@ -3558,23 +3576,22 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    from scipy import interpolate
    import datetime
    
-   version = '150202'
+   version = '150208'
    
    if not ((lsfVersion == '001') | (lsfVersion == '002') | (lsfVersion == '003') ):
       raise IOError("please update the calfiles directory with new lsf file.")
    
    now = datetime.date.today()
    datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
-   if chatter > 0: print "computing RMF file. This takes ~40 sec or more on older machines"
+   if chatter > 0: print "computing RMF file."
    
    # telescope and image intensifier broadening   
-   if wheelpos < 500:
-      instrument_fwhm = 2.7 # Angstroms in units of pix
-   else:    
-      instrument_fwhm = 5.8 # Angstroms in units of pix
+   if lsfVersion == '001':
+       if wheelpos < 500:
+           instrument_fwhm = 2.7 # Angstroms in units of pix
+       else:     
+           instrument_fwhm = 5.8 # Angstroms in units of pix
 
-   spectralorder = 1  # not possible for second order yet
-   
    # get the effective area for the grism mode, anchor position and order at each wavelength
    if effarea1 != None:
       if len(effarea1) == 2:
@@ -3586,7 +3603,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
           w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
 	  fnorm = 1    
    else:
-       hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,spectralorder=spectralorder,chatter=chatter)
+       hdu, fnorm = uvotio.readFluxCalFile(wheelpos,anchor=anchor,
+                    spectralorder=spectralorder,chatter=chatter)
        w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])   
        fnorm = fnorm(w)  
        
@@ -3596,6 +3614,9 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    r = r[ii]
    r = r * fnorm
    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=0.0 )
+
+   # exclude channels with no effective area
+   wave = wave[(wave >= np.min(w)) & (wave <= np.max(w))]
    
    # exclude channels that have bad data
    if flux != None:
@@ -3607,7 +3628,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
       " No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
       return
    
-   # edit here to further restrict the number of channels, ie, every 5th or so.
    iNL = np.arange(0,NN,1,dtype=int)  # index energy array spectrum
    NL = len(iNL)   # number of sample channels
    
@@ -3620,7 +3640,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
 
    # spectral response as function of energy
    resp = specrespfunc(wave[aarev]) 
-   #print "spectral response = ",resp
 
    # wavelengths bounding a pixel 
    wave_lo = np.polyval(disp,aa-0.5)  # increasing
@@ -3642,9 +3661,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    f_chan = np.ones(NN)
    n_chan = np.ones(NN) * NN
    matrix = np.zeros( NN*NN, dtype=float).reshape(NN,NN)
-# chose one representation   
-   # low resolution arrays
-   _matrix = np.zeros( NL*NN, dtype=float).reshape(NL,NN)
    
    # (only for original version pre-2015-02-05) instrumental profile gaussian assuming first order
    # second order needs attention: instrument + LSF
@@ -3653,15 +3669,10 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
       ww = ww/ww.sum().flatten()  # normalised gaussian 
       
    # get the LSF data for selected wavelengths/energies   
-   lsfwav,lsfepix,lsfdata,lsfener = _read_lsf_file(lsfVersion='003',wheelpos=160,)
+   lsfwav,lsfepix,lsfdata,lsfener = _read_lsf_file(lsfVersion=lsfVersion,wheelpos=wheelpos,)
                   
-   # provide a spectral response for NL energies 
-   
-   ##matzero=[] # list of zero LSF rows
-
-   ##from pylab import figure,plot
-   ##figure(22)
-      
+   # provide a spectral response for NN energies 
+         
    for k in iNL:   # increasing energy
               
          # find the LSF for the current energy channel     
@@ -3669,7 +3680,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
 
          # convolution lsf with instrument_fwhm 
          if lsfVersion == '001':
-            print "convolving with instrumental broadening..."
             lsf = convolve(lsf,ww.copy(),)
          
          # lsf should already be normalised normalised to one
@@ -3678,38 +3688,18 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
 
          # find the range in pixels around the e_mid pixel at index k
          pdel = len(lsfepix)/2/2  # one-way difference; half->whole pixels
-         # where to put in matrix row ?
-         qrange = np.arange(
-            np.max([k-pdel,0]),
-            np.min([k+pdel,NN]),
-            1,dtype=int)
+
+         # where to put in matrix row :
+         qrange = np.arange( np.max([k-pdel,0]),  np.min([k+pdel,NN]), 1,dtype=int)
+
          # skipping by lsfepix twos so that we can add neighboring half-pixel LSF 
-         qpix = np.arange(0,pdel*4,2,dtype=int)
+         qpix = np.arange(pdel*4-2,-1,-2,dtype=int)
          
-         ##print "len(qrange)=",len(qrange)
-         ##print "len(qpix)  = ",len(qpix)
-         ##print "check e_mid [k], wave [k]",e_mid[k],"   ",uvotio.kev2angstrom(e_mid[k])
-         ##print "and -............d_mid[k]",d_mid[k]
-         ##print qrange
-         ##print qpix
-
-         ##if len(qrange) != len(qpix):
-         ##   print "===> these should be equal to fit into matrix"
-         ##   print "trimming qrange"
-
+         
          matrixrow   = np.zeros(NN)	 
          matrixrow[qrange] = lsf[qpix]+lsf[qpix+1]
-	 # now centre is in middle of a channel
-
-         ##print matrixrow 
-         ##print "plotting matrixrow for index k=",k
-         ##plot(matrixrow)
-         ##print "response[k=%i]=%f"%(k,resp[k])
+	 # centre is in middle of a channel
          matrix[k,:] = matrixrow*resp[k]
-
-
-   # remove channels that have zero response
-   #if chatter > 3: print "zero matrix entries [index]:",matzero
 
    # for output
    if wheelpos < 500: 
@@ -3723,7 +3713,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    hdulist=fits.HDUList([hdu])
    hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name')                       
    hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name')  
-   hdulist[0].header['COMMENT'] ="revision 2015-02-05" 
+   hdulist[0].header['COMMENT'] ="revision 2015-02-08, version 003" 
     
    col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo,unit='KeV')
    col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi,unit='KeV') 
@@ -3743,7 +3733,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    tbhdu1.header['HDUCLAS2']=('RSP_MATRIX','contains response matrix')   
    tbhdu1.header['HDUCLAS3']=('FULL','type of stored matrix')   
    tbhdu1.header['HDUVERS'] =('1.3.0','version of the file format')      
-   tbhdu1.header['ORIGIN']  =('MSSL/UCL','source of FITS file')
+   tbhdu1.header['ORIGIN']  =('UVOTPY revision 2015-02-08','source of FITS file')
    tbhdu1.header['TLMIN4']  =( 1, 'First legal channel number')                           
    tbhdu1.header['TLMAX4']  =(NN, 'Last legal channel number')                           
    tbhdu1.header['NUMGRP']  =(NN, 'Sum of the N_GRP column')                           
@@ -3751,7 +3741,6 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    tbhdu1.header['DETCHANS']=(NN, 'Number of raw detector channels')                           
    tbhdu1.header['LO_THRES']=(1.0E-10, 'Minimum value in MATRIX column to apply')                           
    tbhdu1.header['DATE']    =(now.isoformat(), 'File creation date') 
-   #tbhdu1.header['null'] = 0.                          
    hdulist.append(tbhdu1)
    
    col21 = fits.Column(name='CHANNEL',format='I',array=channel,unit='channel')
@@ -3852,7 +3841,8 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
     if wheelpos < 500: 
         lsfextension = 1
     else:
-        print "using the LSF model of the UV grism for the Visible grism until such time as it can be incorporated" 
+        print "using the LSF model of the UV grism for the Visible grism "+\
+        "until such time as the LSF model for the visible grism can be incorporated" 
         
     lsfener = lsffile[1].data['channel'][0:15]   # energy value (keV)
     lsfepix = lsffile[1].data['epix'][:,0]         # 156 or 158 values - offset in half pixels (to be converted to wave(wave))
