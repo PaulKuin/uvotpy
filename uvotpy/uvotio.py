@@ -1734,6 +1734,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
     - 2012-03-05 fixed error in calculation bg1rate(a.k.a. bg_r) and bg2rate (or bg_l) 
     - 2012-09-14 added coi correction 
     - 2013-03-06 edited header
+    - 2015-02-13 change quality flag in SPECTRUM extension to conform to XSPEC range
   '''	    
    try:
       from astropy.io import fits
@@ -1964,16 +1965,20 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
        
    back1rate = (background_strip1*2*trackwidth*np.polyval(sig1coef,x[q1[0]])[qwave]/expospec1) # estimate bg1 * width 
    back2rate = (background_strip2*2*trackwidth*np.polyval(sig1coef,x[q1[0]])[qwave]/expospec1) # estimate   # prepare for output   
+
+   xspec_quality = quality
+   xspec_quality[xpec_quality > 1] = int(log2(xspec_quality[xpec_quality > 1]))
+
    # extname_order
    if fileversion == 1:
        spectrum_first = (channel, 
           counts[rc], 
           (np.sqrt(counts*aper1corr))[rc], 
-	  quality[rc], 
+	  xspec_quality[rc], 
 	  aper1corr[rc], 
 	  expospec1[rc],  )
        back_first = (channel, bkg[rc], 0.1*np.sqrt(bkg)[rc],
-          quality[rc],aper1corr[rc], expospec1[rc])
+          xspec_quality[rc],aper1corr[rc], expospec1[rc])
        calspec_first = (dis,wave,
           sprate*fcoi(wave), # fully corrected counts in the spectrum
           bg1rate*bgcoi(wave), # fully corrected counts in the spectrum
@@ -1989,9 +1994,9 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
        spectrum_first = (channel, 
                          sprate[rc]*fcoi(wave[rc]), 
 			 sp1rate_err[rc]*fcoi(wave[rc]),
-			 quality[rc] )
+			 xspec_quality[rc] )
        back_first = (channel, bg1rate[rc], 0.1*np.sqrt(bg1rate)[rc],
-          quality[rc],aper1corr[rc], expospec1[rc])
+          xspec_quality[rc],aper1corr[rc], expospec1[rc])
        if not calibration_mode:	  
           calspec_first = (dis,wave,
           (counts-bkg)/expospec1, bkg/expospec1,   # uncorrected counts in the spectrum
@@ -2086,14 +2091,17 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          flux2 = hnu2*sp2rate*fcoi_2(wave2)/specresp2func(wave2)/binwidth2 # corrected [erg/s/cm2/angstrom]
          flux2_err = hnu2*sp2rate_err*fcoi_2(wave2)/specresp2func(wave2)/binwidth2 
       
+         xspec_qual2 = qual2
+         xspec_qual2[xspec_qual2 > 1] = int(log2(xspec_qual2[xspec_qual2 > 1]))
+      
          # collect data for output
 	 if fileversion == 1:
             spectrum_second = (channel2, sp2counts[rc2], 
-	      (np.sqrt(sp2counts))[rc2], qual2[rc2], 
+	      (np.sqrt(sp2counts))[rc2], xspec_qual2[rc2], 
 	      aper2corr[rc2], expospec2[rc2] )
 	    back_second = (channel2, bg_2cnt[rc2], 
 	      0.1*(np.sqrt(bg_2cnt))[rc2], 
-	      qual2[rc2], aper2corr[rc2],expospec2[rc2] )
+	      xspec_qual2[rc2], aper2corr[rc2],expospec2[rc2] )
             calspec_second = (pix2,wave2,
 	       sp2rate*fcoi_2(wave2),
 	       bg_2rate*fcoi_2(wave2),
@@ -3450,10 +3458,11 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
     import uvotmisc
     
     if rmffile == None: rmffile=phafile.split(".pha")[0]+".rmf"
-    f = fits.open(phafile)
+    f = fits.open(phafile,mode='update')
     if len(f) < 4: 
        raise IOError("The pha input file seems not correct.\n"+
        "The input file needs to be that for order 1, even to compute the rmf for order 2\n")
+      
     try:
        if spectral_order == 1:
            wave = f['CALSPEC'].data['lambda']
@@ -3475,11 +3484,15 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
        write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
        lsfVersion=lsfVersion, 
        chatter=chatter,clobber=clobber)
+       # update the phafile header with rmffile name
+       f['SPECTRUM'].header['RESPFILE'] = (rmffile,"RMF file name")
+       f.close() 
     except:
        print "ERROR in call write_rmf_file. Trying again ... "
        write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
        lsfVersion=lsfVersion, 
        chatter=chatter,clobber=clobber)
+       f.close()
        raise RuntimeError("The file is not a correct PHA file")   
 
    
@@ -3562,7 +3575,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
               Zemax optical model. 
    2015-02-09 There was a major overhaul of this routine, which is now 
               much improved.           
-              
+   2015-02-13 remove trimming of channels            
    ''' 
    try:
       from astropy.io import fits
@@ -3616,11 +3629,11 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=0.0 )
 
    # exclude channels with no effective area
-   wave = wave[(wave >= np.min(w)) & (wave <= np.max(w))]
+   #wave = wave[(wave >= np.min(w)) & (wave <= np.max(w))]
    
    # exclude channels that have bad data
-   if flux != None:
-       wave = wave[(np.isfinite(flux) & (flux >= 0.))]            
+   #if flux != None:
+   #    wave = wave[(np.isfinite(flux) & (flux >= 0.))]            
                    
    NN = len(wave)  # number of channels in spectrum (backward since we will use energy)
    if NN < 20:
