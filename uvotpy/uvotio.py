@@ -1967,7 +1967,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    back2rate = (background_strip2*2*trackwidth*np.polyval(sig1coef,x[q1[0]])[qwave]/expospec1) # estimate   # prepare for output   
 
    xspec_quality = quality
-   xspec_quality[xpec_quality > 1] = int(log2(xspec_quality[xpec_quality > 1]))
+   xspec_quality[xspec_quality > 1] = np.array(np.log2(xspec_quality[xspec_quality > 1]),dtype=int)
 
    # extname_order
    if fileversion == 1:
@@ -2092,7 +2092,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          flux2_err = hnu2*sp2rate_err*fcoi_2(wave2)/specresp2func(wave2)/binwidth2 
       
          xspec_qual2 = qual2
-         xspec_qual2[xspec_qual2 > 1] = int(log2(xspec_qual2[xspec_qual2 > 1]))
+         xspec_qual2[xspec_qual2 > 1] = np.array(np.log2(xspec_qual2[xspec_qual2 > 1]),dtype=int)
       
          # collect data for output
 	 if fileversion == 1:
