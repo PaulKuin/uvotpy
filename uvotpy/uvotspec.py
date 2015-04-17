@@ -140,6 +140,210 @@ spdata = {
   ],
   
 ############################ 
+
+'V339_Del':[ # add also H, HeI, HeII 
+# 
+{'transition':'2-4'  ,'wavevac':4862.69,   'label':r'H$\beta$'},
+{'transition':'2-5'  ,'wavevac':4341.69,   'label':r'H$\gamma$'},
+{'transition':'2-6'  ,'wavevac':4102.899,  'label':r'H$\delta$'},
+{'transition':'2-7'  ,'wavevac':3971.202,  'label':r'H$\epsilon$'},
+#{'transition':'4 - 7','wavevac':5411.5, 'label':u'HeII'},
+{'transition':'3 - 4','wavevac':4687.1, 'label':u'He II'},
+{'transition':'3 - 5','wavevac':3203.95,'label':u'He II'},
+{'transition':'3 - 6','wavevac':2734.13,'label':u'He II+O II*'},
+{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':''},
+# unclutter {'transition':'3 - 6','wavevac':2734.13,'label':u'HeII'},
+# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':u'OII*'},
+{'transition':'3 - 7','wavevac':2511.2, 'label':u'He II'},
+{'transition':'3 - 8','wavevac':2385.4, 'label':u'He II'},
+{'transition':'','wavevac':1750  , 'label':u'N III]'},
+{'transition':'','wavevac':1908.7, 'label':u'C III]'},
+#{'transition':'','wavevac':1987.7, 'label':u'S IX]*'},
+# declutter {'transition':'','wavevac':2143  , 'label':u'N II]'},
+{'transition':'','wavevac':2147  , 'label':u'N II]+IV]'},
+# declutter {'transition':'','wavevac':2151.0, 'label':u'N IV]'},
+#{'transition':'','wavevac':2321.66, 'label':u'O III]'},
+{'transition':'','wavevac':2325.6, 'label':u'C II+[O II]'},
+{'transition':'','wavevac':2332.1, 'label':''},
+# unclutter {'transition':'','wavevac':2325.6, 'label':u'C II'},
+# unclutter {'transition':'','wavevac':2332.1, 'label':u'[O III]'},
+#{'transition':'5D-3D','wavevac':2437.2, 'label':u'Ni V]'},
+{'transition':'','wavevac':2471.0, 'label':u'O II]'},
+#{'transition':'','wavevac':2522.5, 'label':u'Ni V]'},
+#{'transition':'','wavevac':2784, 'label':u'Mg V]'},
+{'transition':'','wavevac':2800, 'label':u'Mg II'},
+{'transition':'','wavevac':2844.9, 'label':u'C III]'},
+{'transition':'','wavevac':2937.4, 'label':u'Mg II*'},
+#{'transition':'','wavevac':2949, 'label':u'Mg V]'},
+# unsure of this one {'transition':'','wavevac':2990, 'label':u'Ni VII]'},
+{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3134.2, 'label':u'O II*'},
+# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3287.5, 'label':u'OII*'},
+#{'transition':'','wavevac':.0, 'label':u''}
+#{'transition':'','wavevac':3132, 'label':u'?Be II ?Fe II '},
+#{'transition':'2s2 2p2 3P 0-2s2 2p2 1D 2','wavevac':3301.4, 'label':u'[NeV]'},
+# declutter {'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3346.8, 'label':u'[NeV]'},
+# declutter {'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3426.9, 'label':u'[NeV]'},
+#{'transition':'3d4 5D-3d4 3G','wavevac':3446.61, 'label':u'[FeV]'},
+{'transition':'','wavevac':3448, 'label':u'N IV*'},
+#declutter {'transition':'','wavevac':3444.6, 'label':u'N IV*'},
+#declutter {'transition':'','wavevac':3461.4, 'label':u'N IV*'}, # opt. thick, especially at later times 
+{'transition':'2s2 2p4 3P 2-2s2 2p4 3P 0','wavevac':3461.7, 'label':u'[Ca XIII]'},
+#{'transition':'3d4 5D-3d4 3G','wavevac':3464.5, 'label':u'[FeV]'},
+{'transition':'','wavevac':4363  , 'label':u'[O III]'},
+# declutter {'transition':'','wavevac':4640  , 'label':u'N III*'},
+{'transition':'','wavevac':4645, 'label':u'C III*+N III*'},
+# declutter {'transition':'','wavevac':4649, 'label':u'C III*'},
+{'transition':'','wavevac':4959  , 'label':u'[O III]'},
+{'transition':'','wavevac':5007  , 'label':u'[O III]'},
+{'transition':'','wavevac':5755  , 'label':u'[N II]'},
+#{'transition':'','wavevac':.0, 'label':u''}
+#{'transition':'','wavevac':.0, 'label':u''}
+  ],
+
+'V1369_Cen':  [
+{'transition':'2-4'  ,'wavevac':4862.69,   'label':r'H$\beta$'},
+{'transition':'2-5'  ,'wavevac':4341.69,   'label':r'H$\gamma$'},
+{'transition':'2-6'  ,'wavevac':4102.899,  'label':r'H$\delta$'},
+{'transition':'2-7'  ,'wavevac':3971.202,  'label':r'H$\epsilon$'},
+{'transition':'4 - 7','wavevac':5411.5, 'label':u'HeII'},
+{'transition':'3 - 4','wavevac':4687.1, 'label':u'He II'},
+{'transition':'3 - 5','wavevac':3203.95,'label':u'He II'},
+{'transition':'3 - 6','wavevac':2734.13,'label':u'He II+O II*'},
+# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':u'OII*'},
+#{'transition':'3 - 7','wavevac':2511.2, 'label':u'He II'},
+#{'transition':'3 - 8','wavevac':2385.4, 'label':u'He II'},
+{'transition':'','wavevac':1750  , 'label':u'N III]'},
+{'transition':'','wavevac':1814  , 'label':u'Si II'},
+{'transition':'','wavevac':1860  , 'label':u'Al III'},
+{'transition':'','wavevac':1908.7, 'label':u'C III]'},
+#{'transition':'','wavevac':1987.7, 'label':u'S IX]*'},
+# declutter {'transition':'','wavevac':2143  , 'label':u'N II]'},
+{'transition':'','wavevac':2147  , 'label':u'N II]+IV]'},
+# declutter {'transition':'','wavevac':2151.0, 'label':u'N IV]'},
+#{'transition':'','wavevac':2321.66, 'label':u'O III]'},
+{'transition':'','wavevac':2325.6, 'label':u'C II+[O II]'},
+{'transition':'','wavevac':2332.1, 'label':''},
+# unclutter {'transition':'','wavevac':2325.6, 'label':u'C II'},
+# unclutter {'transition':'','wavevac':2332.1, 'label':u'[O III]'},
+#{'transition':'5D-3D','wavevac':2437.2, 'label':u'Ni V]'},
+{'transition':'','wavevac':2471.0, 'label':u'O II]'},
+#{'transition':'','wavevac':2522.5, 'label':u'Ni V]'},
+#{'transition':'','wavevac':2784, 'label':u'Mg V]'},
+{'transition':'','wavevac':2800, 'label':u'Mg II'},
+{'transition':'','wavevac':2844.9, 'label':u'2nd order line'},
+#{'transition':'','wavevac':2937.4, 'label':u'Mg II*'},
+#{'transition':'','wavevac':2949, 'label':u'Mg V]'},
+# unsure of this one {'transition':'','wavevac':2990, 'label':u'Ni VII]'},
+{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3134.2, 'label':u'O II*'},
+# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':3287.5, 'label':u'OII*'},
+{'transition':'','wavevac':3291, 'label':u'2nd order line'},
+#{'transition':'','wavevac':.0, 'label':u''}
+#{'transition':'','wavevac':3132, 'label':u'?Be II ?Fe II '},
+#{'transition':'2s2 2p2 3P 0-2s2 2p2 1D 2','wavevac':3301.4, 'label':u'[NeV]'},
+{'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3346.8, 'label':u'[NeV]'},
+{'transition':'2s2 2p2 3P 1-2s2 2p2 1D 2','wavevac':3426.9, 'label':u'[NeV]'},
+#{'transition':'3d4 5D-3d4 3G','wavevac':3446.61, 'label':u'[FeV]'},
+#{'transition':'','wavevac':3448, 'label':u'N IV*'},
+#declutter {'transition':'','wavevac':3444.6, 'label':u'N IV*'},
+#declutter {'transition':'','wavevac':3461.4, 'label':u'N IV*'}, # opt. thick, especially at later times 
+#{'transition':'2s2 2p4 3P 2-2s2 2p4 3P 0','wavevac':3461.7, 'label':u'[Ca XIII]'},
+#{'transition':'3d4 5D-3d4 3G','wavevac':3464.5, 'label':u'[FeV]'},
+{'transition':'','wavevac':3869, 'label':u'[NeIII]'},
+{'transition':'','wavevac':3968, 'label':u'[NeIII]'},
+{'transition':'','wavevac':3729.875, 'label':u'[OII]'},
+{'transition':'','wavevac':4363  , 'label':u'[O III]+2nd order line'},
+# declutter {'transition':'','wavevac':4640  , 'label':u'N III*'},
+{'transition':'','wavevac':4649, 'label':u'C III*'},
+# declutter {'transition':'','wavevac':4649, 'label':u'C III*'},
+{'transition':'','wavevac':4959  , 'label':u'[O III]'},
+{'transition':'','wavevac':5007  , 'label':u'[O III]'},
+{'transition':'','wavevac':5755  , 'label':u'[N II]'},
+#{'transition':'','wavevac':.0, 'label':u''}
+#{'transition':'','wavevac':.0, 'label':u''}
+  ],
+'WN':  [   # strong HeII spectrum 
+# 1720 NIV?, 1750 NIII mult 1,4 
+{'name':'H-beta'   ,'transition':'2-4'  ,'wavevac':4862.69,   'label':r'H$\beta$'},
+{'name':'H-gamma'  ,'transition':'2-5'  ,'wavevac':4341.69,   'label':r'H$\gamma$'},
+{'name':'H-delta'  ,'transition':'2-6'  ,'wavevac':4102.899,  'label':r'H$\delta$'},
+{'transition':'4 - 6','wavevac':6562.0, 'label':u'HeII'},
+{'transition':'4 - 7','wavevac':5411.5, 'label':u'HeII'},# see J.D.Garcia and J.E. Mack,J.Opt.Soc.Am.55,654(1965)
+{'transition':'3 - 4','wavevac':4687.1, 'label':u'HeII'},
+{'transition':'3 - 5','wavevac':3203.95,'label':u'HeII'},
+{'transition':'3 - 6','wavevac':2734.13,'label':u'HeII'},
+{'transition':'3 - 7','wavevac':2511.2, 'label':u'HeII'},
+{'transition':'3 - 8','wavevac':2385.4, 'label':u'HeII'},
+#{'transition':'3 - 9','wavevac':2306.0, 'label':u'He II'},
+{'transition':'2 - 3','wavevac':1640.47,'label':u'HeII'},
+{'transition':'2 - 4','wavevac':1215.17,'label':u'HeII'},
+{'transition':'2 - 6','wavevac':1025.30,'label':u'HeII'},
+{'transition':'','wavevac':1874.0, 'label':u'NIII 1876.6'},
+{'transition':'','wavevac':1984.0, 'label':u'N VI 1989.3'},
+{'transition':'','wavevac':2660.0, 'label':u'NIV 2647'},
+{'transition':'','wavevac':2903.0, 'label':u'N IV 2897.2'},
+{'transition':'','wavevac':2990.0, 'label':u'2980.8 N III'},
+{'transition':'','wavevac':3485.0, 'label':u'N IV 3481.8'},
+{'transition':'','wavevac':3743.0, 'label':u'3748.6 N IV'},
+{'transition':'','wavevac':3909.0, 'label':u'O II 3915.5'},
+{'transition':'','wavevac':4058.0, 'label':u'N IV 4058.9'},
+{'transition':'','wavevac':4207.0, 'label':u'N III 4201.3'},
+{'transition':'','wavevac':4550.0, 'label':u'N III 4544.4'},
+{'transition':'','wavevac':4630.0, 'label':u'N III 4639.8'}, # blend HeII 4686
+{'transition':'','wavevac':5520.0, 'label':u'[O V] 5523.9'},
+  ],
+
+}  
+  
+def continuum_nova_del_lc():
+    import numpy as np
+    phafiles = rdTab('list_phafiles_g.txt')
+    regions = [[2010,2040],[2600,2700],[3530,3580],[3580,3630],
+     [3930,3960],[4030,4050],[4170,4200],[4430,4460],[4750,4800]]
+
+    z = uvotspec.get_continuum(phafiles,regions=regions, tstart=398093612.4,)
+    wave=z[0]
+    time = z[1]
+    sp = array(z[2]) 
+    # byindex: (spectral bands, observations, [0=mean wave,1=flux,2=err])
+    # find a normalisation of the lc using t~110 days
+    q = (time > 90.) & (time < 120.) & np.isfinite(sp[0,:,1])
+    norm=[]
+    for k in range(9):
+        norm.append(sp[k,q,1].mean()*1e13)
+    norm = np.array(norm)
+    norm = norm/norm[1]           
+    # find late time background fit
+    q = (time > 107.)
+    q1 = np.isfinite(sp[0,q,1]) & np.isfinite(sp[1,q,1]) & np.isfinite(sp[2,q,1])\
+       & np.isfinite(sp[3,q,1]) & np.isfinite(sp[4,q,1]) & np.isfinite(sp[5,q,1])\
+       & np.isfinite(sp[6,q,1]) & np.isfinite(sp[7,q,1]) & np.isfinite(sp[8,q,1])
+    sptot = sp[0,q,1][q1]
+    for k in range(1,9):
+        sptot += sp[k,q,1][q1]
+    spmean = sptot/9. # (this the unnormalised bg lc-s)
+    #   linear fits don't work : use log time
+    coef2 = np.polyfit(log10(time[q][q1]),spmean,2)
+    coef1 = np.polyfit(log10(time[q][q1]),spmean,1)
+    normmean = norm.mean()  # use for scaling norm to mean flux spmean
+    return (wave,time,sp, norm), coef, coef2, spmean,normmean    
+    
+def continuum_nova_del_byobs(obsday,wave,time,sp,norm):
+    import numpy as np
+    from scipy.interpolate import interp1d
+    norm = np.asarray(norm)
+    k = np.where( np.abs(obsday - time) < 0.04)[0]
+    print 'processing day = ',time[k]
+    bgcoef = np.polyfit(wave,sp[:,k,1].flatten()/norm,1)
+    w = np.arange(1650,7000,25)
+    ww = [1650]
+    for w1 in wave: ww.append(w1)
+    ww.append(7000)
+    nn = [norm[0]]
+    for n1 in norm: nn.append(n1)
+    nn.append(norm[-1])
+    fnorm = interp1d(ww,nn,bounds_error=False,)
+    return interp1d(w,np.polyval(bgcoef,w) * fnorm(w),bounds_error=False ) 
+  
 ############################
 
     
@@ -239,7 +443,7 @@ class DraggableSpectrum:
 
 def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     ylim=[None,None],ions=['HI','HeII'],reference_spectrum=None,
-    recalculate=True):
+    recalculate=True, figno=None):
     """manually adjust the wavelength scale
     
     Parameters
@@ -270,18 +474,21 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     Returns the figure instance    
     
     """
+    import sys
     import uvotmisc
+    from matplotlib.pyplot import fignum_exists
     # data
     if openfile != None:
        f = openfile 
+       filename = openfile.filename()
        if f.fileinfo(1)['filemode'] != 'update' :
-          print "reopening the fits file with mode set to update"
+          print "reopening the fits file %s with mode set to update"%(filename)
           filename = f.filename()
 	  try: 
 	     f.close()
 	     f = fits.open(filename,mode='update')
 	  except:
-	     raise "reopen fits file with mode set to update, and rerun "
+	     raise "reopen fits file %s with mode set to update, and rerun "%(filename)
 	          
     elif file != None:
        f = fits.open(file,mode='update')
@@ -292,10 +499,12 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     # axis instance to use   
     if openplot != None:
        fig = openplot
+       filename = openplot.filename()
        fig.clf()
     else:
-       fig = plt.figure()
-       
+       fig = plt.figure(figno)
+       fig.clf()
+    fignum = fig.number   
     fig.set_facecolor('lightgreen')
     ax = fig.add_axes([0.05,0.13,0.9,0.77]) 
     canvas = ax.figure.canvas 
@@ -350,19 +559,31 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         delwav0 = 0
 	delwav = 0
     try:
-        while not done:
-            if raw_input("Do you want to adjust wavelengths ? (Y) ").upper()[0] == 'Y':
+        ans1 = raw_input("Do you want to adjust wavelengths ? (Y/N) ").upper()
+	print "answer read = ", ans1," length = ", len(ans1)
+	if len(ans1) > 0:
+          if ans1[0] == 'Y':
+             while not done:
                 print 'drag the spectrum until happy'
-                ax.set_title("when done press key")   
+                ax.set_title(filename+" when done press key")   
                 newspec.connect()
 		print "The selected wavelength shift is ",newspec.delwav," and will be applied when done. " 
          	# register the shift from the last run        	
 	        ans = raw_input("When done hit a key")
                 delwav += newspec.out_delwav()
-		ax.set_title("")
+		ax.set_title(filename)
 	        done = True
-        newspec.disconnect()
-    	if recalculate:
+             newspec.disconnect()
+          elif ans1[0] == 'N': 
+	     done = True
+          else: print " answer Y or N "
+    except:
+        sys.stderr.write("error: wavshift %f\n"%(delwav) )
+    	newspec.disconnect()
+        raise RuntimeError(
+	"An error occurred during the selection of the wavelength shift."+\
+	"\nNo shift was applied.")
+    if recalculate:
 	    print "recalculating wavelength scale after finding shift"
 	    if 'PIXSHFT' in f[extname].header: 
 	        pixshift0 = f[extname].header['PIXSHFT']
@@ -386,7 +607,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
 	       dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
 	       f[extname].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
 	    # now we should update the plot...
-   	else:
+    else:
   	   sys.stderr.write( "wavelength shift found = %s\n"%(delwav) )
            f[extname].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
 	   if extname == 'CALSPEC':
@@ -395,26 +616,25 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
               f['SPECTRUM'].header['COMMENT'] = "Manual wavelength shift not applied to response file."
 	   elif extname == 'SUMMED_SPECTRUM':
               f[extname].data['WAVE'] = f[extname].data['WAVE'] + delwav      
-        f.verify()
-        f.flush()
-        spectrum.set_color('c')
-        f = fits.open(file)
-        if extname == 'SUMMED_SPECTRUM':
+    f.verify()
+    f.flush() 
+    spectrum.set_color('c')
+    #if openfile != None:
+    #   f = openfile 
+    #elif file != None:
+    #   f = fits.open(file,)
+    if extname == 'SUMMED_SPECTRUM':
             w = f[extname].data['wave']
             flx = f[extname].data['flux']
-        else:
+    else:
             w = f[extname].data['lambda']
             flx = f[extname].data['flux']
-        spectrum, = ax.plot(w, flx,color='darkblue',label='fixed spectrum' )
-        ax.set_title(filename) 
-        ax.legend()
+    spectrum, = ax.plot(w, flx,color='darkblue',label='fixed spectrum' )
+    ax.set_title(filename) 
+    ax.legend()
+    if fignum_exists(fignum):
         ax.figure.canvas.draw()
-    except:
-        #sys.stderr.write("error: wavshift %f,pixshift0 %i,C_1 %s,C_2 %s\n"%(delwav,pixshift0,C_1,C_2) )
-        raise RuntimeError("Some error occurred during the selection of the wavelength shift. No shift was applied.")
-    	newspec.disconnect()
-    # apply the shift 
-    return fig, ax, spectrum
+    return fig, ax, spectrum, f
 
 def apply_shift(file,delwav,recalculate=False):
     """apply a given wavelength shift in A"""
@@ -601,6 +821,7 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        fig.clf()
     else:
        fig = plt.figure()
+    lines = []   
     fig.set_facecolor('white')
     ax = fig.add_axes([0.08,0.13,0.87,0.7]) 
     canvas = ax.figure.canvas 
@@ -631,20 +852,23 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
     done = False
     try:
         while not done:
-            if raw_input("Do you want to mark bad regions ? (Y) ").upper()[0] == 'Y':
-                print 'Select bad wavelengths in the spectrum until happy'
-                ax.set_title("when done press key")   
-                s.connect()
-         	# register the shift from the last run        	
-	        ans = raw_input("When done hit the d key, then return, or just return to abort")
-		badregions, lines = s.get_badlines()
-		print "got so far: "
-                for br in lines: print "bad region : [%6.1f,%6.1f]"%(br[0],br[1])
-		print badregions
-		ax.set_title("")
-                s.disconnect()
-            else:		
-	        done = True
+            ans = raw_input("Do you want to mark bad regions ? (Y) ").upper()
+	    if len(ans) > 0:
+                if ans[0] == 'Y':
+                    print 'Select bad wavelengths in the spectrum until happy'
+                    ax.set_title("when done press key")   
+                    s.connect()
+         	    # register the shift from the last run        	
+	            ans = raw_input("When done hit the d key, then return, or just return to abort")
+		    badregions, lines = s.get_badlines()
+		    print "got so far: "
+                    for br in lines: print "bad region : [%6.1f,%6.1f]"%(br[0],br[1])
+		    print badregions
+		    ax.set_title("")
+                    s.disconnect()
+                else:
+	            print "Done for now..."		
+	            done = True
     except:
         raise RuntimeError("Some error occurred during the selection of the bad regions. No changes were applied.")
 	s.disconnect()
@@ -681,7 +905,12 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        return fig,ax   
 
 
-def plotquality(ax,w,quality,flag=['bad'],colors=['c','g','y','m','b','r','k'],alpha=0.2,):
+def plotquality(ax,
+       w, quality,
+       flag=['bad','weakzeroth','zeroth'],
+       colors=['c','g','y','m','b','r','k'],alpha=0.2,
+       quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
+       chatter=0):
        """add vertical greyscale regions in plot for each quality flag 
        
        parameters
@@ -698,17 +927,26 @@ def plotquality(ax,w,quality,flag=['bad'],colors=['c','g','y','m','b','r','k'],a
        alpha : float
          alpha value for transparency
        
+       Note
+       -----
+       Should add an option to plot quality in a different way. 
        """
        from uvotgetspec import quality_flags
        flagdefs = quality_flags()
        k=0
        for fla in flag:
+           if chatter > 2: 'processing flag = ',fla
+           dolabel = True
            fval = flagdefs[fla]
-	   q = quality >= fval  # limit the search
-	   indx = np.where(q)[0] # indx of wave where flag 
-	   fval2 = fval*2
-	   loc = quality[q]/fval2*fval2 != quality[q]
-	   v = indx[loc] # indices of the points with this flag
+           if fval == 1:
+               loc = quality == fval
+               v = np.where(loc)[0]
+           else:
+	       q = quality >= fval  # limit the search
+	       indx = np.where(q)[0] # indx of wave where flag 
+	       fval2 = fval*2
+	       loc = quality[q]/fval2*fval2 != quality[q]
+	       v = indx[loc] # indices of the points with this flag
 	   if len(v) > 1:  # require at least 2
  	       vrange = []
 	       v1 = v[0]
@@ -722,9 +960,13 @@ def plotquality(ax,w,quality,flag=['bad'],colors=['c','g','y','m','b','r','k'],a
 	           else:
 	               vlast=v2
 	       if vlast > v1: vrange.append([v1,vlast])	 # last range       
-	       print "for quality="+fla+" we get ranges ",vrange        
-               for v1 in vrange:
-	           ax.axvspan(w[v1[0]],w[v1[1]],facecolor=colors[k],alpha=alpha)
+	       if chatter > 2: print "for quality="+fla+" we get ranges ",vrange        
+               for v1 in vrange: 
+                   flab = None
+                   if dolabel & quallegend[fla]: 
+                      flab = fla
+                      dolabel = False
+	           ax.axvspan(w[v1[0]],w[v1[1]],facecolor=colors[k],alpha=alpha,label=flab)
        # the algorithm skips two adjacent points which will be ignored. 		   
 		   		      
 def check_flag(quality,flag,chatter=0):
@@ -765,6 +1007,76 @@ def check_flag(quality,flag,chatter=0):
 	      loc[i] = True
    return loc
 
+def _write_xspec_xcm_script(scriptfilename, 
+         E_BmV=0.2, 
+         vel=1000.0,
+         ions=['V339_Del'],
+         clobber=False,chatter=0):
+    """
+    Convenience function to help create an xspec script file for 
+    the continuum and lines
+    
+    Parameters
+    -----------
+    scriptfilename : path
+       path+name for the script file
+    E_BmV : float
+       E(B-V) colour excess 
+    vel : float
+       velocity responsible for line broadening in km/s   
+    
+    """
+    import os 
+    
+    #conversion factor
+    kev2A = 12.3984191
+    
+    # check if scriptfilename exists
+    present = os.access(scriptfilename,os.F_OK)
+    if present and not clobber:
+       raise IOError('script file is present and clobber is not set')
+
+    # initialize model line
+    model = "model redden(bbody + powerlaw + redge "
+    
+    # initialize body 
+    body = []
+    # add redden parameter
+    body.append("%15.3f%11.3f%11.3e%11.3e,%11.3e%11.3e\n"%(E_BmV,-1e-3,1e-5,1e-3,1,10))  
+    # add BB parameters
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(0.025,0.01,0,0,100,200))
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(0.5,0.01,0,0,1e+20,1e+24))
+    # add Powerlaw parameters
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(1.5,0.01,-3,-2,9,10))
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(4.5,0.01,0,0,1e+20,1e+24))
+    # add redge parameters
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(3.167e-3,3e-4,1e-3,1.8e-3,7.4e-3,9e-3))
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(1e-3,1e-3,1e-3,1e-3,100,100))
+    body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(10,0.01,0,0,1e+20,1e+24))
+     
+    for ion in ions:
+       if not ion in spdata.keys():
+          print "unrecognised ion",ion
+       else:   
+          data = spdata[ion]
+          for rec in data:
+             en = kev2A/rec['wavevac'] 
+             if chatter > 0: print rec['wavevac'], en    
+             de = vel/3e5 * en
+             body.append("%15.5e%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(en,-0.05,1e-3,1.8e-3,7.4e-3,9e-3))
+             body.append("%15.5e%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(de,0.05,1e-6,5e-6,3e-5,8e-5))
+             body.append("%15.3e%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(10,0.01,0,0,1e+20,1e+24))
+             model += " + gaussian"
+    # close model line
+    model += ")\n"
+    out = open(scriptfilename,"w")
+    out.write(model)
+    for rec in body:
+        out.write(rec)
+    out.close()
+        
+
+
 def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
     """give a list of good continuum bands in spectrum and 
     determine averages 
@@ -785,8 +1097,8 @@ def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
     returns
     -------
     cont_list: list
-       a list comprised of average wavelength, and continuum flux 
-       value in each band 
+       a list comprised of average wavelength, mean continuum flux, and 
+         standard deviation from the mean flux each band 
        
     """
     import numpy as np
@@ -800,7 +1112,8 @@ def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
           result.append([np.NaN,np.NaN,np.NaN])	  
     return result
     
-def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,full=True):
+def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,
+    full=True,chatter=0):
     '''
     given a list of PHA spectra files and a list of (continuum)
     regions, extract the mean flux and error in the 
@@ -828,7 +1141,11 @@ def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,full=True):
     if daily: daynorm=86400.0
     else: daynorm = 1.0
     for file in phafiles:
-       sp = fits.open(file[0])
+       if chatter > 1: print "reading ",file
+       try:
+          sp = fits.open(file)
+       except:   
+          sp = fits.open(file[0])
        result =  get_continuum_values(
           (sp[2].header['tstart']-tstart)/daynorm,
           sp[2].data['lambda'],
@@ -855,7 +1172,15 @@ def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,full=True):
     
     
 def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False, 
-        hazecolor='grey', hazealpha=0.2, flag='all',chatter=0):
+        hazecolor='grey', hazealpha=0.2, flag='all',
+        ylim=[6e-15,9e-13],
+        speccolor = 'g',
+        plot_quality=True,
+        qual_flags=['bad','weakzeroth','zeroth','overlap','too_bright','first'],
+        qualcolors=['c', 'g', 'y', 'm', 'b', 'r', 'k'], 
+        qualalpha=0.2,
+        quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
+        chatter=0):
     """
     make a quick plot of a PHA/summed spectrum 
     
@@ -865,6 +1190,9 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
        The spectrum will be drawn in 'ax'
     spectrumfile: path
        the full filename of the spectrum
+    ylim : list 
+       y-axis limits
+    speccolor : color   
     errbars: bool
        if False, draw spectrum with optional error as a haze
        (see errhaze, hazecolor, hazealpha)
@@ -875,6 +1203,14 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
     flag: one of quality_flags()
        for PHA spectrum: plot data excluding this flag
        e.g., 'all' include only 'good' data (no flag set)
+    plot_quality : bool 
+       (only for PHA files)
+    qualflag,qualcolors,qualalpha : list, list, float
+       (only for PHA files) parameters passed to plotquality 
+       - qualflag is a list of flags (from uvotgetspec.quality_flags().keys())
+       - qualcolors is a list of colors for the shading of the regions by quality
+       - qualalpha is the alpha factor for the shading   
+       - quallegend (for each flag, add to legend)
     chatter: int (0...5)
        verbosity  
        
@@ -885,9 +1221,9 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
     import numpy as np
     
     if type(ax) != 'matplotlib.axes.AxesSubplot' :
-       print "ax type ?",type( ax )
+       if chatter > 2: print "ax type ?",type( ax )
     first = True   
-    f = fits.open(phafile)
+    f = fits.open(spectrumfile)
     if f[1].header['extname'].upper() == 'SPECTRUM': 
         q = f[2].data['quality'] 
         rx = quality_flags_to_ranges(q)
@@ -902,20 +1238,20 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
         if len(r) == 0:
            r = [[0,len(w)]]
         if not errbars:
-            print "errbars False"
+            if chatter > 2: print "errbars False"
             for rr in r:
 	        if first:
-                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],label=label)
+                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],color=speccolor,label=label)
 		    first = False
 		else:
-                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]])
+                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],color=speccolor)
 	        if errhaze:
 	            ax.fill_between(w[rr[0]:rr[1]],
 	            flx[rr[0]:rr[1]]-err[rr[0]:rr[1]], 
 	            flx[rr[0]:rr[1]]+err[rr[0]:rr[1]],
 	            color=hazecolor,alpha=hazealpha)
         else:
-            print "errbars True"
+            if chatter > 2: print "errbars True"
             for rr in r:
 	        if first:
                    ax.errorbar( w[rr[0]:rr[1]],flx[rr[0]:rr[1]],
@@ -924,6 +1260,8 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
 		else:
                    ax.errorbar( w[rr[0]:rr[1]],flx[rr[0]:rr[1]],
 	           yerr=err[rr[0]:rr[1]],)  
+        if plot_quality:
+            plotquality(ax,w,q,flag=qual_flags,colors=qualcolors,alpha=qualalpha)    		    			   
 		   
     elif f[1].header['extname'].upper() == 'SUMMED_SPECTRUM':
         w = f['SUMMED_SPECTRUM'].data['wave']
@@ -937,7 +1275,7 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
 	    q = sector == s
 	    if not errbars:
 	        if first:
-                    ax.plot(w[q],flx[q],label=label)
+                    ax.plot(w[q],flx[q],label=label,color=speccolor)
 		    first = False
 	        else:
                     ax.plot(w[q],flx[q],)	
@@ -948,13 +1286,14 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
 	            color=hazecolor,alpha=hazealpha)
 	    else:
 	        if first:
-	            ax.errorbar(w[q],flx[q],yerr=err[q],label=label)
+	            ax.errorbar(w[q],flx[q],yerr=err[q],label=label,color=speccolor)
 		    first = False
 		else:	  
-	            ax.errorbar(w[q],flx[q],yerr=err[q],)
+	            ax.errorbar(w[q],flx[q],yerr=err[q],color=speccolor)
     else:
-        raise IOError("Spectrum type (extname) is not recognised")		    			   
-    ax.legend(loc=0)	       
+        raise IOError("Spectrum type (extname) is not recognised")
+    ax.legend(loc=0)	
+    ax.set_ylim(ylim[0],ylim[1])       
     ax.figure.canvas.show()
 
 
@@ -1136,6 +1475,7 @@ class fit_spectrum():
 	self.funargs = []
 	self.models = []  # active models
 	self.valid_model_names=['gaussian','poly_background']  # implemented models
+        self.maskx = np.ones(len(spectrum.x),dtype=bool) 
 
     
     def add_model(self,modelname):
@@ -1341,11 +1681,20 @@ class fit_spectrum():
            return [status, (y-F)/err]
 	else:
 	   return [status, (y-F)]   
+           
+    def ignore(self,range):
+       """ignore points which lie in in specified range """
+       sp = self.spectrum
+       self.maskx[(sp > range[0]) & (sp < range[1])] = False
+       
+    # inverse of ignore function 
+                      
     
     
-def dofit2gpbg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
+def fit2g_bg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
     amp2lim=None,fixsig=False,
-    fixsiglim=0.2, fixpos=False,chatter=0):
+    fixsiglim=0.2, fixpos=False,
+    fixamp=False, chatter=0):
    '''
    Fit two gaussians plus a linear varying background to f(x)
    
@@ -1371,20 +1720,20 @@ def dofit2gpbg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
    import numpy as np
    from mpfit import mpfit
    
-   gp = np.array(gaussian_parameters,)
+   #gp = np.array(gaussian_parameters,)
    
-   n_gaussians = len(gaussian_parameters)
+   #n_gaussians = len(gaussian_parameters)
    
    if np.isfinite(bg):
       bg0 = bg
    else: bg0 = 0.0   
-   bg1 = 0.0 
+   bg1 = 1.e-7
    if np.isfinite(sig1):
       sig1 = np.abs(sig1)
-   else: sig1 = 3.1   
+   else: sig1 = 15.0 
    if np.isfinite(sig2):
       sig2 = np.abs(sig2)
-   else: sig2 = 4.2        
+   else: sig2 = 15.0        
 
    p0 = (bg0,bg1,amp1,pos1,sig1,amp2,pos2,sig2)
    
@@ -1415,39 +1764,39 @@ def dofit2gpbg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
       sig2_hi = sig2+fixsiglim
    else:   
    # make sure lower limit sigma is OK 
-      sig1_lo = max([sig1-10.,35.])
-      sig2_lo = max([sig2-10.,35.])
-      sig1_hi = min([sig1+10.,5.])
-      sig2_hi = min([sig2+10.,5.])
+      sig1_lo = max([sig1-10.,3.])
+      sig2_lo = max([sig2-10.,3.])
+      sig1_hi = min([sig1+10.,70.])
+      sig2_hi = min([sig2+10.,70.])
      
    if amp2lim != None:
       amp2min, amp2max = amp2lim
       parinfo = [{  \
-   'limited': [1,0],   'limits' : [np.min([0.0,bg0]),0.0],'value':    bg,   'parname': 'bg0'    },{  \
-   'limited': [0,0],   'limits' : [0.0,0.0],           'value'  :   0.0,   'parname': 'bg1'    },{  \
-   'limited': [1,0],   'limits' : [0.0,0.0],           'value'  :  amp1,   'parname': 'amp1'   },{  \
-   'limited': [1,1],   'limits' : [pos1a,pos1b],       'value'  :  pos1,   'parname': 'pos1'   },{  \
-   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],   'value'  :  sig1,   'parname': 'sig1'   },{  \
-   'limited': [1,1],   'limits' : [amp2min,amp2max],   'value'  :  amp2,   'parname': 'amp2'   },{  \
-   'limited': [1,1],   'limits' : [pos2a,pos2b],       'value'  :  pos2,   'parname': 'pos2'   },{  \
-   'limited': [1,1],   'limits' : [sig2_lo,sig2_hi],   'value'  :  sig2,   'parname': 'sig2'   }]  
+   'limited': [1,0],   'limits' : [np.min([0.0,bg0]),0]   ,'value'  :    bg,   'parname': 'bg0' ,'fixed':False   },{  \
+   'limited': [0,0],   'limits' : [None,None],             'value'  :   0.0,   'parname': 'bg1' ,'fixed':False   },{  \
+   'limited': [1,0],   'limits' : [0.0,None],              'value'  :  amp1,   'parname': 'amp1','fixed':fixamp  },{  \
+   'limited': [1,1],   'limits' : [pos1a,pos1b],           'value'  :  pos1,   'parname': 'pos1','fixed':fixpos   },{  \
+   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],       'value'  :  sig1,   'parname': 'sig1','fixed':fixsig   },{  \
+   'limited': [1,1],   'limits' : [amp2min,amp2max],       'value'  :  amp2,   'parname': 'amp2','fixed':fixamp  },{  \
+   'limited': [1,1],   'limits' : [pos2a,pos2b],           'value'  :  pos2,   'parname': 'pos2','fixed':fixpos  },{  \
+   'limited': [1,1],   'limits' : [sig2_lo,sig2_hi],       'value'  :  sig2,   'parname': 'sig2','fixed':fixsig  }]  
       
    else:  
       parinfo = [{  \
-   'limited': [1,0],   'limits' : [np.min([0.0,bg0]),0.0],'value':    bg,   'parname': 'bg0'    },{  \
-   'limited': [0,0],   'limits' : [0.0,0.0],           'value'  :   0.0,   'parname': 'bg1'    },{  \
-   'limited': [1,0],   'limits' : [0.0,0.0],           'value'  :  amp1,   'parname': 'amp1'   },{  \
-   'limited': [1,1],   'limits' : [pos1a,pos1b],       'value'  :  pos1,   'parname': 'pos1'   },{  \
-   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],   'value'  :  sig1,   'parname': 'sig1'   },{  \
-   'limited': [1,0],   'limits' : [0.0,0.0],           'value'  :  amp2,   'parname': 'amp2'   },{  \
-   'limited': [1,1],   'limits' : [pos2a,pos2b],       'value'  :  pos2,   'parname': 'pos2'   },{  \
-   'limited': [1,1],   'limits' : [sig2_lo,sig2_hi],   'value'  :  sig2,   'parname': 'sig2'   }]  
+   'limited': [1,0],   'limits' : [np.min([0.0,bg0]),None],'value'  :    bg,   'parname': 'bg0'    },{  \
+   'limited': [0,0],   'limits' : [None,None],             'value'  :   0.0,   'parname': 'bg1'    },{  \
+   'limited': [1,0],   'limits' : [0.0,None],              'value'  :  amp1,   'parname': 'amp1'   },{  \
+   'limited': [1,1],   'limits' : [pos1a,pos1b],           'value'  :  pos1,   'parname': 'pos1'   },{  \
+   'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],       'value'  :  sig1,   'parname': 'sig1'   },{  \
+   'limited': [1,0],   'limits' : [0.0,None],              'value'  :  amp2,   'parname': 'amp2'   },{  \
+   'limited': [1,1],   'limits' : [pos2a,pos2b],           'value'  :  pos2,   'parname': 'pos2'   },{  \
+   'limited': [1,1],   'limits' : [sig2_lo,sig2_hi],       'value'  :  sig2,   'parname': 'sig2'   }]  
 
    if chatter > 4: 
       print "parinfo has been set to: " 
       for par in parinfo: print par
 
-   Z = mpfit(_fit2,p0,functkw=fa,parinfo=parinfo,quiet=True)
+   Z = mpfit(_fit2g,p0,functkw=fa,parinfo=parinfo,quiet=False)
    
    if (Z.status <= 0): 
       print 'uvotgetspec.runfit2.mpfit error message = ', Z.errmsg
@@ -1460,17 +1809,21 @@ def dofit2gpbg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
    return Z	
        
        
-def _fit2(p, fjac=None, x=None, y=None, err=None):
+def _fit2g(p, fjac=None, x=None, y=None, err=None):
    import numpy as np
+   
+   from pylab import plot,figure
 
    (bg0,bg1,amp1,pos1,sig1,amp2,pos2,sig2) = p 
 	     
-   model = bg0 + bg1*x + \
+   model = bg0*(1 + bg1*(x-pos1)) + \
            amp1 * np.exp( - ((x-pos1)/sig1)**2 ) + \
            amp2 * np.exp( - ((x-pos2)/sig2)**2 ) 
 	    
    status = 0
-   return [status, (y-model)/err]
+   figure(12)
+   plot(x,(model-y)/err)
+   return [status, (model-y)/err]
     
 def dofit2poly(x,f,err,coef1=[0,1],coef2=[0,1],
     chatter=0):
@@ -1530,20 +1883,15 @@ def _fit3(p, fjac=None, x=None, y=None, err=None):
 #
 ####################################################################################
 
-def sum_PHAspectra(phafiles, 
-      flag_bad_areas=True,
-      adjust_wavelengths=True, 
-      outfile=None, 
-      returnout = False,
-      figno=14, 
-      ylim=[-0.2e-14,5e-13],
-      chatter=1, 
-      clobber=True,
-      wave_shifts=[], 
-      exclude_wave=[], 
-      ignore_flags=False, 
-      use_flags=['bad'], 
-      objectname='unknown',
+
+def sum_PHAspectra(phafiles, outfile=None, 
+      ignore_flags=False, use_flags=['bad'], 
+      interactive=False,figno=14,ylim=[-0.2e-14,5e-13],
+      flag_bad_areas=False, exclude_wave=[], 
+      adjust_wavelengths=False, wave_shifts=[], 
+      objectname='unknown', object_position=None,
+      wave_adjust_method=1, exclude_method=1,
+      chatter=1, clobber=True,
       ):
    '''
    Read a list of phafiles. Sum the spectra after applying optional wave_shifts.
@@ -1553,32 +1901,33 @@ def sum_PHAspectra(phafiles,
    ----------
    phafiles : list
       list of filenames
-   flag_bad_areas : bool
+   outfile : str 
+      name for output file. If "None" then write to 'sumpha.txt', 
+      if ending in '.fit' or '.fits' a fits file will be written.
+   flag_bad_areas : bool [optional]
       interactively select areas of each spectrum not to include in each spectrum
-   adjust_wavelengths : bool
+   adjust_wavelengths : bool [optional]
       interactively select a wavelength shift for each spectrum to apply before 
       summing the spectra      
-   outfile : str
-      name for output file. If "None" then write to 'sumpha.txt', 
-      if ending in '.fit' a fits file will be written.
-   ylim : list
-      force limits of Y-axis figure      
-   figno : int, or list
-      numbers for figures or (if only one) the start number of figures     
+   ylim : list [optional]
+      force limits of Y-axis figure (interactive)      
+   figno : int, or list [optional]
+      numbers for figures or (if only one) the start number of figures (interactive)    
       
-   wave_shifts : list
+   wave_shifts : list [optional]
       list of shifts to add to the wavelength scale; same length as phafiles
-   exclude_wave : list
+   exclude_wave : list [optional]
       list of lists of exclude regions; same length as pha files; one list per file
       for an indivisual file the the list element is like [[1600,1900],[2700,2750],] 
-   ignore_flags : bool
+   ignore_flags : bool [optional]
       if True, do not automatically convert flagged sections of the 
       spectrum to exclude_wave regions, if False, use the quality flags from "use_flags" 
-   use_flags : list
+   use_flags : list [optional]
       list of flags (except - 'good') to exclude. 
       Valid keyword values for the flags are defined in quality_flags(),
-   objectname : str
-      name of the object. This will be entered as a keyword in the summed_spectrum fits file.       
+   objectname : str [optional]
+      name of the object. This will be entered as a keyword in the summed_spectrum fits file.
+   object_position: astropy.coordinates [optional]          
    
    Returns
    -------
@@ -1614,347 +1963,202 @@ def sum_PHAspectra(phafiles,
    except:   
       import pyfits as fits
    import numpy as np
-   from scipy import interpolate
-   import pylab as plt
    import copy
-   #from uvotspec import quality_flags_to_ranges
-   from uvotmisc import swtime2JD,get_keyword_from_history
    
-   # first create the wave_shifts and exclude_wave lists; then call routine again to 
-   # create output file (or if None, return result)
-   
+# check parameters
    if outfile == None: 
       outfile = 'sumpha.txt'
       returnout = True
+   else: returnout = False   
    
    nfiles = len(phafiles)
    now = datetime.date.today().isoformat()
-   
-   if flag_bad_areas | adjust_wavelengths : 
-      interactive = True
-   else:
-      interactive = False
-   if chatter > 3: sys.stderr.write( "interactive  %s\n"%(interactive))  
       
    # check  phafiles are all valid paths
-   for phafile in phafiles:
-      if not os.access(phafile,os.F_OK):
-         raise IOError("input file : %s not found \n"%(phafile))
+   for fx in phafiles:
+      if not os.access(fx.strip(),os.F_OK):
+         raise IOError("input file : %s not found \n"%(fx))
+
+   if interactive & ((not flag_bad_areas) & (not adjust_wavelengths)):
+      sys.stderr.write(
+      "\n\nWARNING: If interactive, set at least one of flag_bad_areas, adjust_wavelengths.\n\n")
+   
+   if flag_bad_areas | adjust_wavelengths :
+      if type(figno) != list: figno = [figno]
+      if not interactive:
+          sys.stderr.write(
+   "WARNING: forcing interactive since flag_bad_areas or adjust_wavelengths has been set.") 
+      interactive = True
+   else:
+      if interactive:
+          sys.stderr.write("    interactive off\n\n")
+      interactive = False
+      
+   if chatter > 1:
+      sys.stdout.write("Parameters set : ")
+      if interactive: sys.stdout.write("  interactive set,") 
+      else: sys.stdout.write("  interactive not set,")    
+      if flag_bad_areas: sys.stdout.write("  flag_bad_areas set,") 
+      else: sys.stdout.write("  flag_bad_areas not set,")    
+      if adjust_wavelengths: sys.stdout.write("  adjust_wavelengths set.\n") 
+      else: sys.stdout.write("  adjust_wavelengths not set.\n")    
 	 
    # check wave_shifts and exclude_wave are lists
    if (type(wave_shifts) != list) | (type(exclude_wave) != list):
       raise IOError("parameters wave_list and exclude_wave must be a list")	 
+      
+   exclude_wave_copy = copy.deepcopy(exclude_wave) 
 
-   if chatter > 2:
-      sys.stderr.write(" INPUT =============================================================================\n")
+   f = []    #  list of open fits file handles
+   for fx in phafiles:
+       # check fx is a uvot format file
+       # tbd... how
+       f.append( fits.open(fx) )       
+   
+   if len(wave_shifts)  != nfiles: 
+      wave_shifts = []
+      for i in range(nfiles):
+         wave_shifts.append(0.0)
+   elif chatter > 2: sys.stdout.write("  sum_PHAspectra: input wave_shifts = %s\n"%(wave_shifts))      
+          
+   if len(exclude_wave) != nfiles:  
+      exclude_wave = []
+      for i in range(nfiles):
+         exclude_wave.append([]) 
+   elif chatter > 2: sys.stdout.write("  sum_PHAspectra: input excludes are %s\n"%(exclude_wave))      
+         
+   # update exclude_wave with values extracted from spectrum file using 'use_flags' values 
+
+   if not interactive: 
+       # valid ranges in fits file used to determine exclude sections 
+       exclude_wave = _sum_exclude_sub1(f, nfiles, wave_shifts, 
+                       exclude_wave_copy, exclude_wave, ignore_flags, 
+		       use_flags, chatter=0) 
+       if chatter > 2: 
+          sys.stdout.write( "revised exclude_wave _sum_exclude_sub1: %s\n"%(exclude_wave))        
+
+       # if auto_shift_wave:
+       #   (autocorrelate using middle part spectrum[not excluded] 
+                                              
+   if interactive:
+               	          		 	
+         # interactively adjust wavelength shifts and clipping ranges
+      
+         # first flag the bad ranges for each spectrum
+         if chatter > 1: sys.stderr.write("Determine valid ranges for each spectrum")
+	 
+         if flag_bad_areas:	 
+             if exclude_method == 1: 
+                 exclude_wave = _sum_exclude_sub2(phafiles,nfiles, exclude_wave, 
+                   ignore_flags, use_flags, flag_bad_areas, figno, ylim, chatter)
+             elif exclude_method == 2:    
+                 for i in range(nfiles):  
+                      Z = flag_bad_manually(file=None,openfile=f[i],openplot=None, ylim=ylim, )
+                      f[i] = Z[2]   # updated file handle
+                 exclude_wave = _sum_exclude_sub1(f, nfiles, wave_shifts, 
+                            exclude_wave_copy,exclude_wave, ignore_flags, 
+			    ['bad'], chatter=0) 
+             else: 
+                 raise IOError("sum_PHAspectra: parameter exclude_method must be 1, or 2")                                              
+             if chatter > 2: 
+                     sys.stdout.write( "revised exclude_wave _sum_exclude_sub2: %s\n"%(exclude_wave))        
+	 
+         if adjust_wavelengths: 
+             if wave_adjust_method == 1:    	            	  
+                 wave_shifts = _sum_waveshifts_sub3(phafiles,nfiles, adjust_wavelengths, exclude_wave, 
+                                            figno, ylim, chatter)
+             elif wave_adjust_method == 2:
+                 for i in range(nfiles):
+                     Z = adjust_wavelength_manually(file=None,openfile=f[i],openplot=None,
+                         ylim=ylim,ions=['HI','HeI','HeII'],reference_spectrum=None,
+                         recalculate=True)
+                     f[i] = Z[3]  # updated file handle			 
+                     close(Z[0])  # close the figure 
+                 wave_shifts = list(np.zeros(nfiles))   
+             else: 
+                 raise IOError("sum_PHAspectra: parameter wave_adjust_method must be either 1 or 2.")         
+                  
+             if chatter > 2: 
+                 sys.stdout.write( "revised wave_shifts _sum_waveshifts_sub3: %s\n"%(wave_shifts))        
+             
+             Z = ''
+	               	
+   if chatter > 0:
+      sys.stderr.write("\n INPUT =============================================================================\n")
       sys.stderr.write("sum_PHAspectra(\nphafiles;%s,\nwave_shifts=%s,\nexclude_wave=%s,\nignore_flags=%s\n" %(
            phafiles,wave_shifts,exclude_wave,ignore_flags))
       sys.stderr.write("interactive=%s, outfile=%s, \nfigno=%s, chatter=%i, clobber=%s)\n" % (
            interactive,outfile,figno,chatter,clobber) )
       sys.stderr.write("====================================================================================\n")
-      
-   exclude_wave_copy = copy.deepcopy(exclude_wave)  
+                                                   
+   (wave, wf, wvar, mf, svar, serr, nsummed, q, sector), D, result = _sum_weightedsum(
+                                     f,copy.deepcopy(exclude_wave), wave_shifts, chatter)
 
-   f = []    #  list of open fits file handles
-   for fx in phafiles:
-       f.append( fits.open(fx) )
-       	 
-   # update exclude_wave with use_flags 
-   exclude_wave_new = []
-   if (not ignore_flags) & (len(use_flags) > 0):
-      for i in range(nfiles):
-         fx = f[i]
-	 excl = exclude_wave[i]
-         if chatter > 1: print "creating/updating exclude_wave for file ",phafiles[i] 
+      # write output
+   _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
+                       wave,wf,serr,nsummed,sector,q,f,objectname,
+                       object_position, clobber, chatter)      
 
-         quality_range = quality_flags_to_ranges(quality)
-	 if chatter > 3: print "adding",quality_range
+   if returnout:
+       return D
+
+# DONE	 
+           
+def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave, ignore_flags, use_flags, chatter=0):
+         """ Helper routine for sum_PHAspectra() 
+         Using the valid ranges for each spectrum found in the fits file using quality flags
+         """
+         from astropy.io import fits
          
-         for flg in use_flags:
-	        if flg in quality_range:
-		    pixranges = quality_range[flg]
-		    for pixes in pixranges:
-		        waverange=fx[2].data['lambda'][pixes]
-      	                excl.append(list(waverange))
          if chatter > 1: 
-	    print 'processing file number ',i,'  from ',fx[1].header['date-obs']
-	    print "filenumber: %i\nexclude_wave type: %s\nexclude_wave values: %s"%(i,type(excl),excl)
-         exclude_wave_new.append(excl) 
-      exclude_wave = exclude_wave_new
-      if chatter > 3: 
-         print "revised exclude_wave: ",exclude_wave        
-
-   if (interactive == False) & (len(wave_shifts) == nfiles) & (len(exclude_wave) == nfiles):
-      #
-      #   sum the spectra using wave_shifts and exclude_wave 
-      #
-      if chatter > 3: print "if => (interactive == False) & (len(wave_shifts) == nfiles) & (len(exclude_wave) == nfiles)"
-      if chatter > 1 : print "merging spectra "
-      # create the summed spectrum
-      result = None
-      # find wavelength range 
-      wmin = 7000; wmax = 1500
-      tstart = 9999999999.0
-      tstop  = 0.0
-      exposure=0
-      for fx in f:	 
-	 q = np.isfinite(fx[2].data['flux'])
-	 wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
-	 wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
-	 tstart = np.min([tstart,fx[2].header['tstart']])
-         tstop  = np.max([tstop ,fx[2].header['tstop' ]])
-	 exposure += fx[2].header['exposure']
-      if chatter > 1: 
-	    print 'wav min ',wmin
-	    print 'wav max ',wmax
-      #wheelpos = f[0][2].header['wheelpos']	    
-	 
-      # create arrays - output arrays
-      wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps at integer values 
-      nw = len(wave)                     # number of wavelength points
-      flux = np.zeros(nw,dtype=float)	 # flux
-      error = np.zeros(nw,dtype=float)   # mean RMS errors in quadrature
-      nsummed = np.zeros(nw,dtype=int)   # number of spectra summed for the given point - if only one, 
-                                         # add the typical RMS variance found for points with multiple spectra
-      # local arrays      					 
-      err_in  = np.zeros(nw,dtype=float)   # error in flux
-      err_rms = np.zeros(nw,dtype=float)   # RMS error from variance
-      mf = np.zeros(nw,dtype=float)        # mean flux
-      wf = np.zeros(nw,dtype=float)        # weighted flux
-      var = np.zeros(nw,dtype=float)         # variance 
-      err = np.zeros(nw,dtype=float)       # RMS error
-      wgt = np.zeros(nw,dtype=float)       # weight
-      wvar= np.zeros(nw,dtype=float)       # weighted variance
-      one = np.ones(nw,dtype=int)          # unit
-      sector = np.ones(nw,dtype=int)      # sector numbers for disconnected sections of the spectrum
-	 
-      D = []
-      for i in range(nfiles):
-         if chatter>3 : print "for i in range(nfiles):"
-         fx = f[i]
-	 excl = exclude_wave[i]
-	 
-         W = fx[2].data['lambda']+wave_shifts[i]
-	 F = fx[2].data['flux']   
-	 E = np.abs(fx[2].data['fluxerr'])
-	 p = np.isfinite(F) & (W > 1600.)
-	 fF = interpolate.interp1d( W[p], F[p], )
-	 fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
-	 
-         M = np.ones(len(wave),dtype=bool)     # mask set to True
-	 M[wave < W[p][0]] = False
-	 M[wave > W[p][-1]] = False
-	 while len(excl) > 0:
-	    try:
-	       w1,w2 = excl.pop()
-	       if chatter > 1: print 'excluding from file ',i,"   ",w1," - ",w2
-	       M[ (wave >= w1) & (wave <= w2) ] = False
-	    except: pass 
-	 
-	 flux[M]    = fF(wave[M])
-	 error[M]   = fE(wave[M])
-	 nsummed[M] += one[M] 
-	 mf[M]      += flux[M]                 # => mean flux 
-	 wf[M]      += flux[M]/error[M]**2     # sum weight * flux
-	 wvar[M]    += flux[M]**2/error[M]**2  # sum weight * flux**2
-	 var[M]     += flux[M]**2    	       # first part 	
-	 err[M]     += error[M]**2
-	 wgt[M]     += 1.0/error[M]**2    # sum weights
-         D.append(((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed),(mf,wf,wvar),(var,err,wgt)))
-	 
-      # make sectors based on continuous parts spectrum
-      if chatter>3 : print "# make sectors"
-      sect = 1
-      for i in range(1,len(nsummed),1):
-          if (nsummed[i] != 0) & (nsummed[i-1] != 0): sector[i] = sect
-	  elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
-	     sect += 1
-	     sector[i]=sect
-      q = np.where(nsummed > 0)	     
-      exclude_wave = copy.deepcopy(exclude_wave_new)
-      mf[q] = mf[q]/nsummed[q]              # mean flux
-      var[q] = np.abs(var[q]/nsummed[q] - mf[q]**2)    # variance in flux (deviations from mean of measurements)
-      err[q] = err[q]/nsummed[q]            # mean variance from errors in measurements 	
-      wf[q] = wf[q]/wgt[q]                  # mean weighted flux
-      wvar[q] = np.abs(wvar[q]/wgt[q] - wf[q]**2)      # variance weighted from measurement errors		
-      svar = np.sqrt(var)
-      serr = np.sqrt(err)
-      result = wave[q], wf[q], wvar[q], mf[q], svar[q], serr[q], nsummed[q], wave_shifts, exclude_wave, sector[q]
-
-      # debug : 	 
-      D.append( ((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed,sector),(mf,wf,wvar),(var,err,wgt)) )
-      	 	 
-      for fx in f:		# cleanup
-         fx.close()
-      
-      if os.access(outfile,os.F_OK) & (not clobber):
-          sys.stderr.write("output file %s already present\nGive new filename (same will overwrite)"%(outfile)) 
-	  outfile = input("new filename = ")
-	  if type(outfile) != string: 
-	     outfile = "invalid_filename.txt"
-	     sys.stderr.write("invalid filename, writing emergency file %s"%(outfile))
-      
-      if outfile.rsplit('.')[-1][:3].lower() == 'fit':
-         print "writing fits file"
-         hdu = fits.PrimaryHDU()
-         hdulist=fits.HDUList([hdu])
-         hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name' )                     
-         hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name' )                       
-	 col1 = fits.Column(name='wave',format='E',array=wave[q],unit='0.1nm')            
-	 col2 = fits.Column(name='flux',format='E',array=wf[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 #col3 = fits.Column(name='fluxvar',format='E',array=wvar[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 #col4 = fits.Column(name='flux',format='E',array=mf[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 #col5 = fits.Column(name='fluxerr',format='E',array=svar[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 col6 = fits.Column(name='fluxerr',format='E',array=serr[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 col7 = fits.Column(name='n_spec',format='I',array=nsummed[q],unit='erg cm-2 s-1 Angstrom-1')            
-	 col8 = fits.Column(name='sector',format='I',array=sector[q],unit='0.1nm')   
-	 cols = fits.ColDefs([col1,col2,col6,col7,col8])
-	 hdu1 = fits.BinTableHDU.from_columns(cols)   
-         hdu1.header['EXTNAME']=('SUMMED_SPECTRUM','Name of this binary table extension')
-         hdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
-         hdu1.header['INSTRUME']=('UVOTA','Instrument name')
-         hdu1.header['FILTER'] =(f[0][2].header['FILTER'],'filter identification')
-         hdu1.header['ORIGIN'] ='UCL/MSSL','source of FITS file'
-         hdu1.header['CREATOR']=('uvotspec.py','uvotpy python library')
-         hdu1.header['COMMENT']='uvotpy sources at www.github.com/PaulKuin/uvotpy'
-         hdu1.header['OBJECT'] = (objectname,'object name')
-	 hi = f[0][1].header['history']
-	 RA = -999.9
-	 DEC = -999.9
-	 if chatter > 4: print hi
-	 if len(hi) > 0:
-	    for hiline in hi:
-	        if len(hiline.split()) > 0:
-	            if hiline.split()[1] == 'RA,DEC':
-	                RA = hiline.split()[3]
-		        DEC = hiline.split()[4]
-	   	        break
-	 hdu1.header['RA_OBJ'] = (RA ,'Right Ascension')
-	 hdu1.header['DEC_OBJ'] = (DEC,'Declination')
-	 hdu1.header['EQUINOX'] = '2000.0'
-	 hdu1.header['RADECSYS'] = 'FK5'
-	 hdu1.header['HDUCLASS'] = 'UVOT'
-	 hdu1.header['HDUDOC'] = 'http://www.ucl.ac.uk/mssl/astro/space_missions/swift'
-	 hdu1.header['HDUVERS'] = ('1.0','initial format')
-	 hdu1.header['HDUCLAS1'] = ('SPECTRUM','spectrum is sum from spectra from exposures')
-	 hdu1.header['HDUCLAS2'] = ('FLUX','spectrum in units or energy per sec per area')
-	 hdu1.header['tstart'] = (tstart,"Swift time in seconds")
-	 hdu1.header['tstop']  = (tstop,"Swift time in seconds")
-	 xstart = swtime2JD(tstart)
-	 xstop  = swtime2JD(tstop)
-	 hdu1.header['date-obs']=(xstart[3],'start of summed images')
-	 hdu1.header['date-end']=(xstop[3],'end of summed images')
-	 hdu1.header['exposure']=(exposure,'total exposure time, corrected for deadtime')
-	 hdu1.header['comment'] = 'flux weighted by errors ' 
-	 hdu1.header['comment'] = 'sectors define unbroken stretches of summed spectrum'
-	 hdu1.header['comment'] = 'n_spec is the number of spectra used for the data point'
-	 hdu1.header['date'] = (now,'creation date of this file')
-	 #   "#columns: 
-	 #   wave     wave(A),
-	 #   wf       error weighted flux(erg cm-2 s-1 A-1),   
-	 # !  wvar     variance of the weighted flux, 
-	 # !  mf       plain mean of the flux (no weighting at all) (erg cm-2 s-1 A-1), 
-	 # !  svar     plain flux error (deviations from mean),  
-	 #   serr     weighted flux error (mean noise) ~ sqrt(wvar), 
-	 #   nsummed  number of data summed, 
-	 #   sector   sectors of unbroken spectrum (e.g., from zeroth order at same place in all inputs)"
-         hdu1.header['history']= "merged fluxes from the following files"
-	 hdu1.header['history']= "#  file   wave_shift  exclude_wave(s)"
-         for i in range(nfiles): 	      
-	     hdu1.header['history'] = ("%2i %s %5.1f %s" % 
-	        (i,phafiles[i].rsplit('/')[-1],wave_shifts[i],exclude_wave[i]) )
-         hdulist.append(hdu1)		
-	 hdulist.writeto(outfile,clobber=clobber)
-      else:	    
-          print "writing output to ascii file: ",outfile
-          fout = open(outfile,'w')
-          fout.write("#merged fluxes from the following files\n")
-          for i in range(nfiles): 	      
-	      fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
-          fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
-	    +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
-	    +"#          flux error (mean noise), number of data summed, sector\n")
-          if chatter > 4: 
-	    print "len arrays : %i\nlen (q) : %i"%(nw,len(q[0]))   
-          for i in range(len(q[0])):
-	    if np.isfinite(wf[q][i]): 
-               fout.write( ("%8.2f %12.5e %12.5e %12.5e %12.5e %12.5e %4i %3i\n") % \
-	            (wave[q][i],wf[q][i],wvar[q][i],
-		     mf[q][i],svar[q][i],serr[q][i],
-		     nsummed[q][i],sector[q][i]))
-          fout.close()		       
-      
-      if returnout:
-         return D
-	  
-      # END PROGRAM  	 
-	 
-   else: 
-    
-      # before summing the spectra, the wave_shifts and exclude_wave arrays need to be done 
-      
-      # interactive == True OR (len(wave_shifts) == nfiles) OR (len(exclude_wave) == nfiles)
-
-      if chatter > 3: print "else => (interactive == False) & (len(wave_shifts) == nfiles) & (len(exclude_wave) == nfiles)"
-
-      # now only accept the parameters wave_shifts and exclude_wave when passed with values for each file
-      if len(wave_shifts)  != nfiles: 
-         wave_shifts = []
-      if len(exclude_wave_copy) != nfiles: 
-         exclude_wave = []
-         
-      if not interactive: # interactive = F, but either wave_shifts or exclude_wave passed parameters
-         if chatter > 1: print "use passed valid ranges for each spectrum; and given shifts"
-	 exwave = []
+            print "using the valid ranges for each spectrum found in the fits file; and determine the shifts"
+	 exwave = []  # final
          for i in range(nfiles):
 	    if len(wave_shifts)  != nfiles: wave_shifts.append(0)
-	    excl = []
-	    if len(exclude_wave_copy) == nfiles: excl = exclude_wave[i]
+            excl = []  # per file 
 	    if not ignore_flags:
-      	       f = fits.open(phafiles[i])
-	       W  = f[2].data['lambda']
-	       FL = f[2].data['quality']
-	       f.close()
-	       ex = []
-	       if len(use_flags) == 0: # exclude ALL flags 
-                   if chatter > 1: print "creating/updating exclude_wave" 
-   	           if FL[0] != 0: ex=[0]
-	           for i in range(1,len(W)):
-	              same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
-		      good = (FL[i] == 0)
-		      if not same:
-		         if good: ex.append[i]
-		         else: ex = [i]
-	              if len(ex) == 2: 
-		         excl.append(ex)
-		         ex = []
-		      if (i == (len(W)-1)) & (len(ex) == 1): 
-		         ex.append(len(W))
-		         excl.append(ex) 
+      	        fx = f[i]
+	        W  = fx[2].data['lambda']
+	        FL = fx[2].data['quality']
+	        ex = []
+	        if len(use_flags) == 0: # exclude ALL flags 
+                    if chatter > 1: print "creating/updating exclude_wave" 
+   	            if FL[0] != 0: ex=[0]
+	            for i in range(1,len(W)):
+	                same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
+		        good = (FL[i] == 0)
+		        if not same:
+		           if good: ex.append[i]
+		           else: ex = [i]
+	                if len(ex) == 2: 
+		           excl.append(ex)
+		           ex = []
+		        if (i == (len(W)-1)) & (len(ex) == 1): 
+		           ex.append(len(W))
+		           excl.append(ex) 
+                else:
+                    quality_range = quality_flags_to_ranges(FL)
+                    for flg in use_flags:
+	                if flg in quality_range:
+		            pixranges = quality_range[flg]  
+     		            for pixes in pixranges:
+		                waverange=fx[2].data['lambda'][pixes]
+      	                        ex.append(list(waverange))
+                    excl.append(ex)                                          
             exwave.append(excl) 		       			
-	 exclude_wave = exwave
-	    
-	 if not ignore_flags: 
-	    sum_PHAspectra(phafiles, wave_shifts=wave_shifts, 
-	    exclude_wave=exclude_wave, 
-	    ignore_flags=True, use_flags=use_flags,
-	    interactive=False, 
-	    outfile=outfile, figno=figno, 
-	    chatter=chatter, clobber=clobber)
-	          		 	
-      else:    # interactively adjust wavelength shifts and clipping ranges
-      
-         # first flag the bad ranges for each spectrum
-         if chatter > 1: print "Determine valid ranges for each spectrum; determine shifts"
-	 
-	 if (len(exclude_wave) != nfiles):  # this is in case an invalid list is still present
-            if chatter > 0:
-               print "exclude_wave length problem, not == nfiles, but is:",exclude_wave
-               print "setting exclude_wave to empty list"
-	    exclude_wave = []
-	    for i in range(nfiles): exclude_wave.append([])
-	 
-         for i in range(nfiles):
+	 return exwave # updated exclude_wave
+         
+def _sum_exclude_sub2(phafiles,nfiles, exclude_wave, 
+    ignore_flags, use_flags,flag_bad_areas, figno,ylim, chatter):
+    """ Helper routine for sum_PHAspectra() 
+    Interactively determine the exclusion ranges of each spectrum
+    """
+
+    import sys
+    from astropy.io import fits
+    import pylab as plt
+         
+    for i in range(nfiles):
 	    if chatter > 1: 
 	       print "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
 	       print " valid ranges for file number %i - file name = %s\n" % (i,phafiles[i])
@@ -1963,7 +2167,7 @@ def sum_PHAspectra(phafiles,
 	    W = f[2].data['lambda']
 	    F = f[2].data['flux']
 	    E = f[2].data['fluxerr']
-	    FL = f[2].data['quality']
+	    FL = quality = f[2].data['quality']
 	    try:
   	       COI = f[2].data['sp1_coif']
 	       do_COI = True
@@ -1981,8 +2185,9 @@ def sum_PHAspectra(phafiles,
 	    
 	    excl_ = exclude_wave[i]
 	    if len(excl_) != 0: 
-	       sys.stderr.write( "exclusions passed by argument for file %s are: %s\n"%
-	       (phafiles[i],excl_) )
+	        sys.stderr.write( 
+                   "exclusions passed by argument for file %s are: %s\n"%
+	           (phafiles[i],excl_) )
             if (not ignore_flags) & (len(use_flags) > 1) : 
                 quality_range = quality_flags_to_ranges(quality)
                 for flg in use_flags:
@@ -1992,21 +2197,23 @@ def sum_PHAspectra(phafiles,
 			  waverange=W[pixes]
       	                  excl_.append(list(waverange))
 		sys.stderr.write(
-		"exclusions including those from selected quality flags for file %s are: %s\n"%
+          "exclusions - including those from selected quality flags - for file %s are: %s\n"%
 		(phafiles[i],excl_))      
 
 	    if len(excl_) > 0:
-	       sys.stdout.write( "wavelength exclusions for this file are: %s\n"%(excl_))
+               sys.stdout.write( 
+                   "wavelength exclusions for this file are: %s\n"%(excl_))
      	       ans = raw_input(" change this ? (y/N) : ")
 	       if ans.upper()[0] == 'Y' :  OK = True
 	       else: OK = False
 	    else: OK = True   
          
 	    if flag_bad_areas:
-              if chatter > 1: sys.stderr.write("update wavelength exclusions\n")	       
+              if chatter > 1: 
+                 sys.stderr.write("update wavelength exclusions\n")	       
 	      nix1 = 0
 	      while OK:     # update the wavelength exclusions
-	         try:
+	         #try:
 	            nix1 += 1
 		    OK = nix1 < 10
 	            excl = []  # note different from excl_
@@ -2026,8 +2233,7 @@ def sum_PHAspectra(phafiles,
 	            if do_COI: ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
 		    ax2.legend(loc=0)
 		    ax2.set_xlabel('wavelength in $\AA$')
-		  
-	       	  
+		  	       	  
 		    EXCL = True
 		    nix0 = 0
 		    while EXCL:
@@ -2044,45 +2250,54 @@ def sum_PHAspectra(phafiles,
 			   continue
 		        excl_.append(lans)	
 		    OK = False
-	         except:
-	            print "problem encountered with the selection of exclusion regions"
-	            print "try again"
+	         #except:
+	         #   print "problem encountered with the selection of exclusion regions"
+	         #   print "try again"
 	      exclude_wave[i] = excl_
-	    
-	      
-         if chatter > 0: 
-	     sys.stderr.write("new exclusions are %s\n"%(exclude_wave))
-	            	  
-         # get wavelength shifts for each spectrum
-	    # if already passed as argument:  ?
-	 sys.stdout.write(" number  filename \n")
-	 for i in range(nfiles):
+    return exclude_wave	    
+
+def _sum_waveshifts_sub3(phafiles,nfiles, adjust_wavelengths,exclude_wave, 
+    figno, ylim, chatter):
+    """
+    Interactively determine wave shifts
+    """
+    import sys
+    from astropy.io import fits
+    import pylab as plt
+
+    wave_shifts = []
+
+    # get wavelength shifts for each spectrum
+    # if already passed as argument:  ?
+            
+    sys.stdout.write(" number  filename \n")
+    for i in range(nfiles):
 	    sys.stdout.write(" %2i --- %s\n" % (i,phafiles[i]))
-	 try:   
+    try:   
 	    fselect = input(" give the number of the file to use as reference, or 0 : ")
 	    if (fselect < 0) | (fselect >= nfiles):
 	       sys.stderr.write("Error in file number, assuming 0\n")
 	       fselect=0	  
 	    ref = fits.open(phafiles[fselect])   
-         except: 
+    except: 
 	    fselect = 0
 	    ref = fits.open(phafiles[0])
-	 refW = ref[2].data['lambda']
-	 refF = ref[2].data['flux']
-	 refE = ref[2].data['fluxerr']
-	 refexcl = exclude_wave[fselect]   
+    refW = ref[2].data['lambda']
+    refF = ref[2].data['flux']
+    refE = ref[2].data['fluxerr']
+    refexcl = exclude_wave[fselect]   
 
-	 wheelpos = ref[1].header['wheelpos']
-         if wheelpos < 500:
+    wheelpos = ref[1].header['wheelpos']
+    if wheelpos < 500:
      	    q = np.isfinite(refF) & (refW > 1700.) & (refW < 5400)
-	 else:   
+    else:   
      	    q = np.isfinite(refF) & (refW > 2850.) & (refW < 6600)
-	 if len(refexcl) > 0:   
+    if len(refexcl) > 0:   
 	    if chatter > 0: print "refexcl:",refexcl
   	    for ex in refexcl:
                q[ (refW > ex[0]) & (refW < ex[1]) ] = False
 
-         if adjust_wavelengths:
+    if adjust_wavelengths:
 	    if figno != None: 
 	       if len(figno) > 1: fig1=plt.figure(figno[1]) 
 	       else: fig1 = plt.figure(figno[0])
@@ -2141,15 +2356,236 @@ def sum_PHAspectra(phafiles,
 		     if chatter > 1: print "total shift = ",sh," A" 
 	    #
 	    #  TBD use mean of shifts instead of reference spectrum ?
-	    #       
+	    #      drag spectrum ? 
+            #      do autoshift on final two pixels?  
 	    if chatter > 1: 
-	        print "selected shifts = ",wave_shifts
-	        print "selected exclude wavelengths = ",exclude_wave    
-	        print "computing weighted average of spectrum" 
-         else:  # adjust_wavelengths = False
+                sys.stderr.write( "selected shifts = %s\n"%(wave_shifts))
+	        #sys.stderr.write("computing weighted average of spectrum\n")
+    else:  # adjust_wavelengths = False
 	     for i in range(nfiles):
-	         wave_shifts.append(0)		
-	 C = sum_PHAspectra(phafiles, wave_shifts=wave_shifts, exclude_wave=exclude_wave, ignore_flags=True, 
-              outfile=outfile, figno=figno, chatter=chatter, clobber=True, flag_bad_areas=False,
-              adjust_wavelengths=False, returnout = returnout, use_flags=['bad'])
-	 return C       
+	         wave_shifts.append(0)	
+    return wave_shifts             
+
+def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
+   wave,wf,serr,nsummed,sector,q,f,objectname, objposition, clobber, chatter):
+   
+   import os
+   import sys
+   from astropy.io import fits
+   from uvotmisc import swtime2JD, get_keyword_from_history
+   import datetime
+   
+   now = datetime.date.today().isoformat()
+
+   print "outsub exclude_wave: ",exclude_wave
+
+
+   if os.access(outfile,os.F_OK) & (not clobber):
+          sys.stderr.write("output file %s already present\nGive new filename (same will overwrite)"%(outfile)) 
+	  outfile = input("new filename = ")
+	  if type(outfile) != string: 
+	     outfile = "invalid_filename.txt"
+	     sys.stderr.write("invalid filename, writing emergency file %s"%(outfile))
+      
+   if outfile.rsplit('.')[-1][:3].lower() == 'fit':
+         print "writing fits file"
+         hdu = fits.PrimaryHDU()
+         hdulist=fits.HDUList([hdu])
+         hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name' )                     
+         hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name' )                       
+	 col1 = fits.Column(name='wave',format='E',array=wave[q],unit='0.1nm')            
+	 col2 = fits.Column(name='flux',format='E',array=wf[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 #col3 = fits.Column(name='fluxvar',format='E',array=wvar[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 #col4 = fits.Column(name='flux',format='E',array=mf[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 #col5 = fits.Column(name='fluxerr',format='E',array=svar[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 col6 = fits.Column(name='fluxerr',format='E',array=serr[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 col7 = fits.Column(name='n_spec',format='I',array=nsummed[q],unit='erg cm-2 s-1 Angstrom-1')            
+	 col8 = fits.Column(name='sector',format='I',array=sector[q],unit='0.1nm')   
+	 cols = fits.ColDefs([col1,col2,col6,col7,col8])
+	 hdu1 = fits.BinTableHDU.from_columns(cols)   
+         hdu1.header['EXTNAME']=('SUMMED_SPECTRUM','Name of this binary table extension')
+         hdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
+         hdu1.header['INSTRUME']=('UVOTA','Instrument name')
+         hdu1.header['FILTER'] =(f[0][2].header['FILTER'],'filter identification')
+         hdu1.header['ORIGIN'] ='UCL/MSSL','source of FITS file'
+         hdu1.header['CREATOR']=('uvotspec.py','uvotpy python library')
+         hdu1.header['COMMENT']='uvotpy sources at www.github.com/PaulKuin/uvotpy'
+         hdu1.header['OBJECT'] = (objectname,'object name')
+	 hi = f[0][1].header['history']
+         tstart  = f[0][1].header['tstart']
+         tstop  = f[0][1].header['tstop']
+         exposure = f[0][1].header['exposure']
+	 RA = -999.9
+	 DEC = -999.9
+	 if chatter > 4: print hi
+	 if len(hi) > 0:
+	    for hiline in hi:
+	        if len(hiline.split()) > 0:
+	            if hiline.split()[1] == 'RA,DEC':
+	                RA = hiline.split()[3]
+		        DEC = hiline.split()[4]
+	   	        break
+	 hdu1.header['RA_OBJ'] = (RA ,'Right Ascension')
+	 hdu1.header['DEC_OBJ'] = (DEC,'Declination')
+	 hdu1.header['EQUINOX'] = '2000.0'
+	 hdu1.header['RADECSYS'] = 'FK5'
+	 hdu1.header['HDUCLASS'] =  ('UVOT','document class defined by UVOT/MSSL')
+	 hdu1.header['HDUDOC'] = 'http://www.ucl.ac.uk/mssl/astro/space_missions/swift'
+	 hdu1.header['HDUVERS'] = ('1.0','initial format')
+	 hdu1.header['HDUCLAS1'] = ('SPECTRUM','spectrum is sum from spectra from exposures')
+	 hdu1.header['HDUCLAS2'] = ('FLUX','spectrum in units or energy per sec per area')
+	 hdu1.header['tstart'] = (tstart,"Swift time in seconds")
+	 hdu1.header['tstop']  = (tstop,"Swift time in seconds")
+	 xstart = swtime2JD(tstart)
+	 xstop  = swtime2JD(tstop)
+	 hdu1.header['date-obs']=(xstart[3],'start of summed images')
+	 hdu1.header['date-end']=(xstop[3],'end of summed images')
+	 hdu1.header['exposure']=(exposure,'total exposure time, corrected for deadtime')
+	 hdu1.header['comment'] = 'flux weighted by errors ' 
+	 hdu1.header['comment'] = 'sectors define unbroken stretches of summed spectrum'
+	 hdu1.header['comment'] = 'n_spec is the number of spectra used for the data point'
+	 hdu1.header['date'] = (now,'creation date of this file')
+	 #   "#columns: 
+	 #   wave     wave(A),
+	 #   wf       error weighted flux(erg cm-2 s-1 A-1),   
+	 # !  wvar     variance of the weighted flux, 
+	 # !  mf       plain mean of the flux (no weighting at all) (erg cm-2 s-1 A-1), 
+	 # !  svar     plain flux error (deviations from mean),  
+	 #   serr     weighted flux error (mean noise) ~ sqrt(wvar), 
+	 #   nsummed  number of data summed, 
+	 #   sector   sectors of unbroken spectrum (e.g., from zeroth order at same place in all inputs)"
+         hdu1.header['history']= "merged fluxes from the following files"
+	 hdu1.header['history']= "#  file   wave_shift &  exclude_wave(s)"
+         for i in range(nfiles): 	      
+             if chatter > 4: 
+                 print ("%2i %s %5.1f "%
+	         (i,phafiles[i].rsplit('/')[-1],wave_shifts[i]) )
+                 print ("%2i excl=%s"%(i,exclude_wave[i]) )
+	     hdu1.header['history'] = ("%2i %s %5.1f "%
+	        (i,phafiles[i].rsplit('/')[-1],wave_shifts[i]) )
+	     hdu1.header['history'] = ("%2i excl=%s"%(i,exclude_wave[i]) )
+         hdulist.append(hdu1)		
+	 hdulist.writeto(outfile,clobber=clobber)
+   else:	    
+          print "writing output to ascii file: ",outfile
+          fout = open(outfile,'w')
+          fout.write("#merged fluxes from the following files\n")
+          for i in range(nfiles): 	      
+	      fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % 
+                  (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
+          fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
+	    +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
+	    +"#          flux error (mean noise), number of data summed, sector\n")
+          if chatter > 4: 
+	    print "len arrays : %i\nlen (q) : %i"%(len(wave),len(q[0]))   
+          for i in range(len(q[0])):
+	    if np.isfinite(wf[q][i]): 
+               fout.write( ("%8.2f %12.5e %12.5e %12.5e %12.5e %12.5e %4i %3i\n") % \
+	            (wave[q][i],wf[q][i],wvar[q][i],
+		     mf[q][i],svar[q][i],serr[q][i],
+		     nsummed[q][i],sector[q][i]))
+          fout.close()		       
+      
+def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
+
+    import numpy as np
+    import copy
+    from scipy import interpolate
+
+    # create the summed spectrum
+    result = None
+    # find wavelength range 
+    wmin = 7000; wmax = 1500
+    tstart = 9999999999.0
+    tstop  = 0.0
+    exposure=0
+    nfiles=len(f)
+    for fx in f:	 
+	 q = np.isfinite(fx[2].data['flux'])
+	 wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
+	 wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
+	 tstart = np.min([tstart,fx[2].header['tstart']])
+         tstop  = np.max([tstop ,fx[2].header['tstop' ]])
+	 exposure += fx[2].header['exposure']
+    if chatter > 1: 
+	    print 'wav min ',wmin
+	    print 'wav max ',wmax
+	 
+    # create arrays - output arrays
+    wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps at integer values 
+    nw = len(wave)                     # number of wavelength points
+    flux = np.zeros(nw,dtype=float)	 # flux
+    error = np.zeros(nw,dtype=float)   # mean RMS errors in quadrature
+    nsummed = np.zeros(nw,dtype=int)   # number of spectra summed for the given point - if only one, 
+                                         # add the typical RMS variance found for points with multiple spectra
+    # local arrays      					 
+    err_in  = np.zeros(nw,dtype=float)   # error in flux
+    err_rms = np.zeros(nw,dtype=float)   # RMS error from variance
+    mf = np.zeros(nw,dtype=float)        # mean flux
+    wf = np.zeros(nw,dtype=float)        # weighted flux
+    var = np.zeros(nw,dtype=float)         # variance 
+    err = np.zeros(nw,dtype=float)       # RMS error
+    wgt = np.zeros(nw,dtype=float)       # weight
+    wvar= np.zeros(nw,dtype=float)       # weighted variance
+    one = np.ones(nw,dtype=int)          # unit
+    sector = np.ones(nw,dtype=int)      # sector numbers for disconnected sections of the spectrum
+	 
+    D = []
+    for i in range(nfiles):
+         if chatter>3 : print "for i in range(nfiles):"
+         fx = f[i]
+	 excl = exclude_wave[i]
+	 
+         W = fx[2].data['lambda']+wave_shifts[i]
+	 F = fx[2].data['flux']   
+	 E = np.abs(fx[2].data['fluxerr'])
+	 p = np.isfinite(F) & (W > 1600.)
+	 fF = interpolate.interp1d( W[p], F[p], )
+	 fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
+	 
+         M = np.ones(len(wave),dtype=bool)     # mask set to True
+	 M[wave < W[p][0]] = False
+	 M[wave > W[p][-1]] = False
+	 while len(excl) > 0:
+	    try:
+	       w1,w2 = excl.pop()
+	       if chatter > 1: print 'excluding from file ',i,"   ",w1," - ",w2
+	       M[ (wave >= w1) & (wave <= w2) ] = False
+	    except: pass 
+	 
+	 flux[M]    = fF(wave[M])
+	 error[M]   = fE(wave[M])
+	 nsummed[M] += one[M] 
+	 mf[M]      += flux[M]                 # => mean flux 
+	 wf[M]      += flux[M]/error[M]**2     # sum weight * flux
+	 wvar[M]    += flux[M]**2/error[M]**2  # sum weight * flux**2
+	 var[M]     += flux[M]**2    	       # first part 	
+	 err[M]     += error[M]**2
+	 wgt[M]     += 1.0/error[M]**2    # sum weights
+         D.append(((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed),(mf,wf,wvar),(var,err,wgt)))
+	 
+    # make sectors based on continuous parts spectrum
+    if chatter>3 : print "# make sectors"
+    sect = 1
+    for i in range(1,len(nsummed),1):
+          if (nsummed[i] != 0) & (nsummed[i-1] != 0): sector[i] = sect
+	  elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
+	     sect += 1
+	     sector[i]=sect
+    q = np.where(nsummed > 0)	     
+    mf[q] = mf[q]/nsummed[q]              # mean flux
+    var[q] = np.abs(var[q]/nsummed[q] - mf[q]**2)    # variance in flux (deviations from mean of measurements)
+    err[q] = err[q]/nsummed[q]            # mean variance from errors in measurements 	
+    wf[q] = wf[q]/wgt[q]                  # mean weighted flux
+    wvar[q] = np.abs(wvar[q]/wgt[q] - wf[q]**2)      # variance weighted from measurement errors		
+    svar = np.sqrt(var)
+    serr = np.sqrt(err)
+    result = wave[q], wf[q], wvar[q], mf[q], svar[q], serr[q], nsummed[q], wave_shifts, exclude_wave, sector[q]
+    # debug : 	 
+    D.append( ((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed,sector),(mf,wf,wvar),(var,err,wgt)) )
+    for fx in f:		# cleanup
+         fx.close()
+    
+    return (wave, wf, wvar, mf, svar, serr, nsummed, q, sector), D, result 
+  
+
