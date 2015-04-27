@@ -28,9 +28,9 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
  Bug Fixes: 
     2011-08-26 NPMKuin (MSSL/UCL) some clarification in the documentation.
     2013-11-19 NPMKuin (MSSL/UCL) changed import scipy.lib.blas[deprecated] to scipy.linalg.blas 
-    
+                                  changed trace of array in qrsolve() to a copy since it needs to be writeable.
  Known bugs:   
-    2013-11-19 Problem with Ureka_1.0beta6 	
+    	
 
 		DESCRIPTION
 
@@ -1413,7 +1413,7 @@ class mpfit:
 				# Compute errors in parameters
 				catch_msg = 'computing parameter errors'
 				self.perror = numpy.zeros(nn, dtype=float)
-				d = numpy.diagonal(self.covar)
+				d = numpy.diagonal(self.covar).copy()
 				wh = (numpy.nonzero(d >= 0))[0]
 				if len(wh) > 0:
 					self.perror[wh] = numpy.sqrt(d[wh])
@@ -2109,8 +2109,8 @@ class mpfit:
 		# jacobian is rank-deficient, obtain a least-squares solution
 		nsing = n
 		wa1 = qtb.copy()
-		rthresh = numpy.max(numpy.abs(numpy.diagonal(r))) * machep
-		wh = (numpy.nonzero(numpy.abs(numpy.diagonal(r)) < rthresh))[0]
+		rthresh = numpy.max(numpy.abs(numpy.diagonal(r).copy())) * machep
+		wh = (numpy.nonzero(numpy.abs(numpy.diagonal(r).copy()) < rthresh))[0]
 		if len(wh) > 0:
 			nsing = wh[0]
 			wa1[wh[0]:] = 0
