@@ -26,7 +26,7 @@ website available from:
 
 In the current release of the software, the grism 
 calibration files are included in the package, but 
-require the definition of en environment variable, 
+require the definition of an environment variable, 
 
 setenv UVOTPY <installation directory>
 
