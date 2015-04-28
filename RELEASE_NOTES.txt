@@ -1,6 +1,50 @@
 The uvot grism python software release notes
 ============================================
 
+Version 2.0.4 2015-04-28 
+
+Minor changes were made due to API changes in astropy and numpy. 
+Since version 2.0.2 the coincidence loss correction has been 
+identical to that described in the calibration paper and used for 
+the calibration. In version 2.0.0 and 2.0.1 the coincidence loss 
+method was not yet fine-tuned. Differences are less than 5% in 
+the final flux. 
+
+Some new functionality is being added in this version in module
+uvotspec. Recognizing that the wavelength between successive 
+spectra is shifted to some degree, the software adjust_wavelength_manually
+allows easy adjustment of the wavelength by shifting the spectrum in a widget
+and using the shift to update the wavelengths using the dispersion
+relation. This improves the wavelengths at the end of the range. 
+The automatic flagging of artifacts in the code needs further work, 
+and an interactive routine flag_bad_manually (also in module uvotspec) 
+will set the quality flag 'bad' in the spectral file. 
+
+To sum spectra, there was a routine written specifically with the 
+calibration environment in mind, and it had over time evolved in 
+a tangle of options and did not suit the general user. A new, rewritten
+sum_PHAspectra has been provided now in the uvotspec module as well, 
+though examples of its use have not yet been prepared. 
+
+For Xspec users, the RMF file generation was rewritten as there 
+was in unintended loop in the previous version. Testing with the 
+new rmf file revealed that lines with very large coincidence losses 
+are not well described by the RMF, preventing a good fit. It is best 
+to exclude these lines from the fit if this occurs. 
+A script has been added that can be run to generate the RMF file 
+so that the spectral extraction can be done without that step. 
+
+With the changes to Numpy and Astropy, and no time for testing old version, 
+the current release has been making use of the Ureka 1.5.1 distribution. 
+It is believed to be backward compatible to versions of astropy >= 0.4. 
+Heasoft-6.16. 
+
+A python script named consert_sky2det2raw was added to derive the position 
+on the raw image given that on the sky or detector image (for uvot 
+photometry with lenticular filters). The accuracy is about 5 pixels 
+and the script is slow unless a long list is given, as the initialization 
+is slow. 
+
 Version 2.0 2014-06-01 
 
 The coincidence method was updated to the classic coincidence 
