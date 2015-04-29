@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='2.0.4',
+      version='2.0.5',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images
@@ -52,5 +52,5 @@ setup(name='uvotpy',
       requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve','stsci.imagestats'],
       # requires HEADAS, WCStools, internet connection
       # environment setup  requires UVOTPY to point to the installed uvotpy library and calfiles.
-      scripts=['uvotpy/scripts/uvotgrism','uvotpy/scripts/fileinfo','uvotpy/scripts/uvotmakermf',uvotpy/scripts/convert_sky2det2raw'],		   
+      scripts=['uvotpy/scripts/uvotgrism','uvotpy/scripts/fileinfo','uvotpy/scripts/uvotmakermf','uvotpy/scripts/convert_sky2det2raw'],		   
       )
