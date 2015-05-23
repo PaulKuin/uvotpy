@@ -2097,7 +2097,7 @@ def sum_PHAspectra(phafiles, outfile=None,
       # write output
    _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
                        wave,wf,serr,nsummed,sector,q,f,objectname,
-                       object_position, clobber, chatter)      
+                       object_position, wvar,mf,svar,clobber, chatter)        
 
    if returnout:
        return D
@@ -2241,14 +2241,15 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
 			if nix0 > 15: break
 		        print "exclusion wavelengths are : ",excl_
 		        ans = raw_input('Exclude a wavelength region ?')
-		        EXCL = not (ans.upper()[0] == 'N')
-			if ans.upper()[0] == 'N': break		     
-		        ans = input('Give the exclusion wavelength range as two numbers separated by a comma: ')
-			lans = list(ans)
-			if len(lans) != 2: 
-			   print "input either the range like: 20,30  or: [20,30] "
-			   continue
-		        excl_.append(lans)	
+                        if len(ans) > 0:
+  		            EXCL = not (ans.upper()[0] == 'N')
+			    if ans.upper()[0] == 'N': break		     
+		            ans = input('Give the exclusion wavelength range as two numbers separated by a comma: ')
+			    lans = list(ans)
+			    if len(lans) != 2: 
+			        print "input either the range like: 20,30  or: [20,30] "
+			        continue
+		            excl_.append(lans)	
 		    OK = False
 	         #except:
 	         #   print "problem encountered with the selection of exclusion regions"
@@ -2367,8 +2368,8 @@ def _sum_waveshifts_sub3(phafiles,nfiles, adjust_wavelengths,exclude_wave,
     return wave_shifts             
 
 def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
-   wave,wf,serr,nsummed,sector,q,f,objectname, objposition, clobber, chatter):
-   
+   wave,wf,serr,nsummed,sector,q,f,objectname, objposition,wvar,mf,svar, clobber, chatter):
+		    
    import os
    import sys
    from astropy.io import fits
@@ -2413,8 +2414,10 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
          hdu1.header['OBJECT'] = (objectname,'object name')
 	 hi = f[0][1].header['history']
          tstart  = f[0][1].header['tstart']
-         tstop  = f[0][1].header['tstop']
-         exposure = f[0][1].header['exposure']
+         tstop  = f[-1][1].header['tstop']
+         exposure = 0
+         for fk in f:
+            exposure += fk[1].header['exposure']
 	 RA = -999.9
 	 DEC = -999.9
 	 if chatter > 4: print hi
