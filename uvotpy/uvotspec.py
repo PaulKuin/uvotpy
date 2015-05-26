@@ -1267,6 +1267,7 @@ def plot_spectrum(ax,spectrumfile,errbars=False, errhaze=False,
         w = f['SUMMED_SPECTRUM'].data['wave']
 	flx = f['SUMMED_SPECTRUM'].data['flux']
 	err = f['SUMMED_SPECTRUM'].data['fluxerr']
+        label = f[1].header['date-obs']
 	#n_spec = f['SUMMED_SPECTRUM'].data['n_spec']
 	sector = f['SUMMED_SPECTRUM'].data['sector']
 	sect = np.min(sector)
