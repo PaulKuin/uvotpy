@@ -104,6 +104,8 @@ today_ = datetime.date.today()
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
 fileversion=2
 calmode=True
+typeNone = type(None)
+
 print 66*"="
 print "uvotpy module uvotgetspec version=",__version__
 print "N.P.M. Kuin (c) 2009-2014, see uvotpy licence." 
@@ -451,7 +453,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    Yout.update({'ra':RA,'dec':DEC,'wheelpos':wheelpos})
    
    
-   if sumimage == None:
+   if type(sumimage) == typeNone:
    
       if background_template != None:
          # convert background_template to a dictionary
@@ -470,14 +472,14 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       # set some flags and variables
       lfiltinput = (lfilt1 != None) ^ (lfilt2 != None) 
       lfiltpresent = lfiltinput | (lfilt1_ != None) | (lfilt2_ != None) 
-      if (lfilt1_ == None) & (lfilt2_ == None): 
+      if (type(lfilt1_) == typeNone) & (type(lfilt2_) == typeNone): 
          # ensure the output is consistent with no lenticular filter solution
          use_lenticular_image = False
       
       # translate
       filt_id = {"wh":"wh","v":"vv","b":"bb","u":"uu","uvw1":"w1","uvm2":"m2","uvw2":"w2"}
       lfiltflag = False    
-      if ((lfilt1 == None)&(lfilt1_ != None)): 
+      if ((type(lfilt1) == typeNone)&(type(lfilt1_) != typeNone)): 
          lfilt1 = lfilt1_   
          lfilt1_ext = lfilt1_ext_
          if chatter > 0: print "lenticular filter 1 from search lenticular images"+lfilt1+"+"+str(lfilt1_ext)
@@ -489,7 +491,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 	 except:
 	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img.gz",lfilt1_ext)
 	   lfilt1_aspcorr = hdu_1["ASPCORR"]  
-      if ((lfilt2 == None)&(lfilt2_ != None)):
+      if ((type(lfilt2) == typeNone)&(type(lfilt2_) != typeNone)):
          lfilt2 = lfilt2_
          lfilt2_ext = lfilt2_ext_    
          if chatter > 0: print "lenticular filter 2 from search lenticular images"+lfilt2+"+"+str(lfilt2_ext)
@@ -580,7 +582,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if lfiltinput:
          #  the lenticular filter(s) were specified on the command line.
          #  check that the lenticular image and grism image are close enough in time.
-         if lfilt1_ext == None: 
+         if type(lfilt1_ext) == typeNone: 
             lfilt1_ext = int(ext)
          lpos = np.where( np.array([lfilt1]) == lfiltnames )
          if len(lpos[0]) < 1: sys.stderr.write("WARNING: illegal name for the lenticular filter\n")
@@ -592,7 +594,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          if not ( (np.abs(tstart-tstop1) < 20) ^  (np.abs(tstart1-tstop) < 20) ): 
             sys.stderr.write("WARNING:  check that "+lfile1+" matches the grism image\n")   
          if lfilt2 != None:        
-           if lfilt2_ext == None: 
+           if type(lfilt2_ext) == typeNone: 
               lfilt2_ext = lfilt1_ext+1
            lpos = np.where( np.array([lfilt2]) == lfiltnames )
            if len(lpos[0] < 1): sys.stderr.write("WARNING: illegal name for the lenticular filter\n")
@@ -687,7 +689,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if chatter > 4: msg += "Found anchor point; now extracting spectrum.\n"
       if chatter > 2: print "==========Found anchor point; now extracting spectrum ========"
    
-      if offsetlimit == None:
+      if type(offsetlimit) == typeNone:
          if wheelpos > 300:
             offsetlimit = 9
 	    sys.stdout.write("automatically set the value for the offsetlimit = "+str(offsetlimit)+'\n') 
@@ -754,7 +756,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       
       tstart = hdr['tstart']
       ank_c = [100,500,0,2000]
-      if offsetlimit == None:
+      if type(offsetlimit) == typeNone:
         offset = 0
       elif type(offsetlimit) == list:
         offset = offsetlimit[0]-96
@@ -775,7 +777,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       anker2 = anker + [dist12,0]
       spimg,spnetimg,anker_field = None, None, (0.,0.)
       m1,m2,aa,wav1 = None,None,None,None
-      if outfile == None: 
+      if type(outfile) == typeNone: 
          outfile='sum_image_'
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
       "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef} )
@@ -2467,7 +2469,7 @@ def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
    errors are summed as sqrt( sum (errors**2 ) )
    '''
    # calculate bin size response, data
-   if lamda_response == None: 
+   if type(lamda_response) == typeNone: 
       print 'need to read in response matrix file'
       print ' please code it up'
       return None
@@ -3665,19 +3667,19 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
       elif (wheelpos != None):
           # low coi for wheelpos = 160,200; medium coi for wheelpos = 955, 1000
           if wheelpos == 160:
-	      if (coi == None) | (coi < 0.1) :
+	      if (type(coi) == typeNone) | (coi < 0.1) :
 	         apercf1 = interp1d(aper_160_low['sig'],aper_160_low['ape'],)
 	         apercorr = renormal / apercf1(xx)         
           if wheelpos == 200:
-	      if (coi == None) | (coi < 0.1) :
+	      if (type(coi) == typeNone) | (coi < 0.1) :
 	         apercf2 = interp1d(aper_200_low['sig'],aper_200_low['ape'],) 
 	         apercorr = renormal / apercf2(xx)         
           if wheelpos == 955:
-	      if (coi == None) | (coi < 0.1) :
+	      if (type(coi) == typeNone) | (coi < 0.1) :
 	         apercf3 = interp1d(aper_955_med['sig'],aper_955_med['ape'],)
 	         apercorr = renormal / apercf3(xx)          
           if wheelpos == 1000:
-	      if (coi == None) | (coi < 0.1) :
+	      if (type(coi) == typeNone) | (coi < 0.1) :
 	         apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
 	         apercorr = renormal / apercf4(xx)                   	 
       else: 
@@ -3834,7 +3836,7 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       spimg = boxcar(ori_img.copy(),(smoothpix,),mode='reflect')
    else: spimg = ori_img   
    
-   if sigmas == None: 
+   if type(sigmas) == typeNone: 
       sigmas = array([3.1,4.3,4.6])
    
    if chatter > 4:
@@ -3865,7 +3867,7 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
    f_mask = bg_mask    
    bg = f_meas[bg_mask].mean()         
 
-   if noiselevel == None: 
+   if type(noiselevel) == typeNone: 
       noiselevel = f_meas[bg_mask].mean()
       if chatter > 3: print "get_components: adopted noiselevel = ", noiselevel
    
@@ -3873,8 +3875,8 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
    flag = zeros(6, dtype=int )   
    
    if caldefault:
-   
-      if sigmas == None:
+      
+      if type(sigmas) == typeNone:
          print "missing parameter fitorder in uvotgetspec.get_components\n"
       else:
          # the positions of the centre of the fits are given in Ypositions
@@ -6040,7 +6042,7 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
       dis2 = (SO[1][1]+dist12)
 
 
-   if xrange == None: 
+   if type(xrange) == typeNone: 
       ileft = 2
       irite = nx -2
    else:
@@ -6700,7 +6702,7 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
     
    # predict the second order amplitude
    
-   if (predict2nd & present2 & (C_1 != None) & (C_2 != None) & (d12 != None)):
+   if (predict2nd & present2 & (type(C_1) != typeNone) & (type(C_2) != typeNone) & (type(d12) != typeNone)):
       print "updateFitorder: calling predict_second_order()"
       # here the arguments are:	dis = q1[0]
       # 			spnet = sp_first[q1[0]]
@@ -7064,10 +7066,10 @@ def spectrumpixshift(w1,spec1, w2,spec2, wmin=None, wmax=None, spectrum=False,
    tck1 = interpolate.splrep(w1, spec1, )
    tck2 = interpolate.splrep(w2, spec2, )
    # limits
-   if wmin == None: 
+   if type(wmin) == typeNone: 
       wmin = np.max([w1[0],w2[0]])
       if chatter > 0: print "spectrumpixshift: wmin = ",wmin
-   if wmax == None: 
+   if type(wmax) == typeNone: 
       wmax = np.min([w1[-1],w2[-1]])
       if chatter > 0: print "spectrumpixshift: wmax = ",wmax
    q1 = (w1 > wmin) & (w1 < wmax)
@@ -8503,7 +8505,7 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
 	  return
 	  	
      # check valid mag and filter     
-     if mag == None:
+     if type(mag) == typeNone:
          print "problem with input parameters: expected a magnitude"
      else:
          # convert to grism CR
