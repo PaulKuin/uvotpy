@@ -1,4 +1,3 @@
-#!/usr/stsci/pyssg/Python-2.7/bin/python
 # -*- coding: iso-8859-15 -*-
 #
 # This software was written by N.P.M. Kuin (Paul Kuin) 
@@ -4342,7 +4341,7 @@ def quality_flags():
    '''Definition of quality flags for UVOT grism '''
    flags = dict(
    good=0,         # data good, but may need COI correction
-   bad=1,          # data dropout or bad pixel
+   bad=1,          # data dropout or bad pixel or user marked bad
    zeroth=2,       # strong zeroth order too close to/overlaps spectrum
    weakzeroth=4,   # weak zeroth order too close to/overlaps spectrum
    first=8,        # other first order overlaps and brighter than BG + 5 sigma of noise 
@@ -5652,7 +5651,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       import pyfits
 
    from uvotwcs import makewcshdr 
-   import os
+   import os, sys
    
    __version__ = '1.04 NPMK 20131031 NPMK(MSSL)'
 
@@ -5669,7 +5668,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    elif ( (wheelpos == 955) ^ (wheelpos == 1000) ): 
       gfile = indir+'/'+filestub+'ugv_dt.img'
    else: 
-      print "uvotgetspec.findInputAngle: could not determine grism type" 
+      sys.stderr.write("uvotgetspec.findInputAngle: \n\tThe wheelpos=%s is wrong! \n"+\
+          "\tAborting... could not determine grism type\n\n"%(wheelpos)) 
       return   
       
    if ((lfilter == None) & (lfilt2 == None)) | (method == 'grism_only') : 
@@ -7524,6 +7524,8 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    import pylab as plt
    import copy
    from uvotspec import quality_flags_to_ranges
+   
+   sys.stderr.write("Notice: further development of sum_PHAspectra is now done in the uvotspec module.\n")
    
    # first create the wave_shifts and exclude_wave lists; then call routine again to 
    # create output file (or if None, return result)
