@@ -78,7 +78,9 @@ History
 2014-09-03 name changed to convert_sky2det2raw (as suggested by Alice Breeveld)	
 2014-09-09 changed bispline coefficients for the DET->RAW conversion to get 
            slightly better accuracy. The fit is based on 1952 displacements 
-	   measured in a grid over the detector during the UVOT ground cal.	    
+	   measured in a grid over the detector during the UVOT ground cal.
+2015-06--8 changed code  from_det_to_raw to correctly process arrays of 
+           coordinates          	    
 '''
 
 import numpy as np
@@ -303,13 +305,25 @@ def from_det_to_raw(detx,dety,invert=True):
     # if invert == False, then the detx,dety coordinates apply 
     # to RAW and rawx,rawy to DET
     if invert: 
+       detx = np.asarray(detx,dtype=float)
+       dety = np.asarray(dety,dtype=float)
     # shift det coordinates before applying inverse distortion
        detx -= 77
        dety -= 77
+       det = zip(detx,dety)
     # if raw, they are in the right system     
     tck_dx, tck_dy =  get_tck(invert=invert)
-    (rawx, rawy) = (detx + bisplev(detx, dety, tck_dx), 
-                    dety + bisplev(detx, dety, tck_dy) )
+    rawx = []
+    rawy = []
+    for _x,_y in det:
+       (_rawx, _rawy) = (_x + bisplev(_x, _y, tck_dx), 
+                    _y + bisplev(_x, _y, tck_dy) )
+       rawx.append(_rawx)
+       rawy.append(_rawy)
+    rawx = np.asarray(rawx,dtype=float)
+    rawy = np.asarray(rawy,dtype=float)   
+    #(rawx, rawy) = (detx + bisplev(detx, dety, tck_dx), 
+    #                dety + bisplev(detx, dety, tck_dy) )
     if not invert:
     # (rawx,rawy are distortion corrected RAW on physical image system)
     #  convert to det coordinates so they can be used for further processing
