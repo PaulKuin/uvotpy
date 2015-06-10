@@ -420,7 +420,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #   print 'WARNING: cannot locate the sesame program \nDid you install the cdsclient tools?\n'   
 
    # fix some parameters 
-   framtime = 0.0110329
+   framtime = 0.0110329  # all grism images are taken in unbinned mode
    splineorder=3
    getzmxmode='spline'
    smooth=50
@@ -612,13 +612,14 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          method = None   
 	 
       # retrieve the input angle relative to the boresight	 
-      Xphi, Yphi, date1, msg_ = findInputAngle( RA, DEC, filestub, ext, \
+      Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext, msg="", \
            wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
 	   method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
       Yout.update({"Xphi":Xphi,"Yphi":Yphi}) 
+      Yout.update({'lenticular_anchors':lenticular_anchors})
 
       # read the anchor and dispersion out of the wavecal file  	      
-      anker, anker2, C_1, C_2, angle, calibdat = getCalData(Xphi,Yphi,wheelpos, date1, \
+      anker, anker2, C_1, C_2, angle, calibdat, msg4 = getCalData(Xphi,Yphi,wheelpos, date1, \
          calfile=calfile, chatter=chatter)    
 	 
       hdrr = pyfits.getheader(specfile,int(ext))
@@ -636,10 +637,14 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       msg += "   highest term first)\n"
       for k in range(len(C_2)):
          msg += "DISP2_"+str(k)+"=%12.4e\n" % (C_2[k])
-      print "first order anchor = ",anker
-      print "second order anchor = ",anker2	      
-      print "first order dispersion = %s"%(str(C_1))
-      print "second order dispersion = %s"%(str(C_2))
+      sys.stderr.write( "first order anchor = %s\n"%(anker))
+      sys.stderr.write( "second order anchor = %s\n"%(anker2)) 
+      msg += "first order dispersion = %s\n"%(str(C_1))
+      msg += "second order dispersion = %s\n"%(str(C_2))
+      sys.stderr.write( "first order dispersion = %s\n"%(str(C_1)) )
+      sys.stderr.write( "second order dispersion = %s\n"%(str(C_2)) )
+      msg += "lenticular filter anchor positions (det)\n"
+      msg += msg3
       # override angle
       if fixed_angle != None:
          msg += "WARNING: overriding calibration file angle for extracting \n\t"\
@@ -1027,6 +1032,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    offset = ank_c[0]-100.0	      		
    msg += "best fit 1st order anchor offset from spectrum = %7.1f\n"%(offset)
    msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],y1[int(ank_c[1])])
+   msg += msg4
    Yout.update({"offset":offset})
    
    #2012-02-20 moved updateFitorder to curved_extraction
@@ -1054,9 +1060,17 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       Y4 = predict_second_order(dis,(sp_first-bg_first), C_1,C_2, dist12, quality,dlim1L, dlim1U,wheelpos) 
       wav2p, dis2p, flux2p, qual2p, dist12p = Y4[0]
 
+
    # retrieve the effective area 
-   EffArea1 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=1,arf=fluxcalfile,chatter=chatter)
-   EffArea2 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=2,arf=None,chatter=chatter)
+   Y7 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=1,arf=fluxcalfile,msg=msg,chatter=chatter)
+   EffArea1 = Y7[:-1]
+   msg = Y7[-1]   
+   Y7 = readFluxCalFile(wheelpos,anchor=anker,spectralorder=2,arf=None,msg=msg,chatter=chatter)
+   if type(Y7) == tuple: 
+      EffArea2 = Y7[:-1]
+   else: 
+      if type(Y7) != typeNone: msg = Y7
+      EffArea2 = None   
    # note that the output differs depending on parameters given, i.e., arf, anchor
    Yout.update({"effarea1":EffArea1,"effarea2":EffArea2})   
    
@@ -1719,7 +1733,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
        
    bgmean = bg
    bg = 0.5*(bg1+bg2)
-   if chatter > 0: print 'Background : ', bgmean,' +/- ',bgsigma,' (1-sigma error)' 
+   if chatter > 0: print 'Background : %10.2f  +/- %10.2f (1-sigma error)'%( bgmean,bgsigma) 
    # define the dispersion with origen at the projected position of the 
    # 2600 point in first order
    dis = np.arange((c.shape[1]),dtype=np.int16) - ank_c[1] 
@@ -1903,6 +1917,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    -  30 Sep 2014: background fails in visible grism e.g., 57977004+1 nearby bright spectrum 
           new method added (4x slower processing) to screen the image using sigma clipping	        		 
       '''
+   import sys   
    import numpy as np   
    try:
      from convolve import boxcar
@@ -1973,8 +1988,9 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    bg = imgstats.mean
    bgsig  = imgstats.stddev
    
-   if chatter > 1:
-      print 'background statistics: mean , sigma : ',imgstats.mean, imgstats.stddev
+   if chatter > 2:
+      sys.stderr.write( 'background statistics: mean=%10.2f, sigma=%10.2f '%
+         (imgstats.mean, imgstats.stddev))
       
    # create boolean image flagging good pixels
    img_good = np.ones(extimg.shape,dtype=bool)
@@ -2002,12 +2018,13 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    # the next section selects the user-selected or default background for further processing
    if chatter > 1: 
       if background_method == 'boxcar': 
-         print "BACKGROUND METHOD:",background_method, "background smoothing =",background_smoothing
+         sys.stderr.write( "BACKGROUND METHOD: %s;  background smoothing = %s/n"%
+             (background_method,background_smoothing))
       else:
-         print "BACKGROUND METHOD:",background_method 
+         sys.stderr.write( "BACKGROUND METHOD:%s/n"(background_method ))
       
    if not ((background_method == 'splinefit') | (background_method == 'boxcar') ):
-      print 'background method missing; currently reads : ',background_method
+      sys.stderr.write('background method missing; currently reads : %s\n'%(background_method))
 
    if background_method == 'boxcar':	    
       # boxcar smooth in x,y using the global parameter background_smoothing
@@ -2560,10 +2577,11 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_magl
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
    " clobber="+clobber+" chatter=0"
-   #"+repr(chatter) 
-   
-   if chatter > 1: print command
-   
+   #"+repr(chatter)
+   if chatter > 1: 
+      print "trying to detect the zeroth orders in the grism image"
+      print command
+      
    useuvotdetect = True
    tt = os.system(command)
    if tt != 0:
@@ -2658,7 +2676,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_magl
       f.write("%12.7f  %12.7f \n"%(ra[i],dec[i]))
    f.close()   
    command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=detpix.out wcsfile=\"'\
-           +gfile+'['+exts+']\" operation=WORLD_TO_PIX from=S '
+           +gfile+'['+exts+']\" operation=WORLD_TO_PIX from=S chatter='+str(chatter)
    tt = os.system(command)
    if tt != 0: 
       print "find_zeroth_orders: problem with coordinate conversion catalog positions"
@@ -5072,7 +5090,7 @@ def fit1(p, fjac=None, x=None, y=None, err=None):
 
 
 def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
-   kx=1,ky=1,s=0,calfile=None,caldir=None):
+   kx=1,ky=1,s=0,calfile=None,caldir=None, msg=''):
    '''Retrieve the calibration data for the anchor and dispersion (wavelengths).
    
    Parameters
@@ -5198,6 +5216,7 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
 	 raise
          return   
 
+   msg += "wavecal file : %s\n"%(calfile.split('/')[-1])
    #  look up the data corresponding to the (Xphi,Yphi) point in the 
    #  calibration file (which already has rotated input arrays) 
    #    
@@ -5492,7 +5511,7 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
       print 'getCalData. anker [DET-pix]   = ', anker
       print 'getCalData. anker [DET-img]   = ', anker - [77+27,77+1]
       print 'getCalData. second order anker at = ', anker2, '  [DET-pix] ' 
-   return anker, anker2, C_1, C_2, thi, data
+   return anker, anker2, C_1, C_2, thi, data, msg
 
 
 def bilinear(x1,x2,x1a,x2a,f,chatter=0):
@@ -5572,7 +5591,7 @@ def bilinear(x1,x2,x1a,x2a,f,chatter=0):
 def findInputAngle(RA,DEC,filestub, ext, wheelpos=200, 
        lfilter='uvw1', lfilter_ext=None, 
        lfilt2=None,    lfilt2_ext=None, 
-       method=None, attfile=None, 
+       method=None, attfile=None, msg="",
        catspec=None, indir='./', chatter=2):
    '''Find the angles along the X,Y axis for the target distance from the bore sight.
    
@@ -5645,6 +5664,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    better aspect solution.
          
    '''
+   # 2015-06-10 output the lenticular filter anchor position
+   #            and fix deleted second lenticular filter 
 
    import numpy as np
    try:
@@ -5655,11 +5676,12 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    from uvotwcs import makewcshdr 
    import os, sys
    
-   __version__ = '1.04 NPMK 20131031 NPMK(MSSL)'
+   __version__ = '1.05 NPMK 20150610 NPMK(MSSL)'
 
    # 2010-07-11 added code to move existing uvw1 raw and sky files out of the way and cleanup afterwards.
    # npkuin@gmail.com
    msg = ""
+   lenticular_anchors = {}
    
    if (chatter > 0):
       print "uvotspec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
@@ -5711,7 +5733,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    if lfilter == 'uvm2' : ffile = indir+'/'+filestub+'um2_sk.img'
    if lfilter == 'uvw2' : ffile = indir+'/'+filestub+'uw2_sk.img'
    if lfilter == 'fk'   : ffile = indir+'/'+filestub+'ufk_sk.img'
-   
+
    hf = pyfits.getheader(ffile,lfext)   
    hg = pyfits.getheader(gfile,ext)
 
@@ -5739,7 +5761,9 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    ra_diff  = RA - RA_PNT
    dec_diff = DEC - DEC_PNT
    if ((ra_diff > 0.4) ^ (dec_diff > 0.4) ): 
-       print "WARNING: the difference in the pointing from the header to the RA,DEC parameter is > 0.4 "
+       sys.stderr.write( 
+       "\nWARNING: \n\tthe difference in the pointing from the header to the RA,DEC parameter is \n"+\
+       "\tlarge delta-RA = %f deg, delta-Dec = %f deg\n\n"%(ra_diff,dec_diff))
    RAs = repr(RA)
    DECs= repr(DEC)
    exts = repr(ext)
@@ -5758,8 +5782,9 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        print 'The HEADAS environment variable has not been set'
        print 'That is needed for the uvot Ftools '
        return None 
+       
    command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
-             +ffile+'['+lfexts+']\" operation=WORLD_TO_PIX'
+             +ffile+'['+lfexts+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
    if chatter > 0: print command
    system( command )
 
@@ -5771,7 +5796,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    system( 'echo '+repr(x1)+'  '+repr(y1)+'  > skyfits.in' )
    # 
    command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
-             +ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D'
+             +ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
    if chatter > 1: print command
    system( command )
    f = open('detmm.txt', "r")
@@ -5784,11 +5809,77 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    if chatter > 1: print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
    # convert anchor in DET coordinate mm to pixels and arcsec from boresight
    anker_uvw1det = np.array([x1,y1])/0.009075+np.array((1100.5,1100.5))
+   msg += "LFILT1_ANCHOR= [%6.1f,%6.1f]\n"%(anker_uvw1det[0],anker_uvw1det[1])
+   lenticular_anchors.update({"lfilt1":lfilter,"lfilt1_anker":anker_uvw1det})
    
    if (x1 < -14) | (x1 > 14) | (y1 < -14) | (y1 > 14) :
       # outside detector 
       print "/nERROR: source position is not on the detector! Aborting..."
       raise IOError("/nERROR: source position is not on the detector! ")
+   
+   if lfilter == "fk" : 
+      l2filter = "uvw1"
+   else: l2filter = lfilter   
+   if wheelpos != 160:
+       anker_uvw1det_offset = anker_uvw1det - np.array( boresight(filter=l2filter))  # use fixed default value boresight 
+   else: 
+       anker_uvw1det_offset = anker_uvw1det - np.array( boresight(filter=l2filter,date=209952100) )
+   Xphi, Yphi = anker_uvw1det_offset*0.502    
+   as2deg = 1./3600.    
+
+   # second lenticular filter 
+   
+   if lfilt2 != None: 
+      if lfilt2 == 'wh'   : f2ile = indir+'/'+filestub+'uwh_sk.img'
+      if lfilt2 == 'u'    : f2ile = indir+'/'+filestub+'uuu_sk.img'
+      if lfilt2 == 'v'    : f2ile = indir+'/'+filestub+'uvv_sk.img'
+      if lfilt2 == 'b'    : f2ile = indir+'/'+filestub+'ubb_sk.img'
+      if lfilt2 == 'uvw1' : f2ile = indir+'/'+filestub+'uw1_sk.img'
+      if lfilt2 == 'uvm2' : f2ile = indir+'/'+filestub+'um2_sk.img'
+      if lfilt2 == 'uvw2' : f2ile = indir+'/'+filestub+'uw2_sk.img'
+      if lfilt2 == 'fk'   : f2ile = indir+'/'+filestub+'ufk_sk.img'
+      hf2 = pyfits.getheader(f2ile,lfext)   
+      if lfilt2_ext == None: 
+          lf2ext = ext 
+      else: 
+          lf2ext = lfilt2_ext  
+      command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
+             +f2ile+'['+str(lf2ext)+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
+      if chatter > 0: print command
+      system( command )
+
+      f = open('skyfits.out', "r")
+      line = f.read()
+      if chatter > 1: print 'skyfits.out: '+line
+      x2, y2 = (line.split())[2:4]
+      f.close  
+      system( 'echo '+repr(x2)+'  '+repr(y2)+'  > skyfits.in' )
+      # 
+      command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
+             +f2ile+'['+str(lf2ext)+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
+      if chatter > 1: print command
+      system( command )
+      f = open('detmm.txt', "r")
+      line = f.read()
+      if chatter > 1: print 'detmm: '+line
+      x2, y2 = line.split()[2:4]
+      f.close
+      x2 = float(x1)
+      y2 = float(y1)
+      if chatter > 1: print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
+      # convert anchor in DET coordinate mm to pixels and arcsec from boresight
+      anker_lf2det = np.array([x2,y2])/0.009075+np.array((1100.5,1100.5))
+      msg += "LFILT2_ANCHOR= [%6.1f,%6.1f]\n"%(anker_lf2det[0],anker_lf2det[1])
+      lenticular_anchors.update({'lfilt2':lfilt2,'lfilt2_anker':anker_lf2det})
+   
+      if (x2 < -14) | (x2 > 14) | (y2 < -14) | (y2 > 14) :
+         # outside detector 
+         print "/nERROR: source position is not on the detector! Aborting..."
+         raise IOError("/nERROR: source position in second lenticular filter is not on the detector! ")
+
+   # combine lenticular filter anchors, compute (mean) offset, convert in units of degrees
+   
+   anker_uvw1det = (anker_uvw1det+anker_lf2det)*0.5 
    
    if lfilter == "fk" : 
       l2filter = "uvw1"
@@ -5810,17 +5901,19 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    crpix = np.array(crpix)   # centre of image
    cent_ref_2img = np.array([1100.5,1100.5])-crpix  
  
-
    if chatter > 4:
-       print 'findInputAngle. derived undistorted detector coord source in lenticular filter = (%8.5f,%8.5f)  mm '%(x1,y1)
+       sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 1 = (%8.5f,%8.5f)  mm '%(x1,y1))
+       sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 2 = (%8.5f,%8.5f)  mm '%(x2,y2))
    if chatter > 0:  
-       print 'findInputAngle. derived undistorted detector coord lenticular filter           =  ',anker_uvw1det
-       print 'findInputAngle. derived undistorted physical image coord lenticular filter     =  ',anker_uvw1det-cent_ref_2img
+       print 'findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det
+       print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img
+       print 'findInputAngle. derived undistorted detector coord lenticular filter 2         =  ',anker_lf2det
+       print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_lf2det -cent_ref_2img
        print 'findInputAngle. derived boresight offset lenticular filter ',lfilter,' (DET pix): ',anker_uvw1det_offset
        print 'findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees'
    # cleanup temp files:   
    system('rm radec.txt skyfits.out  skyfits.in detmm.txt')
-   return Xphi*as2deg, Yphi*as2deg, tstart, msg
+   return Xphi*as2deg, Yphi*as2deg, tstart, msg, lenticular_anchors
 
 
 def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
