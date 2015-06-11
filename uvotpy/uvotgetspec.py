@@ -5878,9 +5878,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
          raise IOError("/nERROR: source position in second lenticular filter is not on the detector! ")
 
    # combine lenticular filter anchors, compute (mean) offset, convert in units of degrees
-   
-   anker_uvw1det = (anker_uvw1det+anker_lf2det)*0.5 
-   
+   if lfilt2 != None:
+      anker_uvw1det = (anker_uvw1det+anker_lf2det)*0.5 
    if lfilter == "fk" : 
       l2filter = "uvw1"
    else: l2filter = lfilter   
@@ -5907,8 +5906,9 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    if chatter > 0:  
        print 'findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det
        print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img
-       print 'findInputAngle. derived undistorted detector coord lenticular filter 2         =  ',anker_lf2det
-       print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_lf2det -cent_ref_2img
+       if lfilt2 != None:
+          print 'findInputAngle. derived undistorted detector coord lenticular filter 2         =  ',anker_lf2det
+          print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_lf2det -cent_ref_2img
        print 'findInputAngle. derived boresight offset lenticular filter ',lfilter,' (DET pix): ',anker_uvw1det_offset
        print 'findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees'
    # cleanup temp files:   
