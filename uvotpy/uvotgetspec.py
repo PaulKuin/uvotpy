@@ -37,7 +37,7 @@ from __future__ import division
 # uvotpy 
 # (c) 2009-2014, see Licence  
 
-__version__ = '2.0.6 20140930'
+__version__ = '2.0.7 20150630'
  
 import sys
 import optparse
@@ -105,6 +105,7 @@ datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[
 fileversion=2
 calmode=True
 typeNone = type(None)
+senscorr = True # do sensitivity correction
 
 print 66*"="
 print "uvotpy module uvotgetspec version=",__version__
@@ -610,7 +611,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          method = "grism_only"
       else: 
          method = None   
-	 
+      
+      if not senscorr: msg += "WARNING: No correction for sensitivity degradation applied.\n"	 
       # retrieve the input angle relative to the boresight	 
       Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext, msg="", \
            wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
@@ -2018,10 +2020,10 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    # the next section selects the user-selected or default background for further processing
    if chatter > 1: 
       if background_method == 'boxcar': 
-         sys.stderr.write( "BACKGROUND METHOD: %s;  background smoothing = %s/n"%
+         sys.stderr.write( "BACKGROUND METHOD: %s;  background smoothing = %s\n"%
              (background_method,background_smoothing))
       else:
-         sys.stderr.write( "BACKGROUND METHOD:%s/n"(background_method ))
+         sys.stderr.write( "BACKGROUND METHOD:%s\n"(background_method ))
       
    if not ((background_method == 'splinefit') | (background_method == 'boxcar') ):
       sys.stderr.write('background method missing; currently reads : %s\n'%(background_method))
