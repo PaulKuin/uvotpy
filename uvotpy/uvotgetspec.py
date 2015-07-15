@@ -398,6 +398,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    
    from uvotio import fileinfo, rate2flux, readFluxCalFile
    
+   if (type(RA) == np.ndarray) | (type(DEC) == np.array): 
+      raise IOError("RA, and DEC arguments must be of float type ")
+
    if type(offsetlimit) == list:
        if len(offsetlimit) != 2:
            raise IOError("offsetlimit list must be [center, distance from center] in pixels")
@@ -1557,6 +1560,8 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       print searchwidth,chatter,spwid,offsetlimit
 
    img, hdr = pyfits.getdata(file,ext,header=True)
+   # wcs_ = wcs.WCS(header=hdr,)  # detector coordinates DETX,DETY in mm   
+   # wcsS = wcs.WCS(header=hdr,key='S',relax=True,)  # TAN-SIP coordinate type  
    if Tmpl:
       if (img.shape != template['template'].shape) : 
          print "ERROR"
@@ -2548,22 +2553,29 @@ def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
    return lamda_response, new_countrate, new_error
 
 
-def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_maglimit=None, clobber="NO", chatter=0):
-   ''' runs uvotdetect to get the zeroth orders in the detector image.
-   
-       grabs a source list and converts the positions to detector coordinates
+def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
+    set_maglimit=None, clobber="NO", chatter=0):
+   '''
+   The aim is to identify the zeroth order on the grism image.  
+   This is done as follows:
+   We run uvotdetect to get the zeroth orders in the detector image.
+   We also grab the USNO B1 source list and predict the positions on the image using the WCSS header.
+   Bases on a histogram of minimum distances, as correction is made to the WCSS header, and
+   also to the USNO-B1 predicted positions. 
        
    '''
    import os
    try:
-      from astropy.io import fits as pyfits
+      from astropy.io import fits, ascii 
    except:   
-      import pyfits
+      import pyfits as fits
    from numpy import array, zeros, log10, where
    import datetime
    import uvotwcs
+   from astropy import wcs
    
-   if chatter > 0: print "determining positions zeroth orders from USNO-B1"
+   if chatter > 0: 
+       print "find_zeroth_orders: determining positions zeroth orders from USNO-B1"
    
    if ((wheelpos == 160) ^ (wheelpos == 200)):
       grtype = "ugu"
@@ -2579,135 +2591,179 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_magl
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
    " clobber="+clobber+" chatter=0"
-   #"+repr(chatter)
+   
    if chatter > 1: 
-      print "trying to detect the zeroth orders in the grism image"
+      print "find_zeroth_orders: trying to detect the zeroth orders in the grism image"
       print command
       
    useuvotdetect = True
+
    tt = os.system(command)
    if tt != 0:
-      print 'uvotdetect had a problem with this file'
+      print 'find_zeroth_orders: uvotdetect had a problem with this image'
       
    if not os.access(outfile,os.F_OK):  
       # so you can provide it another way
       useuvotdetect = False
    
    if useuvotdetect:
-    f = pyfits.open(outfile)
-    g = f[1].data
-    h = f[1].header
-    refid = g.field('refid')   
-    rate  = g.field('rate')
-    rate_err = g.field('rate_err')
-    rate_bkg = g.field('rate_bkg') # counts/sec/arcsec**2
-    x_img = g.field('ux_image')
-    y_img = g.field('uy_image')
-    a_img = g.field('ua_image')  # semi  axis
-    b_img = g.field('ub_image')  # semi  axis
-    theta = g.field('utheta_image') # angle of the detection ellipse
-    prof_major = g.field('prof_major') 
-    prof_minor = g.field('prof_minor')
-    prof_theta = g.field('prof_theta')
-    threshold =  g.field('threshold')  # sigma
-    flags = g.field('flags')
-    f.close()
+       f = fits.open(outfile)
+       g = f[1].data
+       h = f[1].header
+       refid = g.field('refid')   
+       rate  = g.field('rate')
+       rate_err = g.field('rate_err')
+       rate_bkg = g.field('rate_bkg') # counts/sec/arcsec**2
+       x_img = g.field('ux_image')
+       y_img = g.field('uy_image')
+       a_img = g.field('ua_image')  # semi  axis
+       b_img = g.field('ub_image')  # semi  axis
+       theta = g.field('utheta_image') # angle of the detection ellipse
+       prof_major = g.field('prof_major') 
+       prof_minor = g.field('prof_minor')
+       prof_theta = g.field('prof_theta')
+       threshold =  g.field('threshold')  # sigma
+       flags = g.field('flags')
+       f.close()
    else:
-    rate_bkg = array([0.08]) 
+       rate_bkg = array([0.08]) 
      
-   hh = pyfits.getheader(gfile, ext) 
+   hh = fits.getheader(gfile, ext) 
    exposure = hh['exposure']
    ra  = hh['RA_PNT']
    dec = hh['DEC_PNT']
-   if chatter > 1: print "find_zeroth_orders: pointing position ",ra,dec
+   if "A_ORDER" in hh: 
+       distortpresent = True
+   else: 
+       distortpresent = False    
+
+   if chatter > 1: 
+       print "find_zeroth_orders: pointing position ",ra,dec
+
    #  unfortunately uvotdetect will pick up spurious stuff as well near the spectra 
    #  need real sources.
    #  get catalog sources (B magnitude most closely matches zeroth order)
    
    CALDB = os.getenv('CALDB')
    if CALDB == '': 
-      print 'the CALDB environment variable has not been set'
+      print 'find_zeroth_orders: the CALDB environment variable has not been set'
       return None
    HEADAS = os.getenv('HEADAS')
    if HEADAS == '': 
-      print 'The HEADAS environment variable has not been set'
+      print 'find_zeroth_orders: The HEADAS environment variable has not been set'
       print 'That is needed for the uvot Ftools '
       return None
-      
-   zp = 19.46
+   
+   if wheelpos < 500:    
+       zp = 19.46  # zeropoint uv nominal zeroth orders for 10 arcsec circular region
+   else:
+       zp = 18.50   # estimated visible grism zeropoint for same   
+        
    if set_maglimit == None:  
-      blim = zp - log10( (abs(rate_bkg)).mean()*314. ) + zeroth_blim_offset
+      b_background = zp + 2.5*log10( (rate_bkg.std())*1256.6 )
+      # some typical measure for the image
+      blim= b_background.mean() + b_background.std() + zeroth_blim_offset  
    else:
       blim = set_maglimit
-         
-   command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
-   
+      
+   # if usno-b1 catalog is present, so not retrieve again         
    if not os.access('search.ub1',os.F_OK):
+      command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
       if chatter > 1: print command
       tt = os.system(command)   # writes the results to seach.ub1
       if tt != 0:
          print tt 
-         print "could not get source list from USNO-B1; scat not present?"
+         print "find_zeroth_orders: could not get source list from USNO-B1; scat not present?"
    else:
       if chatter > 1: print "find_zeroth_orders: using the USNO-B1 source list from file search.ub1"
-   f = open('search.ub1','r')
-   lines = f.readlines()
-   f.close()
-   M = len(lines)
-   ra    = zeros(M)
-   dec   = zeros(M)
-   b2mag = zeros(M)
-   ondetector = zeros(M,dtype=bool)
-   Xim = zeros(M)
-   Yim = zeros(M)
+
+   tab = ascii.read('search.ub1')
+   M = len(tab)  
+   ra    = tab['col2']
+   dec   = tab['col3']
+   b2mag = tab['col6']
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
+   ondetector = zeros(M,dtype=bool)
    matched = zeros(M,dtype=bool)
-
-   for i in range(M):
-      x = lines[i] 
-      if chatter > 4: print x
-      ra[i],dec[i] = x.split()[1:3]
-      b2mag[i]     = x.split()[5] 
-      if chatter > 3: print i, ra[i], dec[i], b2mag[i]  
       
    # now find the image coordinates: 
-   f = open('radec.txt','w')   
-   for i in range(M):
-      f.write("%12.7f  %12.7f \n"%(ra[i],dec[i]))
-   f.close()   
-   command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=detpix.out wcsfile=\"'\
-           +gfile+'['+exts+']\" operation=WORLD_TO_PIX from=S chatter='+str(chatter)
-   tt = os.system(command)
-   if tt != 0: 
-      print "find_zeroth_orders: problem with coordinate conversion catalog positions"
-   
+   #
+   wcsS = wcs.WCS(header=hh,key='S',relax=True,)  # TAN-SIP coordinate type 
+   Xim,Yim = wcsS.wcs_world2pix(ra,dec,0) 
+
    xdim, ydim = hh['naxis1'],hh['naxis2']
-   #crpix1,crpix2 = hh['crpix1'],hh['crpix2']
+   
    wheelpos = hh['wheelpos']
    if wheelpos ==  200: defaulttheta = 151.4-180.
    if wheelpos ==  160: defaulttheta = 144.4-180.
    if wheelpos ==  955: defaulttheta = 140.5-180.
    if wheelpos == 1000: defaulttheta = 148.1-180.
+
    Thet -= defaulttheta
    Xa += 17.0
    Yb += 5.5
    
    # convert sky coord. to positions (Xim , Yim) , and set flag ondetector 
-   f = open('detpix.out', "r")
-   lines = f.readlines()
-   for i in range(len(lines)):
-      Xim[i], Yim[i] = (lines[i].split())[2:4]   
-      # now we need to apply the distortion correction:
-      Xim[i], Yim[i] = uvotwcs.correct_image_distortion(Xim[i],Yim[i],hh)
+   for i in range(M):
+      if not distortpresent:
+          # now we need to apply the distortion correction:
+          Xim[i], Yim[i] = uvotwcs.correct_image_distortion(Xim[i],Yim[i],hh)
       ondetector[i] = ((Xim[i] > 8) & (Xim[i] < xdim) & (Yim[i] > 8) & (Yim[i] < ydim-8)) 
-   f.close
    
-   if len(lines) != M:
-      print "M = ",M
-      print "Problem: not enough positions on detector from number of sky positions"
-   
+   xoff = 0.0
+   yoff = 0.0
+   # find the minimum distances between sources in lists and derive offset 
+   distance = []
+   distx = []
+   disty = []
+   kx = -1
+   for i in range(M):
+       if (ondetector[i] and useuvotdetect):
+           dx = (Xim[i] - x_img)
+           dy = (Yim[i] - y_img)
+           kx = np.min( np.sqrt(dx**2+dy**2) ) == np.sqrt(dx**2+dy**2)  
+           distance.append( np.sqrt(dx**2+dy**2)[kx] )
+           distx.append( dx[kx] )
+           disty.append( dy[kx] )
+   if ((type(kx) == int) & (chatter > 3)):
+       print "Xim: ",Xim
+       print "x_img:",x_img
+       print "dx: ",dx
+           
+   if len(distx) > 0 :        
+       bins = np.arange(-29.5,29.5,1)    
+       hisx = np.histogram(distx,bins=bins)    
+       xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
+       hisy = np.histogram(disty,bins=bins)    
+       yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
+       # subtract xoff, yoff from Xim, Yim or add to origin ( hh[CRPIX1S],hh[CRPIX2S] )  is offset 
+       # is larger than 1 pix
+       if (np.sqrt(xoff**2+yoff**2) > 1.0):
+           if ("forceshi" not in hh):
+               hh['crpix1s'] += xoff
+               hh['crpix2s'] += yoff
+               hh["forceshi"] = "%f,%f"%(xoff,yoff)
+               hh["forcesh0"] = "%f,%f"%(xoff,yoff)
+               print "offset (%5.1f,%5.1f) found"%(xoff,yoff)
+               print "offset found has been applied to the fits header of file: %s\n"%(gfile)
+           else:    
+               # do not apply shift to crpix*s for subsequent shifts, but record overall ahift
+               # original shift is in "forcesh0" which actually WAS applied. Both items are needed
+               # to reconstruct shifts between pointing image and the source locations (in case 
+               # we allow interactive adjustments of zeroth orders, that would enable pointing updates
+               # however, the keyword must be reset at start of reprocessing (not done now)
+               xoff_,yoff_ = np.array((hh["forceshi"]).split(','),dtype=float)
+               hh["forceshi"] = "%f,%f"%(xoff_+xoff,yoff_+yoff)
+           f = fits.open(gfile,mode='update')
+           f[ext].header = hh
+           f.close()
+       print "find_zeroth_orders: \n\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
+       print "\tthere was found an overall offset equal to (%5.1f.%5.1f) "%(xoff,yoff)
+       Xim -= xoff
+       Yim -= yoff
+     
    # find ellipse belonging to source from uvotdetect output, or make up one for all ondetector
    xacc = 10
    yacc = 6
@@ -2726,6 +2782,8 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',set_magl
          # make up ellipse
 	 Xa[i] = 17.0
 	 Yb[i] = 5.0
+   if chatter > 0:
+       print "find_zeroth_orders: there were %i matches found between the uvotdetect sources and the USNO B1 list"%(matched.sum()) 
 	
    if region:	     
       a = datetime.date.today()
@@ -5814,10 +5872,10 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    msg += "LFILT1_ANCHOR= [%6.1f,%6.1f]\n"%(anker_uvw1det[0],anker_uvw1det[1])
    lenticular_anchors.update({"lfilt1":lfilter,"lfilt1_anker":anker_uvw1det})
    
-   if (x1 < -14) | (x1 > 14) | (y1 < -14) | (y1 > 14) :
+   if (x1 < -17) | (x1 > 17) | (y1 < -17) | (y1 > 17) :
       # outside detector 
-      print "/nERROR: source position is not on the detector! Aborting..."
-      raise IOError("/nERROR: source position is not on the detector! ")
+      print "\nERROR: source position is not on the detector! Aborting...",(x1,y1)
+      raise IOError("\nERROR: source position is not on the detector! ")
    
    if lfilter == "fk" : 
       l2filter = "uvw1"
@@ -5904,7 +5962,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
  
    if chatter > 4:
        sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 1 = (%8.5f,%8.5f)  mm '%(x1,y1))
-       sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 2 = (%8.5f,%8.5f)  mm '%(x2,y2))
+       if lfilt2 != None:
+           sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 2 = (%8.5f,%8.5f)  mm '%(x2,y2))
    if chatter > 0:  
        print 'findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det
        print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img
