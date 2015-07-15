@@ -2696,10 +2696,22 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    xdim, ydim = hh['naxis1'],hh['naxis2']
    
    wheelpos = hh['wheelpos']
-   if wheelpos ==  200: defaulttheta = 151.4-180.
-   if wheelpos ==  160: defaulttheta = 144.4-180.
-   if wheelpos ==  955: defaulttheta = 140.5-180.
-   if wheelpos == 1000: defaulttheta = 148.1-180.
+   if wheelpos ==  200: 
+       q1 = (rate > 2.5*rate_bkg) & (rate < 125*rate_bkg)
+       defaulttheta = 151.4-180.
+       bins = np.arange(-29.5,29.5,1)    
+   elif wheelpos ==  160: 
+       q1 = (rate > 2.5*rate_bkg) & (rate < 125*rate_bkg) & (x_img > 850)
+       defaulttheta = 144.4-180.
+       bins = np.arange(-29.5,29.5,1)    
+   elif wheelpos ==  955: 
+       q1 = (rate > 2.5*rate_bkg) & (rate < 175*rate_bkg) & (x_img > 850)
+       defaulttheta = 140.5-180
+       bins = np.arange(-49.5,49.5,1)    
+   elif wheelpos == 1000: 
+       q1 = (rate > 2.5*rate_bkg) & (rate < 175*rate_bkg)
+       defaulttheta = 148.1-180.
+       bins = np.arange(-49.5,49.5,1)    
 
    Thet -= defaulttheta
    Xa += 17.0
@@ -2721,24 +2733,23 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    kx = -1
    for i in range(M):
        if (ondetector[i] and useuvotdetect):
-           dx = (Xim[i] - x_img)
-           dy = (Yim[i] - y_img)
+           dx = (Xim[i] - x_img[q1])
+           dy = (Yim[i] - y_img[q1])
            kx = np.min( np.sqrt(dx**2+dy**2) ) == np.sqrt(dx**2+dy**2)  
            distance.append( np.sqrt(dx**2+dy**2)[kx] )
            distx.append( dx[kx] )
            disty.append( dy[kx] )
    if ((type(kx) == int) & (chatter > 3)):
        print "Xim: ",Xim
-       print "x_img:",x_img
+       print "x_img:",x_img[q1]
        print "dx: ",dx
            
    if len(distx) > 0 :        
-       bins = np.arange(-29.5,29.5,1)    
        hisx = np.histogram(distx,bins=bins)    
        xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
        hisy = np.histogram(disty,bins=bins)    
        yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
-       # subtract xoff, yoff from Xim, Yim or add to origin ( hh[CRPIX1S],hh[CRPIX2S] )  is offset 
+       # subtract xoff, yoff from Xim, Yim or add to origin ( hh[CRPIX1S],hh[CRPIX2S] ) if offset 
        # is larger than 1 pix
        if (np.sqrt(xoff**2+yoff**2) > 1.0):
            if ("forceshi" not in hh):
