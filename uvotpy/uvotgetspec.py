@@ -35,9 +35,9 @@
 from __future__ import division
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2014, see Licence  
+# (c) 2009-2015, see Licence  
 
-__version__ = '2.0.7 20150630'
+__version__ = '2.0.8 20150716'
  
 import sys
 import optparse
@@ -642,12 +642,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       msg += "   highest term first)\n"
       for k in range(len(C_2)):
          msg += "DISP2_"+str(k)+"=%12.4e\n" % (C_2[k])
-      sys.stderr.write( "first order anchor = %s\n"%(anker))
-      sys.stderr.write( "second order anchor = %s\n"%(anker2)) 
+      #sys.stderr.write( "first order anchor = %s\n"%(anker))
+      #sys.stderr.write( "second order anchor = %s\n"%(anker2)) 
       msg += "first order dispersion = %s\n"%(str(C_1))
       msg += "second order dispersion = %s\n"%(str(C_2))
-      sys.stderr.write( "first order dispersion = %s\n"%(str(C_1)) )
-      sys.stderr.write( "second order dispersion = %s\n"%(str(C_2)) )
+      if chatter > 1:
+          sys.stderr.write( "first order dispersion = %s\n"%(str(C_1)) )
+          sys.stderr.write( "second order dispersion = %s\n"%(str(C_2)) )
       msg += "lenticular filter anchor positions (det)\n"
       msg += msg3
       # override angle
@@ -2159,17 +2160,17 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
            bgimg[i9,kx0:kx1] = bg1[kx0:kx1] + dbgdy[kx0:kx1]*(i9-25)
 	   bgimg[i9,0:kx0] = bg2[0:kx0]
 	   bgimg[i9,kx1:nx] = bg2[kx1:nx]
-	print "1..BACKGROUND DEFAULT from BG1 and BG2"   
+	if chatter > 2: print "1..BACKGROUND DEFAULT from BG1 and BG2"   
    elif ((background_lower[0] != None) & (background_upper[0] == None)):
      # set background to lower background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg1 
-	print "2..BACKGROUND from lower BG1 only"   
+	if chatter > 2: print "2..BACKGROUND from lower BG1 only"   
    elif ((background_upper[0] != None) & (background_lower[0] == None)):
      # set background to that of upper background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg2
-	print "3..BACKGROUND from upper BG2 only"   
+	if chatter > 2: print "3..BACKGROUND from upper BG2 only"   
    else:
      # linear interpolation of the two background regions  
         dbgdy = (bg2-bg1)/(background_upper[0]+0.5*background_upper[1]+background_lower[0]+0.5*background_lower[1]) 
@@ -2177,7 +2178,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
            bgimg[i9,kx0:kx1] = bg1[kx0:kx1] + dbgdy[kx0:kx1]*(i9-int(100-(background_lower[0]+0.5*background_lower[1])))
 	   bgimg[i9,0:kx0] =  bg2[0:kx0]    # assuming that the spectrum in not in the lower left corner 
 	   bgimg[i9,kx1:nx] = bg2[kx1:nx]
-	print "4..BACKGROUND from BG1 and BG2"   
+	if chatter > 2: print "4..BACKGROUND from BG1 and BG2"   
       
    return bg, bg1, bg2, bgsig, bgimg, bg_limits_used, (bg1_good, bg1_dis, 
           bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good, bgimg_lin)
@@ -2590,7 +2591,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    command = "uvotdetect infile="+infile+ " outfile="+outfile + \
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
-   " clobber="+clobber+" chatter=0"
+   " clobber="+clobber+" chatter=0 > NULL"
    
    if chatter > 1: 
       print "find_zeroth_orders: trying to detect the zeroth orders in the grism image"
@@ -2771,7 +2772,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
            f[ext].header = hh
            f.close()
        print "find_zeroth_orders: \n\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
-       print "\tthere was found an overall offset equal to (%5.1f.%5.1f) "%(xoff,yoff)
+       print "\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff)
        Xim -= xoff
        Yim -= yoff
      
@@ -3312,13 +3313,15 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       	  
    if offsetset: 
        yof = offsetval - anky
-       print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
+       if chatter > 1:
+           print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
        msg += "spectrum location set with input parameter to: y=%5.1f\n"%(offsetval)
    else:    
        (p0,p1), ier = leastsq(Fun1b, (cp2.max(),anky), args=(cp2,arange(200),3.2) )
        yof = (p1-anky) 
-       print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
-       print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
+       if chatter > 1:
+           print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
+           print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
    #### should also estimate the likely wavelength error from the offset distance p1 and print
        #msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
        #msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction was %5.1f\n" % (p1,yof)
@@ -5264,35 +5267,37 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
          calfile = 'swugu0200wcal20041120v001.fits'
          oldcalfile='swwavcal20090406_v1_mssl_ug200.fits'
          calfile = caldir+'/'+calfile
-         print 'reading UV Nominal calfile '+calfile
+         if chatter > 1: print 'reading UV Nominal calfile '+calfile
       elif wheelpos == 160: 
          calfile='swugu0160wcal20041120v002.fits'
          oldcalfile= 'swwavcal20090626_v2_mssl_uc160_wlshift6.1.fits'
          calfile = caldir+'/'+calfile
-         print 'reading UV clocked calfile '+calfile 
+         if chatter > 1: print 'reading UV clocked calfile '+calfile 
       elif wheelpos == 955: 
          calfile='swugv0955wcal20041120v001.fits'
          oldcalfile= 'swwavcal20100421_v0_mssl_vc955_wlshift-8.0.fits'
          calfile = caldir+'/'+calfile
-         print 'reading V Clockedcalfile '+calfile 
+         if chatter > 1: print 'reading V Clockedcalfile '+calfile 
       elif wheelpos == 1000: 
          calfile='swugv1000wcal20041120v001.fits'
          oldcalfile= 'swwavcal20100121_v0_mssl_vg1000.fits'
          calfile = caldir+'/'+calfile
-         print 'reading V Nominal calfile  '+calfile 
+         if chatter > 1: print 'reading V Nominal calfile  '+calfile 
       else:
-         print "Could not find a valid wave calibration file for wheelpos = ",wheelpos
-	 print "Aborting"
-         print "******************************************************************"
-	 raise
-         return   
+          if chatter > 1: 
+             print "Could not find a valid wave calibration file for wheelpos = ",wheelpos
+	     print "Aborting"
+             print "******************************************************************"
+	     raise IOError("missing calibration file")
+               
 
    msg += "wavecal file : %s\n"%(calfile.split('/')[-1])
    #  look up the data corresponding to the (Xphi,Yphi) point in the 
    #  calibration file (which already has rotated input arrays) 
    #    
    cal = pyfits.open(calfile)
-   print "opening the calibration file with extentions\n\t",cal.info()
+   if chatter > 0: print "opening the wavelength calibration file: %s"%(calfile)
+   if chatter > 1: print cal.info()
    hdr0 = cal[0].header
    hdr1 = cal[1].header
    data = cal[1].data
@@ -5737,25 +5742,26 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    '''
    # 2015-06-10 output the lenticular filter anchor position
    #            and fix deleted second lenticular filter 
+   # 2015-07-16 changeover to astropy.wcs from ftools 
+   # 2010-07-11 added code to move existing uvw1 raw and sky files out of the way and cleanup afterwards.
+   # npkuin@gmail.com
 
    import numpy as np
    try:
-      from astropy.io import fits as pyfits
+      from astropy.io import fits
    except:
-      import pyfits
+      import pyfits as fits
 
    from uvotwcs import makewcshdr 
    import os, sys
    
-   __version__ = '1.05 NPMK 20150610 NPMK(MSSL)'
+   __version__ = '1.1 NPMK 20150716 NPMK(MSSL)'
 
-   # 2010-07-11 added code to move existing uvw1 raw and sky files out of the way and cleanup afterwards.
-   # npkuin@gmail.com
    msg = ""
    lenticular_anchors = {}
    
-   if (chatter > 0):
-      print "uvotspec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
+   if (chatter > 1):
+      print "uvotgetspec.getSpec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
        lfilt2,    lfilt2_ext, method, attfile, catspec, chatter,')'
    
    if ( (wheelpos == 160) ^ (wheelpos == 200) ): 
@@ -5805,8 +5811,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    if lfilter == 'uvw2' : ffile = indir+'/'+filestub+'uw2_sk.img'
    if lfilter == 'fk'   : ffile = indir+'/'+filestub+'ufk_sk.img'
 
-   hf = pyfits.getheader(ffile,lfext)   
-   hg = pyfits.getheader(gfile,ext)
+   hf = fits.getheader(ffile,lfext)   
+   hg = fits.getheader(gfile,ext)
 
    # check for losses in grism image
    if (' BLOCLOSS' in hg):
@@ -5823,7 +5829,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
 	   msg += "TOSSLOSS=%4.1f\n"%(hg['TOSSLOSS'])
    tstart = hg['TSTART']
 
-   print 'grism exposure time = ',hg['EXPOSURE'],'  seconds'
+   if chatter > 1: print 'grism exposure time = ',hg['EXPOSURE'],'  seconds'
    
    RA_PNT  = hg['RA_PNT']
    DEC_PNT = hg['DEC_PNT']
@@ -5835,6 +5841,12 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        sys.stderr.write( 
        "\nWARNING: \n\tthe difference in the pointing from the header to the RA,DEC parameter is \n"+\
        "\tlarge delta-RA = %f deg, delta-Dec = %f deg\n\n"%(ra_diff,dec_diff))
+       
+   W1 = wcs.WCS(hf,)
+   xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
+   W2 = wcs.WCS(hf,key='D',relax=True)    
+   x1, y1 = W2.wcs_pix2world(xpix_,ypix_,0)    
+   
    RAs = repr(RA)
    DECs= repr(DEC)
    exts = repr(ext)
@@ -5842,7 +5854,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
 
    # tbd - get random number for temp file name
    from os import getenv,system
-   system('echo '+RAs+'  '+DECs+' > radec.txt ' )
+   #system('echo '+RAs+'  '+DECs+' > radec.txt ' )
 
    CALDB = getenv('CALDB')
    if CALDB == '': 
@@ -5854,30 +5866,31 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        print 'That is needed for the uvot Ftools '
        return None 
        
-   command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
-             +ffile+'['+lfexts+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
-   if chatter > 0: print command
-   system( command )
+   #command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
+   #          +ffile+'['+lfexts+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
+   #if chatter > 0: print command
+   #system( command )
 
-   f = open('skyfits.out', "r")
-   line = f.read()
-   if chatter > 1: print 'skyfits.out: '+line
-   x1, y1 = (line.split())[2:4]
-   f.close  
-   system( 'echo '+repr(x1)+'  '+repr(y1)+'  > skyfits.in' )
-   # 
-   command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
-             +ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
-   if chatter > 1: print command
-   system( command )
-   f = open('detmm.txt', "r")
-   line = f.read()
-   if chatter > 1: print 'detmm: '+line
-   x1, y1 = line.split()[2:4]
-   f.close
-   x1 = float(x1)
-   y1 = float(y1)
-   if chatter > 1: print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
+   #f = open('skyfits.out', "r")
+   #line = f.read()
+   #if chatter > 1: print 'skyfits.out: '+line
+   #x1, y1 = (line.split())[2:4]
+   #f.close  
+   #system( 'echo '+repr(x1)+'  '+repr(y1)+'  > skyfits.in' )
+   ## 
+   #command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
+   #          +ffile+'['+lfexts+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
+   #if chatter > 1: print command
+   #system( command )
+   #f = open('detmm.txt', "r")
+   #line = f.read()
+   #if chatter > 1: print 'detmm: '+line
+   #x1, y1 = line.split()[2:4]
+   #f.close
+   #x1 = float(x1)
+   #y1 = float(y1)
+   if chatter > 1:
+       print "\t The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
    # convert anchor in DET coordinate mm to pixels and arcsec from boresight
    anker_uvw1det = np.array([x1,y1])/0.009075+np.array((1100.5,1100.5))
    msg += "LFILT1_ANCHOR= [%6.1f,%6.1f]\n"%(anker_uvw1det[0],anker_uvw1det[1])
@@ -5909,35 +5922,40 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       if lfilt2 == 'uvm2' : f2ile = indir+'/'+filestub+'um2_sk.img'
       if lfilt2 == 'uvw2' : f2ile = indir+'/'+filestub+'uw2_sk.img'
       if lfilt2 == 'fk'   : f2ile = indir+'/'+filestub+'ufk_sk.img'
-      hf2 = pyfits.getheader(f2ile,lfext)   
+      hf2 = fits.getheader(f2ile,lfext)   
+      W1 = wcs.WCS(hf2,)
+      xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
+      W2 = wcs.WCS(hf2,key='D',relax=True)    
+      x2, y2 = W2.wcs_pix2world(xpix_,ypix_,0)    
       if lfilt2_ext == None: 
           lf2ext = ext 
       else: 
           lf2ext = lfilt2_ext  
-      command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
-             +f2ile+'['+str(lf2ext)+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
-      if chatter > 0: print command
-      system( command )
+      #command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
+      #       +f2ile+'['+str(lf2ext)+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
+      #if chatter > 0: print command
+      #system( command )
 
-      f = open('skyfits.out', "r")
-      line = f.read()
-      if chatter > 1: print 'skyfits.out: '+line
-      x2, y2 = (line.split())[2:4]
-      f.close  
-      system( 'echo '+repr(x2)+'  '+repr(y2)+'  > skyfits.in' )
+      #f = open('skyfits.out', "r")
+      #line = f.read()
+      #if chatter > 1: print 'skyfits.out: '+line
+      #x2, y2 = (line.split())[2:4]
+      #f.close  
+      #system( 'echo '+repr(x2)+'  '+repr(y2)+'  > skyfits.in' )
       # 
-      command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
-             +f2ile+'['+str(lf2ext)+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
-      if chatter > 1: print command
-      system( command )
-      f = open('detmm.txt', "r")
-      line = f.read()
-      if chatter > 1: print 'detmm: '+line
-      x2, y2 = line.split()[2:4]
-      f.close
-      x2 = float(x1)
-      y2 = float(y1)
-      if chatter > 1: print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
+      #command = HEADAS+'/bin/uvotapplywcs infile=skyfits.in outfile=detmm.txt wcsfile=\"'\
+      #       +f2ile+'['+str(lf2ext)+']\" operation=PIX_TO_WORLD to=D chatter='+str(chatter)
+      #if chatter > 1: print command
+      #system( command )
+      #f = open('detmm.txt', "r")
+      #line = f.read()
+      #if chatter > 1: print 'detmm: '+line
+      #x2, y2 = line.split()[2:4]
+      #f.close
+      #x2 = float(x1)
+      #y2 = float(y1)
+      if chatter > 2: 
+          print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x2, y2)
       # convert anchor in DET coordinate mm to pixels and arcsec from boresight
       anker_lf2det = np.array([x2,y2])/0.009075+np.array((1100.5,1100.5))
       msg += "LFILT2_ANCHOR= [%6.1f,%6.1f]\n"%(anker_lf2det[0],anker_lf2det[1])
@@ -5975,7 +5993,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 1 = (%8.5f,%8.5f)  mm '%(x1,y1))
        if lfilt2 != None:
            sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 2 = (%8.5f,%8.5f)  mm '%(x2,y2))
-   if chatter > 0:  
+   if chatter > 2:  
        print 'findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det
        print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img
        if lfilt2 != None:
@@ -5984,7 +6002,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        print 'findInputAngle. derived boresight offset lenticular filter ',lfilter,' (DET pix): ',anker_uvw1det_offset
        print 'findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees'
    # cleanup temp files:   
-   system('rm radec.txt skyfits.out  skyfits.in detmm.txt')
+   #system('rm radec.txt skyfits.out  skyfits.in detmm.txt')
    return Xphi*as2deg, Yphi*as2deg, tstart, msg, lenticular_anchors
 
 
