@@ -341,7 +341,8 @@ def sensitivityCorrection(swifttime,wave=None,sens_rate=0.01):
    if uvotgetspec.senscorr:
        sens_corr = 1.0/(1.0 - sens_rate*(swifttime-126230400.000)/31556952.0 )  
        return sens_corr
-   else: return 1.0
+   else: 
+       return 1.0
 
 def angstrom2kev(lamb,unit='angstrom'):
    """
@@ -1185,9 +1186,10 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
    import numpy as np
    from scipy import interpolate
 
+   typeNone = type(None)
    grismname = "UGRISM"
    if wheelpos > 500: grismname  = "VGRISM"
-   if (anchor != None):
+   if (type(anchor) != typeNone):
       if (len(anchor) != 2):
          sys.stderr.write("input parameter named anchor is not of length 2")
       elif type(anchor) == str: 
@@ -1286,6 +1288,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
             if hdu[1].header['CBD60001'].split("(")[1].split(")")[0] != spectralorder: 
                raise IOError("The supplied effective area file is not correct spectral order.")
             if ("CBD70001" not in hdu[extens].header) :  # old version
+               print "Spectral order = %i. \t"%(spectralorder)
 	       print "Using the oldest version of the effective area. \n"+\
 	            "Flux, COI correction will be wrong."
                return hdu[extname],msg
@@ -1294,22 +1297,24 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
        uvotpy = os.getenv("UVOTPY")  
        arf = uvotpy+"/calfiles/"+calfile
        
-       try:    
-          hdu = fits.open(arf)
-          if check_extension:  # old version file 
+       #try:    
+       hdu = fits.open(arf)
+       if check_extension:  # old version file 
             if hdu[1].header['CBD60001'].split("(")[1].split(")")[0] != spectralorder: 
-               raise IOError("The supplied effective area file is not correct spectral order.")
-            if ("CBD70001" not in hdu[extens].header) :  # old version
+               #raise IOError("The supplied effective area file is not correct spectral order.")
+	       print "Spectral oder = %i:\t"%(spectralorder)
+               print "The supplied effective area file %s is not \n   for the correct spectral order."%(arf)
+            if ("CBD70001" not in hdu[extname].header) :  # old version
 	       print "Using the oldest version of the effective area. \n"+\
 	            "Flux, COI correction will be wrong."
                return hdu[extname],msg
-       except:
-          print "UVOTPY environment variable not set or calfiles directory entries missing" 
-          pass      
-          return None, msg   
+       #except:
+       #   print "UVOTPY environment variable not set or calfiles directory entries missing" 
+       #   pass      
+       #   return None, msg   
       
-   print "using flux calibration file: ",arf   
-   hdu.info()
+   if chatter > 0: print "Spectral order = %i: using flux calibration file: %s"%(spectralorder,arf)   
+   if chatter > 2: hdu.info()
    msg += "Flux calibration file: %s\n"%(arf.split('/')[-1])
    
    if (option == "default") | (option == "nearest"):
