@@ -247,14 +247,14 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
          for i in range(nq):
             qq = q[0][i]
             x,y,a,b,th = X[qq],Y[qq], Xa1[qq], Yb1[qq], Thet[qq]-img_angle 
-            maskEllipse(mapimg, x,y,a,b,th)
+            mapimg = maskEllipse(mapimg, x,y,a,b,th)
       
       if nqsat > 0:
          # update the truth map for bright annulus excluding a circular region
          for i in range(nqsat): 
             qq = qsat[0][i]
             x,y,a,b,th = X[qq],Y[qq], ann_size, ann_size, Thet[qq]-img_angle 
-            maskEllipse(mapimg, x,y,a,b,th)
+            mapimg = maskEllipse(mapimg, x,y,a,b,th)
 	    if chatter > 1: print "masked bright source annulus at position [",x,",",y,"]"
 	 		
       return mapimg    

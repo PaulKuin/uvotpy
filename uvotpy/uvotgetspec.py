@@ -429,9 +429,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    getzmxmode='spline'
    smooth=50
    testparam=None
-   msg = "" ; msg2 = ""
+   msg = "" ; msg2 = "" ; msg4 = ""
    attime = datetime.datetime.now()
-   logfile = 'uvotgrism_'+obsid+'['+str(ext)+']'+'_'+attime.isoformat()[0:19]+'.log'
+   logfile = 'uvotgrism_'+obsid+'_'+str(ext)+'_'+'_'+attime.isoformat()[0:19]+'.log'
    if type(fluxcalfile) == bool: fluxcalfile = None
    tempnames.append(logfile)
    tempntags.append('logfile')
@@ -981,25 +981,6 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         	 	
       ank_c[0] = y1[ank_c[1]]	      
       Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	
-      # 2012-02-20 moved to curved_extraction so that updated track is used for spectrum 		 
-      #if curved == "update":
-      #  # the hope is, that with more data the calibration can be improved to eliminate this step
-      #  #try:	 
-      #    fitorder2, fval, fvalerr = updateFitorder(extimg, fitorder, wheelpos, full=True,
-      #      predict2nd=predict2nd, fit_second=fit_second, fit_third=fit_second,
-      #	    C_1=C_1, C_2=C_2, d12=dist12, chatter=chatter)	      
-      #    msg += "updated fitorder\n"
-      # 
-      #    (present0,present1,present2,present3),(q0,q1,q2,q3), \
-      #        (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
-      #        (y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
-      #	      (x,xstart,xend,sp_all,quality)  = fitorder2
-      #	      
-      #    # update the anchor y-coordinate	      
-      #    ank_c[0] = y1[ank_c[1]]	      
-      #  #except:
-      #	#  msg += "WARNING: fit order curvature update has failed\n"
-      #	#  curved = "curve"	      
 	 
       msg += "orders present:"
       if present0: msg += "0th order, "
@@ -2579,20 +2560,29 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        print "find_zeroth_orders: determining positions zeroth orders from USNO-B1"
    
    if ((wheelpos == 160) ^ (wheelpos == 200)):
-      grtype = "ugu"
+       grtype = "ugu"
+       zp = 19.46  # zeropoint uv nominal zeroth orders for 10 arcsec circular region
    else:
-      grtype = "ugv"  
-       
+       grtype = "ugv"
+       zp = 18.90   # estimated visible grism zeropoint for same   
+                 
    exts = repr(ext)
    gfile = indir+'/'+filestub+grtype+"_dt.img"   
    infile = indir+'/'+filestub+grtype+"_dt.img["+exts+"]"
    outfile = indir+'/'+filestub+grtype+"_"+exts+"_detect.fits"
-   
-   command = "uvotdetect infile="+infile+ " outfile="+outfile + \
+      
+   if ((wheelpos == 160) ^ (wheelpos == 200)):
+       command = "uvotdetect infile="+infile+ " outfile="+outfile + \
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
    " clobber="+clobber+" chatter=0 > NULL"
-   
+
+   else:
+       command = "uvotdetect infile="+infile+ " outfile="+outfile + \
+   ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
+   " expopt = BETA calibrate=NO  expfile=NONE "+ \
+   " clobber="+clobber+" chatter=0 > NULL"
+       
    if chatter > 1: 
       print "find_zeroth_orders: trying to detect the zeroth orders in the grism image"
       print command
@@ -2655,17 +2645,13 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       print 'That is needed for the uvot Ftools '
       return None
    
-   if wheelpos < 500:    
-       zp = 19.46  # zeropoint uv nominal zeroth orders for 10 arcsec circular region
-   else:
-       zp = 18.50   # estimated visible grism zeropoint for same   
-        
    if set_maglimit == None:  
       b_background = zp + 2.5*log10( (rate_bkg.std())*1256.6 )
       # some typical measure for the image
       blim= b_background.mean() + b_background.std() + zeroth_blim_offset  
    else:
       blim = set_maglimit
+   if blim <  background_source_mag: blim = background_source_mag  
       
    # if usno-b1 catalog is present, so not retrieve again         
    if not os.access('search.ub1',os.F_OK):
@@ -2727,22 +2713,46 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    
    xoff = 0.0
    yoff = 0.0
-   # find the minimum distances between sources in lists and derive offset 
+   # derive offset :
+   # find the minimum distances between sources in lists pair-wise
    distance = []
    distx = []
    disty = []
    kx = -1
-   for i in range(M):
+   dxlim = 100 # maximum distance in X
+   dylim = 100 # maximum distance in Y
+   tol = 5     # tolerance in x and y match
+   xim = x_img[q1]
+   yim = y_img[q1]
+   M2 = int(len(xim)*0.5)
+   for i2 in range(M2):   # loop over the xdetect results
+       i = 2*i2
+       i1 = 2*i2+1
        if (ondetector[i] and useuvotdetect):
-           dx = (Xim[i] - x_img[q1])
-           dy = (Yim[i] - y_img[q1])
-           kx = np.min( np.sqrt(dx**2+dy**2) ) == np.sqrt(dx**2+dy**2)  
-           distance.append( np.sqrt(dx**2+dy**2)[kx] )
-           distx.append( dx[kx] )
-           disty.append( dy[kx] )
+           dx  =  np.abs(Xim - xim[i ])
+           dy  =  np.abs(Yim - yim[i ])
+           dx1 =  np.abs(Xim - xim[i1])
+           dy1 =  np.abs(Yim - yim[i1])
+           op = (dx < dxlim) & (dy < dylim)
+           if op.sum() != 0:
+               dis = np.sqrt(dx[op]**2+dy[op]**2)
+               kx = dis == np.min(dis)  
+               kx = np.arange(len(op))[op][kx]
+
+               op1 = (dx1 < dxlim) & (dy1 < dylim)
+               if op1.sum() != 0:
+                   dis = np.sqrt(dx1[op1]**2+dy1[op1]**2)
+                   kx1 = dis == np.min(dis)
+                   kx1 = np.arange(len(op1))[op1][kx1]
+
+                   if (np.abs(dx[kx] - dx1[kx1]) < tol ) & (np.abs(dy[kx] - dy1[kx1]) < tol ):
+                       distx.append( Xim[kx]  - xim[i ] )
+                       disty.append( Yim[kx]  - yim[i ] )
+                       distx.append( Xim[kx1] - xim[i1] )
+                       disty.append( Yim[kx1] - yim[i1] )
    if ((type(kx) == int) & (chatter > 3)):
-       print "Xim: ",Xim
-       print "x_img:",x_img[q1]
+       print "Xim: ",Xim[kx]
+       print "xim:",xim
        print "dx: ",dx
            
    if len(distx) > 0 :        
@@ -2771,10 +2781,53 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
            f = fits.open(gfile,mode='update')
            f[ext].header = hh
            f.close()
-       print "find_zeroth_orders: \n\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
+       print "find_zeroth_orders result (binary matched offset): \n"
+       print "\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
        print "\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff)
        Xim -= xoff
        Yim -= yoff
+   else:
+      # if binary matched offsets don't pan out at all, compute simple offsets 
+      for i in range(len(xim)):   # loop over the xdetect results
+        if (ondetector[i] and useuvotdetect):
+           dx  =  np.abs(Xim - xim[i ])
+           dy  =  np.abs(Yim - yim[i ])
+           op = (dx < dxlim) & (dy < dylim)
+           if op.sum() != 0:
+               dis = np.sqrt(dx[op]**2+dy[op]**2)
+               kx = dis == np.min(dis)  
+               kx = np.arange(len(op))[op][kx]
+               distx.append( Xim[kx]  - xim[i ] )
+               disty.append( Yim[kx]  - yim[i ] )
+      hisx = np.histogram(distx,bins=bins)    
+      xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
+      hisy = np.histogram(disty,bins=bins)    
+      yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
+      if (np.sqrt(xoff**2+yoff**2) > 1.0):
+           if ("forceshi" not in hh):
+               hh['crpix1s'] += xoff
+               hh['crpix2s'] += yoff
+               hh["forceshi"] = "%f,%f"%(xoff,yoff)
+               hh["forcesh0"] = "%f,%f"%(xoff,yoff)
+               print "offset (%5.1f,%5.1f) found"%(xoff,yoff)
+               print "offset found has been applied to the fits header of file: %s\n"%(gfile)
+           else:    
+               # do not apply shift to crpix*s for subsequent shifts, but record overall ahift
+               # original shift is in "forcesh0" which actually WAS applied. Both items are needed
+               # to reconstruct shifts between pointing image and the source locations (in case 
+               # we allow interactive adjustments of zeroth orders, that would enable pointing updates
+               # however, the keyword must be reset at start of reprocessing (not done now)
+               xoff_,yoff_ = np.array((hh["forceshi"]).split(','),dtype=float)
+               hh["forceshi"] = "%f,%f"%(xoff_+xoff,yoff_+yoff)
+           f = fits.open(gfile,mode='update')
+           f[ext].header = hh
+           f.close()
+      print "find_zeroth_orders result (simple offset): \n"
+      print "\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
+      print "\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff)
+      Xim -= xoff
+      Yim -= yoff
+       
      
    # find ellipse belonging to source from uvotdetect output, or make up one for all ondetector
    xacc = 10
@@ -2791,7 +2844,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
 	     Thet[i]= -theta[k] 
 	     matched[i] = True
        else:
-         # make up ellipse
+         # make up some ellipse axes in pix
 	 Xa[i] = 17.0
 	 Yb[i] = 5.0
    if chatter > 0:
@@ -3220,6 +3273,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    # get the mask for zeroth orders in the way 
    # set bad done while extracting spectra below
    set_qual = ((not skip_field_sources) & (ZOpos != None) & (angle != None))
+   
    if set_qual:
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
             
@@ -3244,19 +3298,6 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	 lmap=True,makeplot=False,chatter=chatter) 
       if chatter > 2:
          print "zeroth order map strong: shape=",map_strong.shape," min, max =",map_strong.min(), map_strong.max()
-	 	 
-      if ny > 20: 
-         # weak and strong sources within 
-	 at1 = where(map_all[:,ny/2-10:ny/2+10].mean(1) != 1.)[0]
-         quality[at1] = qflag['weakzeroth']
-      if ny > 40:
-         # strong sources
-	 at2 = where(map_strong[:,ny/2-20:ny/2+20].mean(1) != 1.)[0]
-         quality[at2] = qflag['zeroth']	 
-   else:
-      map = None
-      print "no zeroth order contamination quality information available "
-      quality[:] = qflag['good']     
 
 
    # tracks - defined as yi (delta) = 0 at anchor position (ankx,anky)  
@@ -3342,12 +3383,17 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       y3 += yof
 
 
+   if not set_qual:
+      map = None
+      print "no zeroth order contamination quality information available "
+      quality[:] = qflag['good']     
+
 # OUTPUT PARAMETER  spectra, background, slit init - full dimension retained 
    # initialize
    
    sp_all    = zeros(nx) + cval   # straight slit
    bg_all    = zeros(nx) + cval   # straight slit
-   
+   # spectrum arrays
    sp_zeroth = zeros(nx) + cval   # curved extraction 
    sp_first  = zeros(nx) + cval   # curved extraction 
    sp_second = zeros(nx) + cval   # curved extraction 
@@ -3356,11 +3402,16 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    bg_first  = zeros(nx) + cval   # curved extraction 
    bg_second = zeros(nx) + cval   # curved extraction 
    bg_third  = zeros(nx) + cval   # curved extraction 
+   # coi-area arrays
    co_zeroth = zeros(nx) + cval
    co_first  = zeros(nx) + cval
    co_second = zeros(nx) + cval
    co_third  = zeros(nx) + cval
    co_back   = zeros(nx) + cval
+   # quality flag arrays
+   at1 = zeros(nx,dtype=bool)
+   at2 = zeros(nx,dtype=bool)
+   at3 = zeros(nx,dtype=bool)
    
    apercorr   = zeros(5*nx).reshape(5,nx) + cval 
    borderup   = zeros(5*nx).reshape(5,nx) + cval 
@@ -3403,6 +3454,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
         #except:
 	#  msg += "WARNING: fit order curvature update has failed\n"
 	#  curved = "curve"
+        
       if offsetset: 
          mess = "%s\nWARNING Using offsetlimit with parameter  *curved = 'update'* \n"\
 	 "WARNING Therefore we updated the curvature, and besides the curvature, the\n"\
@@ -3429,6 +3481,16 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       # background for coi-loss box - using a 3x larger sampling region
       k1 = int(anky-3*coi_half_width+0.5)
       co_back = bgimg[k1:k1+int(6*coi_half_width),:].sum(axis=0)/3.0
+
+      if set_qual:	 	 
+          if ny > 20: 
+              # weak and strong sources within 
+	      at1 = where(map_all[:,ny/2-10:ny/2+10].mean(1) != 1.)[0]
+              quality[at1] = qflag['weakzeroth']
+          if ny > 100:
+              # strong sources
+	      at2 = where(map_strong[:,ny/2-49:ny/2+49].mean(1) != 1.)[0]
+              quality[at2] = qflag['zeroth']	 
 
       if present0:
          for i in range(nx): 
@@ -3472,12 +3534,20 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	       apercorr[1,i] = x_aperture_correction(k1,k2,sig1coef,x[i],norder=1)
                if len(expmap) == 1: expospec[1,i] = expmap[0]
 	       else:  expospec[1,i] = expmap[k1:k2,i].mean()
-	       if set_qual:
-	           if (map_all[i,k1:k2].mean() != 1.):
-                       quality[i] = qflag['bad']	       
                if dropout_mask != None:
-	           if dropout_mask[k1:k2,i].any(): 
-	               quality[i] = qflag['bad']  
+	           at3[i] = dropout_mask[k1:k2,i].any() 
+               if set_qual:	 	 
+	           k5 = int(y1[i] - 49 + 0.5)   
+                   k6 = k1 + int(98+0.5) 	    
+                   if ny > 20: 
+                 # all zeroth orders of sources within coi-distance: 
+	               at1[i] = (map_all[i,k3:k4] == False).any()
+                   if ny > 100:
+                 # strong sources: circle 49 pix radius hits the centre of the track 
+	               at2[i] = (map_strong[i,k5:k6] == False).any()
+                   quality[at1] = qflag['weakzeroth']
+                   quality[at2] = qflag['zeroth']	 
+	           quality[at3] = qflag['bad']  
 	       
       if present2:
          for i in range(nx): 
@@ -3526,19 +3596,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	       else: expospec[3,i] = expmap[k1:k2,i].mean()
 
       # y0,y1,y2,y3 now reflect accurately the center of the slit used.
-      
-      # update mask for zeroth orders in the way 
-      if ((not skip_field_sources) & (ZOpos != None) & (angle != None)):
-	 splim1 = anky/2
-         if ny > 20: 
-            # weak and strong sources within 
-	    at1 = where(map_all[:,splim1-10:splim1+10].mean(1) != 1.)[0]
-            quality[at1] = qflag.get('weakzeroth')
-         if ny > 40:
-            # strong sources
-	    at2 = where(map_strong[:,splim1-20:splim1+20].mean(1) != 1.)[0]
-            quality[at2] = qflag.get('zeroth')		 
-      
+            
       fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
 	      y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
