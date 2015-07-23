@@ -3278,8 +3278,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
             
    # find_zeroth_orders(filestub, ext, wheelpos,clobber="yes", )
-      dims = asarray( extimg.shape )
-      dims = array([dims[1],dims[0]])
+      dims = array([nx,ny])
       pivot_ori=array([(anchor1)[0],(anchor1)[1]])
       pivot= array([ank_c[1],ank_c[0]])
 
@@ -3481,16 +3480,6 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       # background for coi-loss box - using a 3x larger sampling region
       k1 = int(anky-3*coi_half_width+0.5)
       co_back = bgimg[k1:k1+int(6*coi_half_width),:].sum(axis=0)/3.0
-
-      if set_qual:	 	 
-          if ny > 20: 
-              # weak and strong sources within 
-	      at1 = where(map_all[:,ny/2-10:ny/2+10].mean(1) != 1.)[0]
-              quality[at1] = qflag['weakzeroth']
-          if ny > 100:
-              # strong sources
-	      at2 = where(map_strong[:,ny/2-49:ny/2+49].mean(1) != 1.)[0]
-              quality[at2] = qflag['zeroth']	 
 
       if present0:
          for i in range(nx): 
@@ -5954,7 +5943,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    msg += "LFILT1_ANCHOR= [%6.1f,%6.1f]\n"%(anker_uvw1det[0],anker_uvw1det[1])
    lenticular_anchors.update({"lfilt1":lfilter,"lfilt1_anker":anker_uvw1det})
    
-   if (x1 < -17) | (x1 > 17) | (y1 < -17) | (y1 > 17) :
+   if (x1 < -14) | (x1 > 14) | (y1 < -14) | (y1 > 14) :
       # outside detector 
       print "\nERROR: source position is not on the detector! Aborting...",(x1,y1)
       raise IOError("\nERROR: source position is not on the detector! ")
