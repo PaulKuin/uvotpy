@@ -903,11 +903,20 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       poly_2 = None
       poly_3 = None
       try: 
-         poly_1 = raw_input("give coefficients of first order polynomial array([X^3,X^2,X,C])")
-         poly_2 = raw_input("give coefficients of second order polynomial array([X^2,X,C])")
-         poly_3 = raw_input("give coefficients of third order polynomial array([X,C])")
+         poly_1 = input("give coefficients of first order polynomial array([X^3,X^2,X,C])")
+         poly_2 = input("give coefficients of second order polynomial array([X^2,X,C])")
+         poly_3 = input("give coefficients of third order polynomial array([X,C])")
       except:
          print "failed"
+      
+      if (type(poly_1) != list) | (type(poly_2) != list) | (type(poly_3) != list):
+         print "poly_1 type = ",type(poly_1)
+         print "poly_2 type = ",type(poly_2)
+         print "poly_3 type = ",type(poly_3)
+         raise IOError("the coefficients must be a list")
+      poly_1 = np.asarray(poly_1)
+      poly_2 = np.asarray(poly_2)
+      poly_3 = np.asarray(poly_3)
          
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
@@ -3237,9 +3246,9 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    sig3coef=array([0.0059,1.5])
    
 # override coefficients y(x):
-   if (poly_1 != None): coef1 = poly_1   
-   if (poly_2 != None): coef2 = poly_2   
-   if (poly_3 != None): coef3 = poly_3   
+   if (type(poly_1) != typeNone): coef1 = poly_1   
+   if (type(poly_2) != typeNone): coef2 = poly_2   
+   if (type(poly_3) != typeNone): coef3 = poly_3   
    
 #===================================================================
    if chatter > 0:
