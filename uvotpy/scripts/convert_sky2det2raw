@@ -42,6 +42,32 @@ Input parameters are explained in the help. Enter
 
 convert_sky2det2raw -h. 
 
+Examples
+--------
+
+Using a parameter file:
+
+convert_sky2det2raw -p data_sky2raw > raw_coordinames
+
+with a parameter file like:
+
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,1
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,2
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,3
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,4
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,5
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,6
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,7
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,8
+288.4496417,46.8370361,00033601001/uvot/image/sw00033601001uw2_sk.img,9
+288.4496417,46.8370361,00033601002/uvot/image/sw00033601002uw1_sk.img,1
+288.4496417,46.8370361,00033601002/uvot/image/sw00033601002uuu_sk.img,1
+
+Passing the details for a simgle observation:
+
+convert_sky2det2raw --radec -d 288.4496417 46.8370361 \
+   -f 00033601001/uvot/image/sw00033601001uw2_sk.img+1 --chatter=5
+
 
 Note
 ----
@@ -54,9 +80,15 @@ executes *your* python, and that it has "scipy" and "astropy" version > 0.4
 installed. 
 
 
-output
+Output
 ------
-six numbers are output for [SKY->] DET -> RAW:
+
+if starting from SKY coordinates, 8 numbers are output ::
+det-X, det-Y (pixels),  raw-X,raw-Y (pixels), det-X,det-Y (mm), band, tstart
+Here band is the uvot filter name, and tstart the time in seconds in swift time
+(seconds since 2001-01-01T00:00:00.000).
+
+six numbers are output for DET -> RAW:
 det-X, det-Y (pixels),  raw-X,raw-Y (pixels), det-X,det-Y (mm)
 
 four number for RAW->DET
@@ -65,6 +97,7 @@ raw-X,raw-Y (pixels), det-X, det-Y (pixels)
 The DET pixels and DET (mm) coordinates are tied to 
 DET(pixels) = 1100.5+DET(mm)/0.009075 conform to the 
 Swift CALDB UVOTA TELDEF file.
+
 
 History
 --------
@@ -481,6 +514,14 @@ def finish(fromsky,invert,chatter,posJ2000=None,ext=None,xpos=None,ypos=None,
         sys.stderr.write("convert_sky2det2raw version="+__version__+'\n')
                       
     if fromsky & invert:
+        try:
+            band = fits.getval(skyfile,'filter',ext)
+            tstart = fits.getval(skyfile,'tstart',ext)
+            extrainfo = True
+        except: 
+            print "error trying"
+            extrainfo = False
+            pass    
         if det_as_mm: 
 	    xpos, ypos, x_mm,y_mm = radec2det(posJ2000,skyfile,ext,chatter,det_as_mm=det_as_mm,)
 	else:
@@ -497,7 +538,10 @@ def finish(fromsky,invert,chatter,posJ2000=None,ext=None,xpos=None,ypos=None,
 	if returns: 
 	   return rx,ry
 	elif invert:
-           sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f \n"%(x, y, rx,ry, x_mm, y_mm) )
+           if extrainfo:
+               sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f %4s %10i\n"%(x, y, rx,ry, x_mm, y_mm,band,tstart) )
+           else:
+               sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f \n"%(x, y, rx,ry, x_mm, y_mm) )
 	else:   
            sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f\n"%(x, y, rx,ry) )
 
