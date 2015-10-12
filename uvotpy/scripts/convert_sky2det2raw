@@ -79,8 +79,12 @@ History
 2014-09-09 changed bispline coefficients for the DET->RAW conversion to get 
            slightly better accuracy. The fit is based on 1952 displacements 
 	   measured in a grid over the detector during the UVOT ground cal.
-2015-06--8 changed code  from_det_to_raw to correctly process arrays of 
-           coordinates          	    
+2015-06-08 changed code  from_det_to_raw to correctly process arrays of 
+           coordinates  
+2015-10-11 fixed conversion of xdet,ydet to list using proper types in 
+           from_det_to_raw, corrected variable det2raw to invert in finish()
+           added skyfile argument missing from finish call.
+                               	    
 '''
 
 import numpy as np
@@ -107,8 +111,10 @@ from astropy import units
 import datetime
 import astropy
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 status = 0
+import astropy
+print "Astropy ",astropy.__version__
 
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
@@ -304,18 +310,25 @@ def get_tck(invert=True):
 def from_det_to_raw(detx,dety,invert=True):
     # if invert == False, then the detx,dety coordinates apply 
     # to RAW and rawx,rawy to DET
+    if type(detx) == int: detx=[detx]
+    if type(dety) == int: dety=[dety]
+    if type(detx) == np.float64: detx=[detx]
+    if type(dety) == np.float64: dety=[dety]
+    if type(detx) == np.float32: detx=[detx]
+    if type(dety) == np.float32: dety=[dety]
+    if type(detx) == float: detx=[detx]
+    if type(dety) == float: dety=[dety]
     if invert: 
        detx = np.asarray(detx,dtype=float)
        dety = np.asarray(dety,dtype=float)
     # shift det coordinates before applying inverse distortion
        detx -= 77
        dety -= 77
-       det = zip(detx,dety)
     # if raw, they are in the right system     
     tck_dx, tck_dy =  get_tck(invert=invert)
     rawx = []
     rawy = []
-    for _x,_y in det:
+    for _x,_y in zip(detx,dety):
        (_rawx, _rawy) = (_x + bisplev(_x, _y, tck_dx), 
                     _y + bisplev(_x, _y, tck_dy) )
        rawx.append(_rawx)
@@ -341,13 +354,13 @@ def radec2det(posJ2000,skyfile,ext,chatter, det_as_mm=False):
        hdr = fits.getheader(skyfile,ext)
    except:
        raise RuntimeError("\nThe FITS header could not be found for %s[%s]\n"%(skyfile,ext))    
-   w1 =wcs.WCS(header=hdr,)
-   wD =wcs.WCS(header=hdr,key='D',)
+   w1 =wcs.WCS(header=hdr,fix=False)
+   wD =wcs.WCS(header=hdr,key='D',fix=False)
    phys = w1.wcs_world2pix([[posJ2000.ra.deg,posJ2000.dec.deg]],0)
    xyposd = wD.wcs_pix2world(phys,0)
    xypos = xyposd/0.009075+np.array((1100.5,1100.5))
    if chatter > 0: sys.stderr.write( "detector coordinates %s mm = %s pix\n"%(xyposd,xypos) )
-   xypos = np.array(xypos)
+   xypos = np.array(xypos,dtype=float)
    xpos, ypos = xypos[:,0],xypos[:,1]
    if det_as_mm:
        return  xpos, ypos, xyposd[:,0], xyposd[:,1], 
@@ -372,7 +385,7 @@ def radec2pos(ra,dec,chatter):
         except:
 	    sys.stderr.write("\nError with input values RA=%s, DEC=%s \n"%(ra,dec))
             raise IOError("provide the coordinates in degrees, or ra as '00h42m00s', dec as '+41d12m00s'\n")	 
-    if chatter > 0: sys.stderr.write( "position used: %s\n"%(posJ2000)) 
+    if chatter > 0: sys.stderr.write( "radec2pos: position used: %s\n"%(posJ2000)) 
     return posJ2000
     
 def get_ext(file,chatter):      
@@ -398,7 +411,7 @@ def get_ext(file,chatter):
     except:
         pass
     if chatter > 1: 
-        sys.stderr.write("get_ext: %s + %s\n"%(skyfile,ext))	
+        sys.stderr.write("get_ext: skyfile=%s ; extension=%s\n"%(skyfile,ext))	
     return skyfile, ext		  	 
 
 def _rotvec(X, Y, theta):
@@ -473,7 +486,7 @@ def finish(fromsky,invert,chatter,posJ2000=None,ext=None,xpos=None,ypos=None,
 	else:
 	    xpos, ypos = radec2det(posJ2000,skyfile,ext,chatter)
 	    
-    if (not det_as_mm) & det2raw:
+    if (not det_as_mm) & invert:
         x_mm, y_mm = (xpos-1100.5)*0.009075, (ypos-1100.5)*0.009075	    
 
     if chatter > 1: 
@@ -483,7 +496,7 @@ def finish(fromsky,invert,chatter,posJ2000=None,ext=None,xpos=None,ypos=None,
         rx,ry= from_det_to_raw(x,y,invert=invert)
 	if returns: 
 	   return rx,ry
-	elif det2raw:
+	elif invert:
            sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f \n"%(x, y, rx,ry, x_mm, y_mm) )
 	else:   
            sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f\n"%(x, y, rx,ry) )
@@ -601,7 +614,10 @@ If the other route is desired (raw->det), set -det2raw
 	                 
    if not options.radec: 
        xpos,ypos = ra,dec
-   else: xpos,ypos = None, None       
+   else: xpos,ypos = None, None  
+   
+   skyfile=options.skyfile
+   ext = 0     
 
    if options.radec:
       posJ2000 = radec2pos(ra, dec, chatter)
@@ -613,7 +629,10 @@ If the other route is desired (raw->det), set -det2raw
          raise IOError("file not found: "+skyfile)
       	 
 	 
-   finish(options.radec,options.det2raw,options.chatter,
-          posJ2000=posJ2000,ext=ext,xpos=xpos,ypos=ypos) 	 	 
+   finish(options.radec, # fromsky
+          options.det2raw, # invert
+          options.chatter, # chatter
+          posJ2000=posJ2000, skyfile=skyfile, ext=ext, # passed
+          xpos=xpos,ypos=ypos) 	 	 
 
             
