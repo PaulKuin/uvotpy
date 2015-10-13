@@ -539,7 +539,7 @@ def finish(fromsky,invert,chatter,posJ2000=None,ext=None,xpos=None,ypos=None,
 	   return rx,ry
 	elif invert:
            if extrainfo:
-               sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f %4s %10i\n"%(x, y, rx,ry, x_mm, y_mm,band,tstart) )
+               sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f, %4s, %10i\n"%(x, y, rx,ry, x_mm, y_mm,band,tstart) )
            else:
                sys.stdout.write( "%8.2f,%8.2f,  %8.2f,%8.2f, %9.5f, %9.5f \n"%(x, y, rx,ry, x_mm, y_mm) )
 	else:   
