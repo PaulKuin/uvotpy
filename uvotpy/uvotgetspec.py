@@ -35,9 +35,9 @@
 from __future__ import division
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2015, see Licence  
+# (c) 2009-2016, see Licence  
 
-__version__ = '2.0.8 20150716'
+__version__ = '2.4.0 20160116'
  
 import sys
 import optparse
@@ -64,7 +64,7 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-from uvotmisc import interpgrid, uvotrotvec
+from uvotmisc import interpgrid, uvotrotvec, rdTab
 import uvotplot
 import datetime
 import os
@@ -92,6 +92,8 @@ if __name__ != '__main__':
       use_rectext = False
       background_method = 'boxcar'  # alternatives 'splinefit' 'boxcar'
       background_smoothing = [50,7]   # 'boxcar' default smoothing in dispersion and across dispersion in pix
+      background_interpolation = 'linear'
+      trackcentroiding = True # default (= False will disable track y-centroiding) 
       trackwidth = 2.5  # width of extraction region in sigma  (alternative default = 1.0) 2.5 was used for flux calibration.
       bluetrackwidth = 1.3 # multiplier width of non-order-overlapped extraction region [not yet active]
       write_RMF = False
@@ -109,7 +111,7 @@ senscorr = True # do sensitivity correction
 
 print 66*"="
 print "uvotpy module uvotgetspec version=",__version__
-print "N.P.M. Kuin (c) 2009-2014, see uvotpy licence." 
+print "N.P.M. Kuin (c) 2009-2016, see uvotpy licence." 
 print "please use reference provided at http://github.com/PaulKuin/uvotpy"
 print 66*"=","\n"
 
@@ -122,7 +124,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       fixed_angle=None, spextwidth=13, curved="update",
       fit_second=False, predict2nd=True, skip_field_src=False,      
       optimal_extraction=False, catspec=None,write_RMF=write_RMF,
-      get_curve=False,fit_sigmas=True,get_sigma_poly=False,
+      get_curve=False,fit_sigmas=True,get_sigma_poly=False, 
       lfilt1=None, lfilt1_ext=None, lfilt2=None, lfilt2_ext=None,  
       wheelpos=None, interactive=interactive,  sumimage=None, set_maglimit=None,
       plot_img=True, plot_raw=True, plot_spec=True, zoom=True, highlight=False, 
@@ -345,6 +347,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
      Version 2014-01-01 NPMK(MSSL)  : aperture correction for background added; output dictionary
      Version 2014-07-23 NPMK(MSSL)  : coi-correction using new calibrared coi-box and factor
      Version 2014-08-04 NPMK(MSSL/UCL): expanded offsetlimit parameter with list option to specify y-range.  
+     Version 2015-12-03 NPMK(MSSL/UCL): change input parameter 'get_curve' to accept a file name with coefficients
+     Version 2016-01-16 NPMK(MSSL/UCL): added options for background; disable automated centroiding of spectrum
 
    Example
    -------
@@ -404,7 +408,21 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if type(offsetlimit) == list:
        if len(offsetlimit) != 2:
            raise IOError("offsetlimit list must be [center, distance from center] in pixels")
+           
+   get_curve_filename = None
    
+   if type(get_curve) == str:
+       # file name: check this file is present
+       if os.access(get_curve,os.F_OK):
+          get_curve_filename = get_curve
+          get_curve = True
+       else:
+          raise IOError("ERROR: get_curve is not a boolean value nor the name of a file that is on the disk.")   
+   elif type(get_curve) == bool:
+       if get_curve: 
+          get_curve_filename = None
+          print "requires input of curvature coefficients"
+
    # check environment
    CALDB = os.getenv('CALDB')
    if CALDB == '': 
@@ -896,28 +914,43 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #  choose input coef or pick from plot
    #  choose order to do it for
    
-   if get_curve & interactive:
+   if (get_curve & interactive) | (get_curve & (get_curve_filename != None)):
       spextwidth = None
       # grab coefficients
       poly_1 = None
       poly_2 = None
       poly_3 = None
-      try: 
-         poly_1 = input("give coefficients of first order polynomial array([X^3,X^2,X,C])")
-         poly_2 = input("give coefficients of second order polynomial array([X^2,X,C])")
-         poly_3 = input("give coefficients of third order polynomial array([X,C])")
-      except:
-         print "failed"
+      if get_curve_filename == None:
+         try: 
+            poly_1 = input("give coefficients of first order polynomial array( [X^3,X^2,X,C] )")
+            poly_2 = input("give coefficients of second order polynomial array( [X^2,X,C] )")
+            poly_3 = input("give coefficients of third order polynomial array( [X,C] )")
+         except:
+            print "failed"
       
-      if (type(poly_1) != list) | (type(poly_2) != list) | (type(poly_3) != list):
-         print "poly_1 type = ",type(poly_1)
-         print "poly_2 type = ",type(poly_2)
-         print "poly_3 type = ",type(poly_3)
-         raise IOError("the coefficients must be a list")
-      poly_1 = np.asarray(poly_1)
-      poly_2 = np.asarray(poly_2)
-      poly_3 = np.asarray(poly_3)
-         
+         if (type(poly_1) != list) | (type(poly_2) != list) | (type(poly_3) != list):
+            print "poly_1 type = ",type(poly_1)
+            print "poly_2 type = ",type(poly_2)
+            print "poly_3 type = ",type(poly_3)
+            raise IOError("the coefficients must be a list")
+         poly_1 = np.asarray(poly_1)
+         poly_2 = np.asarray(poly_2)
+         poly_3 = np.asarray(poly_3)
+      else:
+         try: 
+            curfile = rdList(get_curve_filename) 
+            poly_1 = np.array(curfile[0][0].split(','),dtype=float)
+            poly_2 = np.array(curfile[1][0].split(','),dtype=float)
+            poly_3 = np.array(curfile[2][0].split('.'),dtype=float)
+         except:
+            print "There seems to be a problem when readin the coefficients out of the file"
+            print "The format is a list of coefficient separated by comma's, highest order first"
+            print "The first line for the first order"
+            print "The second line for the secons order"
+            print "The third line for the third order"
+            print "like, \n1.233e-10,-7.1e-7,3.01e-3,2600.\n1.233e-5,-2.3e-2,2600.0\n1.7e-1,2600\n"
+            raise IOError("ERROR whilst reading curvature polynomial from file\n")
+             
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
 	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
           =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, offsetlimit=offsetlimit, 
@@ -1529,7 +1562,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
      the offset search range.   
    ''' 
    import numpy as np
-   import os
+   import os, sys
    try: 
       from astropy.io import fits as pyfits
    except:   
@@ -1619,6 +1652,8 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       ank_c = [ (c.shape[0]-1)/2+1, (c.shape[1]-1)/2+1 , 0, c.shape[1]]
       
    if use_rectext:
+      # history: rectext is a fortran code that maintains proper density of quantity when 
+      #   performing a rotation. 
       # build the command for extracting the image with rectext   
       outfile= tempnames[tempntags.index('rectext')]
       cosangle = np.cos(theta/180.*np.pi)
@@ -1651,23 +1686,27 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       if Tmpl: 
          raise("background_template cannot be used with use_rectext option")	 
        
+   # version 2016-01-16 revision:
+   #   the background can be extracted via a method from the strip image 
+   #    
    # extract the strips with the background on both sides, and the spectral orders
    # find optimised place of the spectrum
    
-   # first find parts not off the detector 
+   # first find parts not off the detector -> 'qofd'
    eps1 = 1e-15 # remainder after resampling for intel-MAC OSX system (could be jacked up)
    qofd = np.where( abs(c[100,:] - cval) > eps1 )
+
+   # define constants for the spectrum in each mode
    if wheelpos < 300:   # UV grism
       disrange = 150    # perhaps make parameter in call?
       disscale = 10     # ditto
       minrange = disrange/10 # 300 is maximum
-      maxrange = np.array([disrange*10,c.shape[1]-ank_c[1]-2]).min()  # 1200 is most of the spectrum 
+      maxrange = np.array([disrange*disscale,c.shape[1]-ank_c[1]-2]).min()  # 1200 is most of the spectrum 
    else:                # V grism
       disrange = 120    # perhaps make parameter in call?
-      disscale = 6      # ditto
+      disscale = 5      # ditto
       minrange = np.array([disrange/2,ank_c[1]-qofd[0].min() ]).max() # 300 is maximum
-      maxrange = np.array([disrange*5,c.shape[1]-ank_c[1]-2],qofd[0].max()-ank_c[1]).min()  # 600 is most of the spectrum   
-        
+      maxrange = np.array([disrange*disscale,c.shape[1]-ank_c[1]-2],qofd[0].max()-ank_c[1]).min()  # 600 is most of the spectrum           
    if chatter > 1: 
       #print 'image was rotated; anchor in extracted image is ', ank_c[:2]
       #print 'limits spectrum are ',ank_c[2:]
@@ -1681,16 +1720,21 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
      ank_c[2] = -1
      ank_c[3] = -1 
 
-   y_default=100
+   # y-position of anchor spectrum in strip image (allowed y (= [50,150], but search only in 
+   #    range defined by searchwidth (default=35) )
+   y_default=100 # reference y
    if (type(offsetlimit) == list):
        if (len(offsetlimit)==2): 
        # sane y_default
            if (offsetlimit[0] > 50) & (offsetlimit[0] < 150):
-               y_default=int(offsetlimit[0]+0.5)
-           else: raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))	
+               y_default=int(offsetlimit[0]+0.5)  # round to nearest pixel
+           else: 
+               raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))	
            if offsetlimit[1] < 1:
                fixoffset = offsetlimit[0]-100
-           else:  searchwidth=int(offsetlimit[1]+0.5)
+           else:  
+               searchwidth=int(offsetlimit[1]+0.5)
+
    if fixoffset == None:
       offset = ( (np.where(d == (d[y_default-searchwidth:y_default+searchwidth]).max() ) )[0] - y_default )
       if chatter>0: print 'offset found from y=%i is %i '%(y_default ,-offset)
@@ -1705,8 +1749,10 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
 	         print 'This is larger than the offsetlimit. The offset has been set to 0'
 	         if interactive: 
 	            offset = float(raw_input('Please give a value for the offset:  '))
-   else: offset = fixoffset	      
-   if chatter>0: 
+   else: 
+       offset = fixoffset	
+         
+   if chatter > 0: 
       print 'offset used is : ', -offset	 
    
    if (type(offsetlimit) == list) & (fixoffset == None):
@@ -1717,7 +1763,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    print 'image was rotated; anchor in extracted image is [', ank_c[0],',',ank_c[1],']'
    print 'limits spectrum on image in dispersion direction are ',ank_c[2],' - ',ank_c[3] 
    
-   # Straight extraction :
+   # Straight slit extraction (most basic extraction, no curvature):
    sphalfwid = int(spwid-0.5)/2
    splim1 = 100+offset-sphalfwid+1
    splim2 = splim1 + spwid
@@ -1913,7 +1959,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
 	  The cause is that the sources are more extended than can be handled by this method. 
 	  A solution would be to derive a global background 	
    -  30 Sep 2014: background fails in visible grism e.g., 57977004+1 nearby bright spectrum 
-          new method added (4x slower processing) to screen the image using sigma clipping	        		 
+          new method added (4x slower processing) to screen the image using sigma clipping	
       '''
    import sys   
    import numpy as np   
@@ -1933,7 +1979,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    ny = bgimg.shape[0]  # width of the image     
    
    # sigma screening of background taking advantage of the dispersion being 
-   # basiacally along the x-axis 
+   # basically along the x-axis 
    
    if _PROFILE_BACKGROUND_:
       bg, u_x, bg_sig = background_profile(bgimg, smo1=30, badval=cval)
@@ -1943,16 +1989,16 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
                 np.isfinite(bgimg[i,:].flatten())] = True
    		
       bkg_sc = np.zeros((ny,nx),dtype=float)
-   # the following leaves larger disps in the dispersion but less noise; 
-   # tested but not implemented, as it is not as fast and the mean results 
-   # are comparable: 
-   #for i in range(ny):
-   #    uf = interpolate.interp1d(np.where(u_mask[i,:])[0],bgimg[i,u_mask[i,:]],bounds_error=False,fill_value=cval)
-   #    bkg_sc[i,:] = uf(np.arange(nx))
-   #for i in range(nx):
-   #    ucol = bkg_sc[:,i]
-   #    if len(ucol[ucol != cval]) > 0:
-   #        ucol[ucol == cval] = ucol[ucol != cval].mean()   
+      # the following leaves larger disps in the dispersion but less noise; 
+      # tested but not implemented, as it is not as fast and the mean results 
+      # are comparable: 
+      #for i in range(ny):
+      #    uf = interpolate.interp1d(np.where(u_mask[i,:])[0],bgimg[i,u_mask[i,:]],bounds_error=False,fill_value=cval)
+      #    bkg_sc[i,:] = uf(np.arange(nx))
+      #for i in range(nx):
+      #    ucol = bkg_sc[:,i]
+      #    if len(ucol[ucol != cval]) > 0:
+      #        ucol[ucol == cval] = ucol[ucol != cval].mean()   
       for i in range(nx):
           ucol = bgimg[:,i]
           if len(ucol[u_mask[:,i]]) > 0: 
@@ -3161,7 +3207,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	 2014-06-02 add support for fixed box extraction coincidence loss.	
 	 2014-08-04 add parameter curved_extraction to limit y-positioning extraction slit with list option  
 	 2014-08-06 changed code to correctly adjust y1 position  
-	 2014-08-25 fixed error in curve of location orders except first one 	    
+	 2014-08-25 fixed error in curve of location orders except first one 
+         2016-01-17 trackcentroiding parameter added to disable centroiding	    
    '''
    import pylab as plt
    from numpy import array,arange,where, zeros,ones, asarray, abs
@@ -3329,51 +3376,55 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    x3 = x[q3]
    if present3:  y3[q3] += polyval(coef3,x[q3])
    
-   # refine the offset by determining where the peak in the 
-   # first order falls. 
-   # We NEED a map to exclude zeroth orders that fall on/near the spectrum 
+   if trackcentroiding:   # global (default = True)
+       # refine the offset by determining where the peak in the 
+       # first order falls. 
+       # We NEED a map to exclude zeroth orders that fall on/near the spectrum 
       
-   ny = int(ny)
-   cp2 = zeros(ny)
-   delpix = 20
-   if wheelpos == 200: delpix=25  # the accuracy for the nominal uv anchor is not as good.
-   offsetset = False    
-   if type(offsetlimit) == list: 
-       offsetval = offsetlimit[0]
-       delpix = array([abs(offsetlimit[1]),1],dtype=int).max() # at least 1
-       if offsetlimit[1] < 1.:
-           offsetset = True
-       else:	   
-           print 'curved_extraction: offsetlimit=',offsetlimit,'  delpix=',delpix
-   eo = int(anky-100)
-   if set_offset: 
-      eo = int(offset-100)
+       ny = int(ny)
+       cp2 = zeros(ny)
+       delpix = 20
+       if wheelpos == 200: delpix=25  # the accuracy for the nominal uv anchor is not as good.
+       offsetset = False    
+       if type(offsetlimit) == list: 
+           offsetval = offsetlimit[0]
+           delpix = array([abs(offsetlimit[1]),1],dtype=int).max() # at least 1
+           if offsetlimit[1] < 1.:
+               offsetset = True
+           else:	   
+               print 'curved_extraction: offsetlimit=',offsetlimit,'  delpix=',delpix
+       eo = int(anky-100)
+       if set_offset: 
+           eo = int(offset-100)
    
-   for q in q1[0]:
-      if ((x[q] < 600) & (x[q] > -200) & (quality[q] == 0)):
-        try:
-          m0 = 0.5*ny-delpix + eo #int( (ny+1)/4) 
-          m1 = 0.5*ny+delpix + eo #int( 3*(ny+1)/4)+1
-          yoff = y1[q] - anky   # this is just the offset from the anchor since y1[x=0] was set to anky
-          cp2[int(m0-yoff):int(m1-yoff)] += spimg[m0:m1,q].flatten()
-        except:
-	  print "skipping slice %5i in adjusting first order y-position"%(q)
-          pass 
+       for q in q1[0]:
+          if ((x[q] < 600) & (x[q] > -200) & (quality[q] == 0)):
+            try:
+              m0 = 0.5*ny-delpix + eo #int( (ny+1)/4) 
+              m1 = 0.5*ny+delpix + eo #int( 3*(ny+1)/4)+1
+              yoff = y1[q] - anky   # this is just the offset from the anchor since y1[x=0] was set to anky
+              cp2[int(m0-yoff):int(m1-yoff)] += spimg[m0:m1,q].flatten()
+            except:
+               print "skipping slice %5i in adjusting first order y-position"%(q)
+               pass 
       	  
-   if offsetset: 
-       yof = offsetval - anky
-       if chatter > 1:
-           print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
-       msg += "spectrum location set with input parameter to: y=%5.1f\n"%(offsetval)
-   else:    
-       (p0,p1), ier = leastsq(Fun1b, (cp2.max(),anky), args=(cp2,arange(200),3.2) )
-       yof = (p1-anky) 
-       if chatter > 1:
-           print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
-           print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
-   #### should also estimate the likely wavelength error from the offset distance p1 and print
-       #msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
-       #msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction was %5.1f\n" % (p1,yof)
+       if offsetset: 
+           yof = offsetval - anky
+           if chatter > 1:
+               print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
+           msg += "spectrum location set with input parameter to: y=%5.1f\n"%(offsetval)
+       else:    
+           (p0,p1), ier = leastsq(Fun1b, (cp2.max(),anky), args=(cp2,arange(200),3.2) )
+           yof = (p1-anky) 
+           if chatter > 1:
+               print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
+               print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
+       #### should also estimate the likely wavelength error from the offset distance p1 and print
+           #msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
+           #msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction was %5.1f\n" % (p1,yof)
+   else:
+       set_offset = True
+       offsetset = False    
    
    # so now shift the location of the curves to match the first order uv part.
    if set_offset: 
@@ -3442,7 +3493,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 
    if not trackfull:
 
-      if curved == "update":
+      if (curved == "update") & (not trackcentroiding):
         # the hope is, that with more data the calibration can be improved to eliminate this step
         #try:	 
           fitorder2, fval, fvalerr = updateFitorder(extimg, fitorder, wheelpos, full=True,
@@ -3463,7 +3514,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 	#  msg += "WARNING: fit order curvature update has failed\n"
 	#  curved = "curve"
         
-      if offsetset: 
+      if offsetset & (not trackcentroiding): 
          mess = "%s\nWARNING Using offsetlimit with parameter  *curved = 'update'* \n"\
 	 "WARNING Therefore we updated the curvature, and besides the curvature, the\n"\
 	 "Y-position of the extraction region was updated to y1[ankx]=%5.1f and \n"\
