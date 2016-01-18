@@ -343,167 +343,6 @@ def WC_zemaxlines(dis_zmx,wav_zmx,xpix,ypix,wave,
     
     return (xplines, yplines, dislines, lines)    
 	   
-
-def uvotGrismCoadd(ra,dec,filelist,chatter=2):
-   '''coadd first order uvot *_dt.img grism images 
-      
-   (depricated: see uvotgrism.sum_PHAfiles and merge_spectra)
-      
-   use sw000*ug?_dt.img file(s)
-   
-   filelist must list 
-   filename extentsion number
-   sw00032150003ugu_dt.img 1
-   sw00032150003ugu_dt.img 3
-   etc. 
-   
-   One line per image.
-   
-   no compressed file
-   required: run uvotgraspcorr 
-      
-   '''
-   import numpy as np
-   
-   # reserve image space   
-   
-   COUNTS = np.zeros([2000,1000])   
-   BACKGR = np.zeros([2000,1000])  
-   EXPMAP = np.zeros([2000,1000])
-   DATQUA = np.zeros([2000,1000])
-   
-   # put all anchor points at position [1600,300]
-   
-   
-   if len(filelist)==0: 
-      print 'uvotGrism.coadd(filelist) error: empty argument\n'
-      return [sumimg, BG, EM, DQ]
-      
-   #loop over list fl
-   k = 0
-   if chatter > 0: print 'number of files to process = ',len(filelist)
-   for i in range(len(filelist)):
-      if chatter > 0: print ' reading file # i = ',i,' : ',filelist[i]
-      file = filelist[i]
-      # now file should be a string (add test ?)
-      if len(re.findall(r'_dt.img',file)) == 0:
-         print '\n uvotGrism.coadd error: input file appears not to be a det image\n\n'
-	 print 'returning'
-	 return [sumimg, BG, EM, DQ]
-      
-      #loop over multiple extensions in a file
-      hdulist = pyfits.open(file)
-      hdulist.info
-      for j in range(len(hdulist)-1):
-         if chatter > 0: print ' reading extension number ',j+1
-         #    read extension header and image 
-	 hdr = hdulist[j+1].header
-	 data = hdulist[j+1].data
-            
-         if k == 0:
-	    #  initialise the data (skips to next extension until a good one is found)
-            if chatter > 1: print '*********** initialising arrays *************'
-	    #  read main header
-	    hdr0 = hdulist[0].header
-	    hdr1 = hdr
-	    # find main keywords to verify following extensions against
-	    filter0 = hdr0['FILTER']
-	    wheelpos0 = hdr0['WHEELPOS']
-	    RA = hdr0['RA_PNT']
-	    DEC = hdr0['DEC_PNT']
- 	    RA_obj = hdr0['RA_OBJ']
-	    DEC_obj = hdr0['DEC_OBJ']
-	    if chatter > 0:
-               print '\nFilter = ',filter0,'  Wheel Position = ',wheelpos0,'\n'
-               print 'pointing RA = ',RA,'  DEC = ',DEC,'\n'
-	     
-	    # check no tossloss etc. if keyword is present or bail out & print message
-            hdrkeys = hdulist[1].header.ascard.keys()
-	    if hdrkeys.count('TOSSLOSS') == 1: 
-	       if hdr['TOSSLOSS'] > 0.:
-	          print 'Tossloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-		  break
-		  
-	    #if hdrkeys.count('STALLOSS') == 1: 
-	    #   if hdr['STALLOSS'] > 0.:
-	    #      print 'stalloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-	    #	   break
-		  
-	    if hdrkeys.count('BLOCLOSS') == 1: 
-	       if hdr['BLOCLOSS'] > 0.: 
-	          print 'blocloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-		  break 
-		  
-	    # select the size of the first image for the final one
-	    # can be replaced by a second pass after matching the sources to image pos.
-	    #           initialise arrays
-            sumimg = data*0.
-	    BG = data*0.          # background image (sources removed and interpolated)
-	    EM = data*0	          # exposure map
-            DQ = data*0           # data quality
-	    k = 9
-	    # find USNO-B1 coordinates for object (first extension target position )
-            # command = 'scat -c ub1 -ad '+str(RA_obj)+'  '+str(DEC_obj) 
-            # out = commands.getoutput(command)
-            command = 'scat -c ub1 -ad '+str(RA_obj)+'  '+str(DEC_obj)+' > position.temp_ ' 
-            os.system(command)
-            f = open('position.temp_')
-            out = f.read()
-            f.close()
-            os.system('rm position.temp_')
-            RA_  = (out.split())[1]  
-            DEC_ = (out.split())[2]       
-	    # end initialisation
-	 else:
-	    # check no tossloss etc. if keyword is present or bail out & print message
-	    if chatter > 0: print 'not the first extension '
-            hdrkeys = hdulist[j+1].header.ascard.keys()
-	    if hdrkeys.count('TOSSLOSS') == 1: 
-	       if hdr['TOSSLOSS'] > 0.:
-	          print 'Tossloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-		  break
-		  
-	    #if hdrkeys.count('STALLOSS') == 1: 
-	    #   if hdr['STALLOSS'] > 0.:
-	    #      print 'stalloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-	    #      break
-		  
-	    if hdrkeys.count('BLOCLOSS') == 1: 
-	       if hdr['BLOCLOSS'] > 0.:
-	          print 'blocloss in image extension ' + hdr['EXTNAME'] + '\n\n'
-		  break 
-		  
-	       
-	 exposure = hdr['EXPOSURE']	# exposure time current image
-             
-	 # make background --> find area zero orders *depending on peak flux ? --> mask out/set flag
-	 back = getback(image) + data*0
-         
-	 # find range in source brightness (use back.mean, back.max)
-         # search USNO-B! with scat in brightness range to get list of all sources this image 
-         # --> source list [id, RA, DEC, Ximage0, Yimage0, Ximage1,Yimage1]
-	 # get all image postions zero orders + estimate extent (match with sextractor output?)
-         # remove all? zero orders --> 
-         DQ_ = DQ  # remove zero orders
-         
-         # create header for output file /edit 
-	 # copy unmasked image  	    
-	 q = np.where(DQ_ == 0)
-	 sumimg[q] = sumimg[q] + data[q]
-	 EM[q] = EM[q] + exposure
-	 BG    = BG + back
-	 
-	 # end loop over extension in a file
-	    
-      hdulist.close()        
-      # 
-      #find mask good
-      #add exposure (good) to expo map
-      #add to output (or create output )
-      #end loop over all files
-      
-   return [sumimg, BG, EM, DQ]   # add sourcelist ,SRCLIST]
-
 def get_keyword_from_history(hist,key):
    '''Utility to get the keyword from the history list.
    
@@ -580,7 +419,7 @@ def swtime2JD(TSTART):
    example (input TSTART as a string) 
    for 2001-01-01T00:00:00.000 
        TSTART=0.000 
-       MJD=51910.00000000 
+       MJD= 51910.00000000 
        JD=2451910.5
    '''
    import datetime
@@ -597,6 +436,17 @@ def swtime2JD(TSTART):
 def JD2swift(JD):
    import numpy as np
    return (JD - np.double(2451910.5))*(86400.0)
+
+def swift2JD(tswift):
+   return tswift/86400.0  + 2451910.5
+   
+def MJD2swift(MJD):   
+   import numpy as np
+   return (MJD - np.double(51910.5))*(86400.0)
+   
+def swift2MJD(tswift):
+   return tswift/86400.0  + 51910.5
+   
 
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''Convert time in UT to swift time in seconds.
