@@ -64,7 +64,7 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-from uvotmisc import interpgrid, uvotrotvec, rdTab
+from uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
 import uvotplot
 import datetime
 import os
@@ -941,14 +941,20 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             curfile = rdList(get_curve_filename) 
             poly_1 = np.array(curfile[0][0].split(','),dtype=float)
             poly_2 = np.array(curfile[1][0].split(','),dtype=float)
-            poly_3 = np.array(curfile[2][0].split('.'),dtype=float)
+            poly_3 = np.array(curfile[2][0].split(','),dtype=float)
          except:
             print "There seems to be a problem when readin the coefficients out of the file"
             print "The format is a list of coefficient separated by comma's, highest order first"
             print "The first line for the first order"
             print "The second line for the secons order"
             print "The third line for the third order"
-            print "like, \n1.233e-10,-7.1e-7,3.01e-3,2600.\n1.233e-5,-2.3e-2,2600.0\n1.7e-1,2600\n"
+            print "like, \n1.233e-10,-7.1e-7,3.01e-3,0.0.\n1.233e-5,-2.3e-2,0.03.0\n1.7e-1,0.9\n"
+            print get_curve_filename
+            print curfile
+            print poly_1
+            print poly_2
+            print poly_3
+            
             raise IOError("ERROR whilst reading curvature polynomial from file\n")
              
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
