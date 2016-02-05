@@ -115,6 +115,7 @@ spdata = {
 #{'transition':'','wavevac':2151.0, 'label':u'N IV]'},
 {'transition':'','wavevac':2297  , 'label':u'C III'},
 {'transition':'','wavevac':2325.4, 'label':u'C II'},
+{'transition':'','wavevac':2335.4, 'label':u'Si II'},
 #{'transition':'','wavevac':2326.1, 'label':u'C II'},
 {'transition':'','wavevac':2332.1, 'label':u'[O III]'},
 {'transition':'','wavevac':2471.0, 'label':u'O II]'},
@@ -2487,7 +2488,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
 	   	        break
 	 hdu1.header['RA_OBJ'] = (RA ,'Right Ascension')
 	 hdu1.header['DEC_OBJ'] = (DEC,'Declination')
-	 hdu1.header['EQUINOX'] = '2000.0'
+	 hdu1.header['EQUINOX'] = 2000.0
 	 hdu1.header['RADECSYS'] = 'FK5'
 	 hdu1.header['HDUCLASS'] =  ('UVOT','document class defined by UVOT/MSSL')
 	 hdu1.header['HDUDOC'] = 'http://www.ucl.ac.uk/mssl/astro/space_missions/swift'
