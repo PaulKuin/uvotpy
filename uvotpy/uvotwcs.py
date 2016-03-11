@@ -37,7 +37,7 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-import uvotgetspec as uvotgrism
+#import uvotgetspec as uvotgrism
 
 def makewcshdr(filestub, ext, attfile, 
      indir="./", 

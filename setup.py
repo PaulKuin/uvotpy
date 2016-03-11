@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='2.0.5',
+      version='2.1.0',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images
@@ -12,7 +12,7 @@ setup(name='uvotpy',
       supernovae, gamma ray bursts, x-ray binaries and such in gamma rays, X-rays
       and the uv and optical spectral regions with three instruments. 
       
-      The UVOT uv grism observes the spectrum from 165 - 500 nm, while the optical 
+      The UVOT uv grism observes the spectrum from 168 - 520 nm, while the optical 
       grism does that from 270-650 nm. The grisms make images of 2048x2048 pixels
       which are distortion corrected by the ground processing. The Swift software 
       is part of the HEADAS software distributed by HEASARC at Goddard Space Flight 
@@ -21,15 +21,17 @@ setup(name='uvotpy',
       are also required, as well as an active internet connection. 
       
       The spectral extraction will locate the spectrum in the image based on 
-      the provided sky coordinates which must be provided in RA, Dec (J2000). 
-      The output is in the form of plots and FITS formatted files compatible
-      with XSPEC.         
+      the provided sky coordinates which must be provided in RA, Dec (J2000) in 
+      degrees. The output is in the form of plots and FITS formatted files 
+      compatible with XSPEC.         
 
       This code has been registered with the Astrophysics Source Code Library as
       ascl:1410.004, and has been assigned a DOI 10.5281/zenodo.12323
 
       The calibration of the Swift UVOT grisms has been described in the following 
-      publication: http://arxiv.org/arXiv:1501.02433 
+      publication:
+      BIBCODE 2015MNRAS.449.2514K ; Kuin et al. 2015, Monthly Notices of the 
+      Royal Astronomical Society, Vol. 449, p2514. 
                        """,
       author='Paul Kuin',
       author_email='npkuin@gmail.com',

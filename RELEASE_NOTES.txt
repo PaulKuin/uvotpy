@@ -1,6 +1,33 @@
 The uvot grism python software release notes
 ============================================
 
+Version 2.1.0 2016-03-11
+
+The code in the core modules has been cleaned up somewhat and
+been updated to the astropy.io fits module conventions. 
+
+An attempt was made to improve the aspect correction for 
+single grism images, i.e., match the zeroth orders better, but 
+more work needs to be done. 
+
+The post-extraction processing in the uvotspec module has 
+been developed further and allows to manually apply a wavelength 
+shift with triggered recalculation of the dispersion solution. 
+The procedure to sum spectra has been moved from uvotgetspec to
+uvotspec and has been partially rewritten as the original code 
+was not easy to maintain. 
+
+An intermediate release, version 2.0.5 had some issues with 
+finding calibration files. to solve that the uvotio output module 
+was partially rewritten to remove ancient parts that caused trouble.
+
+The verbosity of the code was examined and some output was 
+moved to a higher verbosity level to get a cleaner output. 
+
+I probably made some other changes, most of which may be found 
+by checking the github repository comments. 
+
+
 Version 2.0.4 2015-04-28 
 
 Minor changes were made due to API changes in astropy and numpy. 

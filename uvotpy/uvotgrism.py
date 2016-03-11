@@ -33,7 +33,7 @@
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-__version__ = '1.1 20141020' 
+__version__ = '-1.1 20141020' 
 
 '''
 .. _uvotpy:
@@ -488,15 +488,15 @@ http://swift.gsfc.nasa.gov/ '''
      clobber=bool(options.clobber), chatter=int(options.chatter))
      
    yn = raw_input("Done ?")
+   print "for further processing use the output files" 
+   print today_
+   print datestring
+   print "(c) NPMK 2013-2016 - Mullard Space Science Lab, University College London"
    
 else:
     
-   print "uvotpy "+__version__+'  NPMK [University College London / Mullard Space Science Laboratory]'
+   print "uvotpy"+__version__+'  n.kuin@ucl.ac.uk'
 
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]
 
-print "for further processing use the output files" 
-print today_
-print datestring
-print "(c) NPMK 2013 - Mullard Space Science Lab, University College London"

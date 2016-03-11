@@ -33,7 +33,7 @@
 #
 
 from __future__ import division
-__version__ = "1.5.8"
+__version__ = "1.6.0"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -59,11 +59,12 @@ __version__ = "1.5.8"
 # version 1.5.8 November 2014, updated fits "new_table" to "BinTableHDU.from_columns" This breaks probably 
 #               for the old pyfits and older astropy versions, but "new_table" will be discontinued soon.
 #               Jan 2015 fixed a typo (bracket) in write_rmf_file
+# version 1.6.0 March 11 2016, update all the fits header.update statements to revised standard astropy
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
-  pass  
+  pass
 import uvotgetspec
 
 typeNone = type(None)
@@ -706,9 +707,10 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    
    hdu = fits.PrimaryHDU()
    hdulist=fits.HDUList([hdu])
-   hdulist[0].header.update('TELESCOP','SWIFT   ','Telescope (mission) name')                       
-   hdulist[0].header.update('INSTRUME','UVOTA   ','Instrument Name')                                
-   hdulist[0].header.update('COMMENT','Grism Effective area')                                
+   hdulist[0]['TELESCOP']=('SWIFT   ','Telescope (mission) name')                       
+   hdulist[0]['INSTRUME']=('UVOTA   ','Instrument Name')                                
+   hdulist[0]['COMMENT']='Grism Effective area'     
+   hdulist[0]['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
    
    #  first extension SPECRESP
    
@@ -755,45 +757,46 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
       cols1 = fits.ColDefs([col11,col12,col13,col14,col15,col16])
       
    tbhdu1 = fits.BinTableHDU.from_columns(cols1)
-   tbhdu1.header.update('EXTNAME',EXTNAME,'Name of this binary table extension')
-   tbhdu1.header.update('TELESCOP','Swift','Telescope (mission) name')
-   tbhdu1.header.update('INSTRUME','UVOTA','Instrument name')
-   tbhdu1.header.update('FILTER',filtername)
+   tbhdu1.header['EXTNAME']=(EXTNAME,'Name of this binary table extension')
+   tbhdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
+   tbhdu1.header['INSTRUME']=('UVOTA','Instrument name')
+   tbhdu1.header['FILTER']=filtername
    tbhdu1.header['ORIGIN']=('UCL/MSSL','source of FITS file')
-   tbhdu1.header.update('CREATOR','uvotio.py','uvotpy python library')
-   tbhdu1.header.update('COMMENT','uvotpy sources at www.github.com/PaulKuin/uvotpy')
-   tbhdu1.header.update('VERSION',fileversion)
-   tbhdu1.header.update('FILENAME',outfile,'file NAME')
-   tbhdu1.header.update('HDUCLASS','OGIP','format conforms to OGIP standard')
-   tbhdu1.header.update('HDUCLAS1','RESPONSE','RESPONSE DATA')
-   tbhdu1.header.update('HDUCLAS2','SPECRESP','type of calibration data')   
-   tbhdu1.header.update('CCLS0001','CPF','dataset is a calibration product file')
-   tbhdu1.header.update('CCNM0001','SPECRESP','Type of calibration data')
-   tbhdu1.header.update('CDES0001',filtername+' SPECTRAL RESPONSE','Description')
-   tbhdu1.header.update('CDTP0001','DATA','Calibration file contains data')
-   tbhdu1.header.update('CVSD0001','2004-11-20','UTC date when calibration should first be used')
-   tbhdu1.header.update('CVST0001','00:00:00','UTC time when calibration should first be used')
-   tbhdu1.header.update('CBD10001','FILTER('+filtername+')','Parameter boundary')
-   tbhdu1.header.update('CBD20001','ENERG('+str(elow)+'-'+str(ehigh)+')keV','spectral range')
-   tbhdu1.header.update('CBD30001','RADIUS(0-10)pixel','Parameter boundary')
-   tbhdu1.header.update('CBD40001','THETA(0-17)arcmin','Parameter boundary')
-   tbhdu1.header.update('CBD50001','WHEELPOS('+str(wheelpos)+')','Filter/Mode Selection')
-   tbhdu1.header.update('CBD60001','ORDER('+str(spectralorder)+')','spectral order')  
+   tbhdu1.header['CREATOR']=('uvotio.py','uvotpy python library')
+   tbhdu1.header['COMMENT']=('uvotpy sources at www.github.com/PaulKuin/uvotpy')
+   tbhdu1.header['VERSION']=fileversion
+   tbhdu1.header['FILENAME']=(outfile,'file NAME')
+   tbhdu1.header['HDUCLASS']=('OGIP','format conforms to OGIP standard')
+   tbhdu1.header['HDUCLAS1']=('RESPONSE','RESPONSE DATA')
+   tbhdu1.header['HDUCLAS2']=('SPECRESP','type of calibration data')   
+   tbhdu1.header['CCLS0001']=('CPF','dataset is a calibration product file')
+   tbhdu1.header['CCNM0001']=('SPECRESP','Type of calibration data')
+   tbhdu1.header['CDES0001']=(filtername+' SPECTRAL RESPONSE','Description')
+   tbhdu1.header['CDTP0001']=('DATA','Calibration file contains data')
+   tbhdu1.header['CVSD0001']=('2004-11-20','UTC date when calibration should first be used')
+   tbhdu1.header['CVST0001']=('00:00:00','UTC time when calibration should first be used')
+   tbhdu1.header['CBD10001']=('FILTER('+filtername+')','Parameter boundary')
+   tbhdu1.header['CBD20001']=('ENERG('+str(elow)+'-'+str(ehigh)+')keV','spectral range')
+   tbhdu1.header['CBD30001']=('RADIUS(0-10)pixel','Parameter boundary')
+   tbhdu1.header['CBD40001']=('THETA(0-17)arcmin','Parameter boundary')
+   tbhdu1.header['CBD50001']=('WHEELPOS('+str(wheelpos)+')','Filter/Mode Selection')
+   tbhdu1.header['CBD60001']=('ORDER('+str(spectralorder)+')','spectral order')  
    if (anker != None) & (dxy_anker != None):
-      tbhdu1.header.update('CBD70001','ANCHOR('+str(anker[0])+','+str(anker[1])+')','anchor in pix (1100.5,1100.5)pix=(0,0)mm')  
-      tbhdu1.header.update('CBD80001','ANCHOR_RANGE('+str(dxy_anker[0])+','+str(dxy_anker[1])+')','cal sources used in range dx,dy from anchor')  
-      tbhdu1.header.update('CBD90001','COIAWARE('+'T'+')','pile-up effect taken out')  
-      tbhdu1.header.update('COIVERS','2','full solution')  
+      tbhdu1.header['CBD70001']=('ANCHOR(%6.1f,%6.1f)'%(anker[0],anker[1]),'anchor in pix (1100.5,1100.5)pix=(0,0)mm')  
+      tbhdu1.header['CBD80001']=('ANCHOR_RANGE(%f4.0,%4.0f)'%(dxy_anker[0],dxy_anker[1]),'calibrated range from anchor')  
+      tbhdu1.header['CBD90001']=('COIAWARE('+'T'+')','pile-up effect taken out')  
+      tbhdu1.header['COIVERS']=('2','full solution')  
    
-   tbhdu1.header.update('TTYPE1','ENERG_LO','[keV] Lower boundary of energy bin')
-   tbhdu1.header.update('TTYPE2','ENERG_HI','[keV] Upper boundary of energy bin')
-   tbhdu1.header.update('TTYPE5','SPECRESP','[cm**2] Effective Area')
+   tbhdu1.header['TTYPE1']=('ENERG_LO','[keV] Lower boundary of energy bin')
+   tbhdu1.header['TTYPE2']=('ENERG_HI','[keV] Upper boundary of energy bin')
+   tbhdu1.header['TTYPE5']=('SPECRESP','[cm**2] Effective Area')
    tbhdu1.header['COMMENT']= 'The effective area was determined using version 2 of the '
    tbhdu1.header['COMMENT']= 'coincidence loss'
-   tbhdu1.header.update('COMMENT','uvotpy.writeEffAreaFile() version='+version)
-   tbhdu1.header.update('COMMENT','created '+datestring)
+   tbhdu1.header['COMMENT']=('uvotpy.writeEffAreaFile() version='+version)
+   tbhdu1.header['COMMENT']=('created '+datestring)
+   tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
    if specresp_err != None:
-      tbhdu1.header.update('TTYPE6','SPRS_ERR','[cm**2] 1-sigma error effective area')
+      tbhdu1.header['TTYPE6']=('SPRS_ERR','[cm**2] 1-sigma error effective area')
    hdulist.append(tbhdu1)
    hdulist.writeto(outfile,clobber=clobber)
 
@@ -1257,6 +1260,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
          os.getenv("CALDB")
          command="quzcif swift uvota - "+grismname+\
           " SPECRESP now now  wheelpos.eq."+str(wheelpos)+" > quzcif.out"
+         os.system(command) 
          f = open("quzcif.out")
          records = f.readlines()
          f.close()
@@ -2329,28 +2333,29 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    # create primary header 
    #
    hdu0 = fits.PrimaryHDU()
-   hdu0.header.update('CREATED','written by uvotio.py '+version)
-   hdu0.header.update('DATE',str(now))
-   hdu0.header.update('AUTHOR','UVOTPY author is NPM Kuin (UCL/MSSL)')
-   hdu0.header.update('WHEELPOS',hdr['wheelpos'])
-   hdu0.header.update('FILTER',hdr['filter'],comment='UVOT filter used')
-   hdu0.header.update('ORDERS',orders,comment='list of orders included')
-   hdu0.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-   hdu0.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-   hdu0.header.update('FILEVERS',fileversion,comment='UVOTPY file version')
+   hdu0.header['CREATED']=('written by uvotio.py '+version)
+   hdu0.header['DATE']=(str(now))
+   hdu0.header['AUTHOR']=('UVOTPY author is NPM Kuin (UCL/MSSL)')
+   hdu0.header['WHEELPOS']=(hdr['wheelpos'])
+   hdu0.header['FILTER']=(hdr['filter'],'UVOT filter used')
+   hdu0.header['ORDERS']=(orders,'list of sp. orders included')
+   hdu0.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+   hdu0.header['INSTRUME']=('UVOTA   ','Instrument Name')
+   hdu0.header['FILEVERS']=(fileversion,'UVOTPY file version')
+   hdu0.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
    hdulist=fits.HDUList([hdu0])
    #
    #  Main fits part
    #
    hdr0 = hdr.copy()
-   hdr0.update('ORI_FILE',obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
-   hdr0.update('RA_X',ra,'RA of source extracted spectrum')
-   hdr0.update('DEC_X',dec,'DEC of source extracted spectrum')
-   hdr0.update('DETX_X',anker[0],'XDET position source anker in DET coord') 
-   hdr0.update('DETY_X',anker[1],'YDET position source anker in DET coord')
-   hdr0.update('POSX_AS',phx,'angle boresight in deg in DETX direction')
-   hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
-   hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
+   hdr0['ORI_FILE']=(obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
+   hdr0['RA_X']=(ra,'RA of source extracted spectrum')
+   hdr0['DEC_X']=(dec,'DEC of source extracted spectrum')
+   hdr0['DETX_X']=(anker[0],'XDET position source anker in DET coord') 
+   hdr0['DETY_X']=(anker[1],'YDET position source anker in DET coord')
+   hdr0['POSX_AS']=(phx,'angle boresight in deg in DETX direction')
+   hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
+   hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
    if chatter>4: print "uvotio: write first header"
    #  first extension: first order spectrum ; add extname everywhere
@@ -2372,85 +2377,85 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       cols1 = fits.ColDefs([col11,col12,col13,col15])
    tbhdu1 = fits.BinTableHDU.from_columns(cols1)
    if fileversion == 1:
-      tbhdu1.header.update('comment','COUNTS are observed, uncorrected counts')
+      tbhdu1.header['comment']='COUNTS are observed, uncorrected counts'
    elif fileversion == 2:
-      tbhdu1.header.update('comment','RATE are the fully corrected count rates')
+      tbhdu1.header['comment']='RATE are the fully corrected count rates'
    try:   
-      tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+      tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
    except:
       pass   
-   tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
-   tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-   tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-   tbhdu1.header.update('TIMESYS ',hdr['timesys'],'time system')
-   tbhdu1.header.update('FILETAG',filetag,'unique set id')
-   tbhdu1.header.update('MJDREFI ',hdr['mjdrefi'],'Reference MJD time integer part')
-   tbhdu1.header.update('MJDREFF ',hdr['mjdreff'],'Reference MJD fractional part')
-   tbhdu1.header.update('TIMEREF ',hdr['timeref'],'time reference barycentric/local')
-   tbhdu1.header.update('TASSIGN ',hdr['tassign'],'time assigned by clock')
-   tbhdu1.header.update('TIMEUNIT',hdr['timeunit'])
-   tbhdu1.header.update('TIERRELA',hdr['TIERRELA'],'time relative error [s/s]')
-   tbhdu1.header.update('TIERABSO',hdr['TIERABSO'],'timing precision in seconds')
-   tbhdu1.header.update('TSTART',hdr['TSTART'])
-   tbhdu1.header.update('TSTOP',hdr['TSTOP'])
-   tbhdu1.header.update('DATE-OBS',hdr['DATE-OBS'])
-   tbhdu1.header.update('DATE-END',hdr['DATE-END'])
-   tbhdu1.header.update('CLOCKAPP',hdr['CLOCKAPP'],'if clock correction was applied')
-   tbhdu1.header.update('TELAPSE',hdr['TELAPSE'],'Tstop - Tstart')
-   tbhdu1.header.update('EXPOSURE',hdr['EXPOSURE'],'Average Total exposure, with all known corrections')
-   tbhdu1.header.update('DEADC',hdr['DEADC'],'dead time correction')
-   tbhdu1.header.update('FRAMTIME',hdr['FRAMTIME'],'frame exposure time')
-   tbhdu1.header.update('DETNAM',hdr['DETNAM'])
-   tbhdu1.header.update('FILTER',hdr['FILTER'])
-   tbhdu1.header.update('OBS_ID',hdr['OBS_ID'],'observation id')
-   tbhdu1.header.update('TARG_ID',hdr['TARG_ID'],'Target ID')
-   #tbhdu1.header.update('SEQ_NUM',hdr['SEQ_NUM'])
-   tbhdu1.header.update('EQUINOX',hdr['EQUINOX'])
-   tbhdu1.header.update('RADECSYS',hdr['RADECSYS'])
-   tbhdu1.header.update('WHEELPOS',hdr['WHEELPOS'],'filterweel position')
-   tbhdu1.header.update('SPECTORD',1,'spectral order')
+   tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
+   tbhdu1.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+   tbhdu1.header['INSTRUME']=('UVOTA   ','Instrument Name')
+   tbhdu1.header['TIMESYS ']=(hdr['timesys'],'time system')
+   tbhdu1.header['FILETAG']=(filetag,'unique set id')
+   tbhdu1.header['MJDREFI ']=(hdr['mjdrefi'],'Reference MJD time integer part')
+   tbhdu1.header['MJDREFF ']=(hdr['mjdreff'],'Reference MJD fractional part')
+   tbhdu1.header['TIMEREF ']=(hdr['timeref'],'time reference barycentric/local')
+   tbhdu1.header['TASSIGN ']=(hdr['tassign'],'time assigned by clock')
+   tbhdu1.header['TIMEUNIT']=(hdr['timeunit'])
+   tbhdu1.header['TIERRELA']=(hdr['TIERRELA'],'time relative error [s/s]')
+   tbhdu1.header['TIERABSO']=(hdr['TIERABSO'],'timing precision in seconds')
+   tbhdu1.header['TSTART']=(hdr['TSTART'])
+   tbhdu1.header['TSTOP']=(hdr['TSTOP'])
+   tbhdu1.header['COMMENT']="Note that all Swift times are not clock corrected by definition"
+   tbhdu1.header['DATE-OBS']=hdr['DATE-OBS']
+   tbhdu1.header['DATE-END']=hdr['DATE-END']
+   tbhdu1.header['CLOCKAPP']=(hdr['CLOCKAPP'],'if clock correction was applied')
+   tbhdu1.header['TELAPSE']=(hdr['TELAPSE'],'Tstop - Tstart')
+   tbhdu1.header['EXPOSURE']=(hdr['EXPOSURE'],'Average Total exposure, with all known corrections')
+   tbhdu1.header['DEADC']=(hdr['DEADC'],'dead time correction')
+   tbhdu1.header['FRAMTIME']=(hdr['FRAMTIME'],'frame exposure time')
+   tbhdu1.header['DETNAM']=hdr['DETNAM']
+   tbhdu1.header['FILTER']=hdr['FILTER']
+   tbhdu1.header['OBS_ID']=(hdr['OBS_ID'],'observation id')
+   tbhdu1.header['TARG_ID']=(hdr['TARG_ID'],'Target ID')
+   if 'SEQ_NUM' in hdr: tbhdu1.header['SEQ_NUM']=hdr['SEQ_NUM']
+   tbhdu1.header['EQUINOX']=hdr['EQUINOX']
+   tbhdu1.header['RADECSYS']=hdr['RADECSYS']
+   tbhdu1.header['WHEELPOS']=(hdr['WHEELPOS'],'filterweel position')
+   tbhdu1.header['SPECTORD']=(1,'spectral order')
    try:
-      tbhdu1.header.update('BLOCLOSS',hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
-      tbhdu1.header.update('STALLOSS',hdr['STALLOSS'],'[s] Est DPU stalling time loss')
-      tbhdu1.header.update('TOSSLOSS',hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
-      tbhdu1.header.update('MOD8CORR',hdr['MOD8CORR'],'Was MOD8 correction applied')
-      tbhdu1.header.update('FLATCORR',hdr['FLATCORR'],'was flat field correction applied')
+      tbhdu1.header['BLOCLOSS']=(hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
+      tbhdu1.header['STALLOSS']=(hdr['STALLOSS'],'[s] Est DPU stalling time loss')
+      tbhdu1.header['TOSSLOSS']=(hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
+      tbhdu1.header['MOD8CORR']=(hdr['MOD8CORR'],'Was MOD8 correction applied')
+      tbhdu1.header['FLATCORR']=(hdr['FLATCORR'],'was flat field correction applied')
    except:
       pass   
-   tbhdu1.header.update('ASPCORR',hdr['ASPCORR'],'Aspect correction method')
-   tbhdu1.header.update('HDUCLASS','OGIP','format attemts to follow OGIP standard')
-   tbhdu1.header.update('HDUCLAS1','SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
+   tbhdu1.header['ASPCORR']=(hdr['ASPCORR'],'Aspect correction method')
+   tbhdu1.header['HDUCLASS']=('OGIP','format attemts to follow OGIP standard')
+   tbhdu1.header['HDUCLAS1']=('SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
    if fileversion == 1:
-      tbhdu1.header.update('HDUCLAS2','TOTAL','Gross PHA Spectrum (source + background)')
-      tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
-      tbhdu1.header.update('POISSERR','F','Poissonian errors not applicable')
-      tbhdu1.header.update('BACKFILE',backfile1,'Background FITS file')
+      tbhdu1.header['HDUCLAS2']=('TOTAL','Gross PHA Spectrum (source + background)')
+      tbhdu1.header['HDUCLAS3']=('COUNT','PHA data stored as counts (not count/s)')
+      tbhdu1.header['POISSERR']=('F','Poissonian errors not applicable')
+      tbhdu1.header['BACKFILE']=(backfile1,'Background FITS file')
    elif fileversion == 2:   
-      tbhdu1.header.update('HDUCLAS2','NET','Gross PHA Spectrum (source only)')
-      tbhdu1.header.update('HDUCLAS3','RATE','PHA data stored as rate (not count)')
-      tbhdu1.header.update('POISSERR','F','Poissonian errors not applicable')
-      #tbhdu1.header.update('BACKFILE',None,'No Background FITS file')
-   tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
-   tbhdu1.header.update('CHANTYPE','PHA','Type of channel PHA/PI')
-   tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
-   tbhdu1.header.update('TLMAX1',len(spectrum_first[0]),'Highest legal channel number')
-   tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
-   tbhdu1.header.update('DETCHANS',len(spectrum_first[0]),'Total number of detector channels available')
-   tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
-   tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
-   tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-   tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
-   tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
-   tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
-#   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
-   tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
-   tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-   tbhdu1.header.update('CRPIX1  ','(1,'+str(len(spectrum_first[0]))+')','Channel binning of the CHANNEL column')
-   tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format') 
+      tbhdu1.header['HDUCLAS2']=('NET','Gross PHA Spectrum (source only)')
+      tbhdu1.header['HDUCLAS3']=('RATE','PHA data stored as rate (not count)')
+      tbhdu1.header['POISSERR']=('F','Poissonian errors not applicable')
+   tbhdu1.header['HDUVERS1']=('1.1.0','Version of format (OGIP memo OGIP-92-007a)')
+   tbhdu1.header['CHANTYPE']=('PHA','Type of channel PHA/PI')
+   tbhdu1.header['TLMIN1']=(1,'Lowest legal channel number')
+   tbhdu1.header['TLMAX1']=(len(spectrum_first[0]),'Highest legal channel number')
+   tbhdu1.header['GROUPING']=(0,'No grouping of the data has been defined')
+   tbhdu1.header['DETCHANS']=(len(spectrum_first[0]),'Total number of detector channels available')
+   tbhdu1.header['AREASCAL']=(1,'Area scaling factor')
+   tbhdu1.header['BACKSCAL']=(1,'Background scaling factor')
+   tbhdu1.header['CORRSCAL']=(1,'Correlation scaling factor')
+   tbhdu1.header['BACKFILE']=('NONE','Background FITS file')
+   tbhdu1.header['CORRFILE']=('NONE  ','Correlation FITS file')
+   tbhdu1.header['RESPFILE']=('NONE','Redistribution matrix')
+   tbhdu1.header['ANCRFILE']=('NONE  ','Ancillary response')
+   tbhdu1.header['XFLT0001']=('NONE  ','XSPEC selection filter description')
+   tbhdu1.header['CRPIX1']=('(1,'+str(len(spectrum_first[0]))+')','Channel binning of the CHANNEL column')
+   tbhdu1.header['PHAVERSN']=('1992a ','OGIP memo number for file format') 
    # convert ra,dec -> zerodetx,zerodety using uvotapplywcs?  
    # look in code uvotimgrism
-   tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
-   tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
+   tbhdu1.header['ZERODETX']=(zeroxy[0],'zeroth order position on image')
+   tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
+   tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
    hdulist.append(tbhdu1)
    #
    if chatter>4: print "uvotio: write second header"
@@ -2536,93 +2541,95 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       
    tbhdu2 = fits.BinTableHDU.from_columns(cols2)
    if fileversion == 1:
-       tbhdu2.header.update('HISTORY','coi-loss, aperture - corrected flux and rates')
+       tbhdu2.header['HISTORY']='coi-loss, aperture - corrected flux and rates'
    elif fileversion == 2: 
-       tbhdu2.header.update('HISTORY','no coi-loss, no aperture - uncorrected rates')
-       tbhdu2.header.update('HISTORY','coi-loss, aperture - corrected flux and rates')
+       tbhdu2.header['HISTORY']='no coi-loss, no aperture - uncorrected rates'
+       tbhdu2.header['HISTORY']='coi-loss, aperture - corrected flux and rates'
    if history != None:
       msg1 = history.split('\n')
       for msg in msg1: tbhdu1.header.add_history(msg)
    try:   
-      tbhdu2.header.update('EXPID',hdr['expid'])
+      tbhdu2.header['EXPID']=hdr['expid']
    except:
       pass   
 #   tbhdu2.header.update('EXTNAME','FIRST_ORDER_NET_SPECTRUM')
-   tbhdu2.header.update('EXTNAME','CALSPEC')
-   tbhdu2.header.update('FILETAG',filetag,'unique set id')
-   tbhdu2.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-   tbhdu2.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-   tbhdu2.header.update('TIMESYS ',hdr['timesys'])
-   tbhdu2.header.update('MJDREFI ',hdr['mjdrefi'])
-   tbhdu2.header.update('MJDREFF ',hdr['mjdreff'])
-   tbhdu2.header.update('TIMEREF ',hdr['timeref'])
-   tbhdu2.header.update('TASSIGN ',hdr['tassign'])
-   tbhdu2.header.update('TIMEUNIT',hdr['timeunit'])
-   tbhdu2.header.update('TIERRELA',hdr['TIERRELA'])
-   tbhdu2.header.update('TIERABSO',hdr['TIERABSO'])
-   tbhdu2.header.update('TSTART',hdr['TSTART'])
-   tbhdu2.header.update('TSTOP',hdr['TSTOP'])
-   tbhdu2.header.update('DATE-OBS',hdr['DATE-OBS'])
-   tbhdu2.header.update('DATE-END',hdr['DATE-END'])
-   tbhdu2.header.update('CLOCKAPP',hdr['CLOCKAPP'])
-   tbhdu2.header.update('TELAPSE',hdr['TELAPSE'])
-   tbhdu2.header.update('EXPOSURE',hdr['EXPOSURE'])
-   tbhdu2.header.update('DEADC',hdr['DEADC'])
-   tbhdu2.header.update('FRAMTIME',hdr['FRAMTIME'])
-   tbhdu2.header.update('DETNAM',hdr['DETNAM'])
-   tbhdu2.header.update('FILTER',hdr['FILTER'])
-   tbhdu2.header.update('OBS_ID',hdr['OBS_ID'])
-   tbhdu2.header.update('TARG_ID',hdr['TARG_ID'])
-   tbhdu2.header.update('EQUINOX',hdr['EQUINOX'])
-   tbhdu2.header.update('RADECSYS',hdr['RADECSYS'])
-   tbhdu2.header.update('WHEELPOS',hdr['WHEELPOS'])
+   tbhdu2.header['EXTNAME']='CALSPEC'
+   tbhdu2.header['FILETAG']=(filetag,'unique set id')
+   tbhdu2.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+   tbhdu2.header['INSTRUME']=('UVOTA   ','Instrument Name')
+   tbhdu2.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
+   tbhdu2.header['TIMESYS ']=hdr['timesys']
+   tbhdu2.header['MJDREFI ']=hdr['mjdrefi']
+   tbhdu2.header['MJDREFF ']=hdr['mjdreff']
+   tbhdu2.header['TIMEREF ']=hdr['timeref']
+   tbhdu2.header['TASSIGN ']=hdr['tassign']
+   tbhdu2.header['TIMEUNIT']=hdr['timeunit']
+   tbhdu2.header['TIERRELA']=hdr['TIERRELA']
+   tbhdu2.header['TIERABSO']=hdr['TIERABSO']
+   tbhdu2.header['COMMENT']="Note that all Swift times are not clock corrected by definition"
+   tbhdu2.header['TSTART']=hdr['TSTART']
+   tbhdu2.header['TSTOP']=hdr['TSTOP']
+   tbhdu2.header['DATE-OBS']=hdr['DATE-OBS']
+   tbhdu2.header['DATE-END']=hdr['DATE-END']
+   tbhdu2.header['CLOCKAPP']=hdr['CLOCKAPP']
+   tbhdu2.header['TELAPSE']=hdr['TELAPSE']
+   tbhdu2.header['EXPOSURE']=hdr['EXPOSURE']
+   tbhdu2.header['DEADC']=hdr['DEADC']
+   tbhdu2.header['FRAMTIME']=hdr['FRAMTIME']
+   tbhdu2.header['DETNAM']=hdr['DETNAM']
+   tbhdu2.header['FILTER']=hdr['FILTER']
+   tbhdu2.header['OBS_ID']=hdr['OBS_ID']
+   tbhdu2.header['TARG_ID']=hdr['TARG_ID']
+   tbhdu2.header['EQUINOX']=hdr['EQUINOX']
+   tbhdu2.header['RADECSYS']=hdr['RADECSYS']
+   tbhdu2.header['WHEELPOS']=hdr['WHEELPOS']
    try:
-      tbhdu2.header.update('BLOCLOSS',hdr['BLOCLOSS'])
-      tbhdu2.header.update('MOD8CORR',hdr['MOD8CORR'])
-      tbhdu2.header.update('FLATCORR',hdr['FLATCORR'])
-      tbhdu2.header.update('STALLOSS',hdr['STALLOSS'])
-      tbhdu2.header.update('TOSSLOSS',hdr['TOSSLOSS'])
+      tbhdu2.header['BLOCLOSS']=hdr['BLOCLOSS']
+      tbhdu2.header['MOD8CORR']=hdr['MOD8CORR']
+      tbhdu2.header['FLATCORR']=hdr['FLATCORR']
+      tbhdu2.header['STALLOSS']=hdr['STALLOSS']
+      tbhdu2.header['TOSSLOSS']=hdr['TOSSLOSS']
    except:
       print "WARNING problem found in uvotio line 2440 try update XXXXLOSS keywords"
       pass 
    if calmode:     
       tbhdu2.header['COIWIDTH'] = 2*coi_half_width   
-   tbhdu2.header.update('HDUCLASS','OGIP')
-   tbhdu2.header.update('HDUCLAS1','SPECTRUM')
+   tbhdu2.header['HDUCLASS']='OGIP'
+   tbhdu2.header['HDUCLAS1']='SPECTRUM'
    if fileversion == 1:
-      tbhdu2.header.update('HDUCLAS2','TOTAL')   
+      tbhdu2.header['HDUCLAS2']='TOTAL'  
    elif fileversion == 2:
-      tbhdu2.header.update('HDUCLAS2','NET')
-   tbhdu2.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
-   tbhdu2.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
+      tbhdu2.header['HDUCLAS2']='NET'
+   tbhdu2.header['ZERODETX']=(zeroxy[0],'zeroth order position on image')
+   tbhdu2.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu2)
    #
    if chatter>4: print "uvotio: write third header"
    #  THIRD extension: extracted image
    #
    hdu3 = fits.ImageHDU(extimg)
-   hdu3.header.update('EXTNAME','SPECTRUM_IMAGE')
+   hdu3.header['EXTNAME']='SPECTRUM_IMAGE'
    try:
-      hdu3.header.update('EXPID',hdr['expid'])
+      hdu3.header['EXPID']=hdr['expid']
    except:
       pass   
-   hdu3.header.update('ANKXIMG',ank_c[1],'Position anchor in image')
-   hdu3.header.update('ANKYIMG',ank_c[0],'Position anchor in image')
-   hdu3.header.update('FILETAG',filetag,'unique set id')
+   hdu3.header['ANKXIMG']=(ank_c[1],'Position anchor in image')
+   hdu3.header['ANKYIMG']=(ank_c[0],'Position anchor in image')
+   hdu3.header['FILETAG']=(filetag,'unique set id')
    hdulist.append(hdu3)
    #
    #  FOURTH extension: extracted image
    #
    if len(expmap) > 1: 
       hdu4 = fits.ImageHDU(expmap)
-      hdu4.header.update('EXTNAME','EXPOSURE_MAP')
+      hdu4.header['EXTNAME']='EXPOSURE_MAP'
       try: 
-         hdu4.header.update('EXPID',hdr['expid'])
+         hdu4.header['EXPID']=hdr['expid']
       except:
          pass	 
-      hdu4.header.update('ANKXIMG',ank_c[1],'Position anchor in image')
-      hdu4.header.update('ANKYIMG',ank_c[0],'Position anchor in image')
-      hdu4.header.update('FILETAG',filetag,'unique set id')
+      hdu4.header['ANKXIMG']=(ank_c[1],'Position anchor in image')
+      hdu4.header['ANKYIMG']=(ank_c[0],'Position anchor in image')
+      hdu4.header['FILETAG']=(filetag,'unique set id')
       hdulist.append(hdu4)
    try:   
      hdulist.writeto(outfile1,clobber=clobber)
@@ -2638,26 +2645,27 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      # create primary header 
      #
      hdu0 = fits.PrimaryHDU()
-     hdu0.header.update('CREATED','written by uvotio.py '+version)
-     hdu0.header.update('DATE',str(now))
-     hdu0.header.update('AUTHOR','UVOTPY author is NPM Kuin (UCL/MSSL)')
-     hdu0.header.update('WHEELPOS',hdr['wheelpos'])
-     hdu0.header.update('FILTER',hdr['filter'],comment='UVOT filter used')
-     hdu0.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-     hdu0.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
+     hdu0.header['CREATED']='written by uvotio.py '+version
+     hdu0.header['DATE']=str(now)
+     hdu0.header['AUTHOR']='UVOTPY author is NPM Kuin (UCL/MSSL)'
+     hdu0.header['WHEELPOS']=hdr['wheelpos']
+     hdu0.header['FILTER']=(hdr['filter'],'UVOT filter used')
+     hdu0.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+     hdu0.header['INSTRUME']=('UVOTA   ','Instrument Name')
+     hdu0.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
      hdulist=fits.HDUList([hdu0])
      #
      #  Main fits part
      #
      hdr0 = hdr.copy()
-     hdr0.update('ORI_FILE',obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
-     hdr0.update('RA_X',ra,'RA of source extracted spectrum')
-     hdr0.update('DEC_X',dec,'DEC of source extracted spectrum')
-     hdr0.update('DETX_X',anker[0],'XDET position source anker in DET coord') 
-     hdr0.update('DETY_X',anker[1],'YDET position source anker in DET coord')
-     hdr0.update('POSX_AS',phx,'angle boresight in deg in DETX direction')
-     hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
-     hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
+     hdr0['ORI']=(FILE,obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
+     hdr0['RA_X']=(ra,'RA of source extracted spectrum')
+     hdr0['DEC_X',]=(dec,'Dec. of source extracted spectrum')
+     hdr0['DETX_X']=(anker[0],'XDET position source anker in DET coord') 
+     hdr0['DETY_X']=(anker[1],'YDET position source anker in DET coord')
+     hdr0['POSX_AS']=(phx,'angle boresight in deg in DETX direction')
+     hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
+     hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
      #
      #  first extension: first order spectrum ; add extname everywhere
      #
@@ -2679,79 +2687,78 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
         cols1 = fits.ColDefs([col21,col22,col23,col24])
      tbhdu1 = fits.BinTableHDU.from_columns(cols1)
      try:
-        tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+        tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
      except:
         pass	
      if chatter>4: print "uvotio: write 2nd order 1 header"
 
-     tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
-     tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-     tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-     tbhdu1.header.update('TIMESYS ',hdr['timesys'],'time system')
-     tbhdu1.header.update('FILETAG',filetag,'unique set id')
-     tbhdu1.header.update('MJDREFI ',hdr['mjdrefi'],'Reference MJD time integer part')
-     tbhdu1.header.update('MJDREFF ',hdr['mjdreff'],'Reference MJD fractional part')
-     tbhdu1.header.update('TIMEREF ',hdr['timeref'],'time reference barycentric/local')
-     tbhdu1.header.update('TASSIGN ',hdr['tassign'],'time assigned by clock')
-     tbhdu1.header.update('TIMEUNIT',hdr['timeunit'])
-     tbhdu1.header.update('TIERRELA',hdr['TIERRELA'],'time relative error [s/s]')
-     tbhdu1.header.update('TIERABSO',hdr['TIERABSO'],'timing precision in seconds')
-     tbhdu1.header.update('TSTART',hdr['TSTART'])
-     tbhdu1.header.update('TSTOP',hdr['TSTOP'])
-     tbhdu1.header.update('DATE-OBS',hdr['DATE-OBS'])
-     tbhdu1.header.update('DATE-END',hdr['DATE-END'])
-     tbhdu1.header.update('CLOCKAPP',hdr['CLOCKAPP'],'if clock correction was applied')
-     tbhdu1.header.update('TELAPSE',hdr['TELAPSE'],'Tstop - Tstart')
-     tbhdu1.header.update('EXPOSURE',hdr['EXPOSURE'],'Average Total exposure, with all known corrections')
-     tbhdu1.header.update('DEADC',hdr['DEADC'],'dead time correction')
-     tbhdu1.header.update('FRAMTIME',hdr['FRAMTIME'],'frame exposure time')
-     tbhdu1.header.update('DETNAM',hdr['DETNAM'])
-     tbhdu1.header.update('FILTER',hdr['FILTER'])
-     tbhdu1.header.update('OBS_ID',hdr['OBS_ID'],'observation id')
-     tbhdu1.header.update('TARG_ID',hdr['TARG_ID'],'Target ID')
-     tbhdu1.header.update('EQUINOX',hdr['EQUINOX'])
-     tbhdu1.header.update('RADECSYS',hdr['RADECSYS'])
-     tbhdu1.header.update('WHEELPOS',hdr['WHEELPOS'],'filterweel position')
-     tbhdu1.header.update('SPECTORD',2,'spectral order')
+     tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
+     tbhdu1.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+     tbhdu1.header['INSTRUME']=('UVOTA   ','Instrument Name')
+     tbhdu1.header['TIMESYS ']=(hdr['timesys'],'time system')
+     tbhdu1.header['FILETAG']=(filetag,'unique set id')
+     tbhdu1.header['MJDREFI ']=(hdr['mjdrefi'],'Reference MJD time integer part')
+     tbhdu1.header['MJDREFF ']=(hdr['mjdreff'],'Reference MJD fractional part')
+     tbhdu1.header['TIMEREF ']=(hdr['timeref'],'time reference barycentric/local')
+     tbhdu1.header['TASSIGN ']=(hdr['tassign'],'time assigned by clock')
+     tbhdu1.header['TIMEUNIT']=hdr['timeunit']
+     tbhdu1.header['TIERRELA']=(hdr['TIERRELA'],'time relative error [s/s]')
+     tbhdu1.header['TIERABSO']=(hdr['TIERABSO'],'timing precision in seconds')
+     tbhdu1.header['TSTART']=hdr['TSTART']
+     tbhdu1.header['TSTOP']=hdr['TSTOP']
+     tbhdu1.header['DATE-OBS']=hdr['DATE-OBS']
+     tbhdu1.header['DATE-END']=hdr['DATE-END']
+     tbhdu1.header['CLOCKAPP']=(hdr['CLOCKAPP'],'if clock correction was applied')
+     tbhdu1.header['TELAPSE']=(hdr['TELAPSE'],'Tstop - Tstart')
+     tbhdu1.header['EXPOSURE']=(hdr['EXPOSURE'],'Average Total exposure, with all known corrections')
+     tbhdu1.header['DEADC']=(hdr['DEADC'],'dead time correction')
+     tbhdu1.header['FRAMTIME']=(hdr['FRAMTIME'],'frame exposure time')
+     tbhdu1.header['DETNAM']=hdr['DETNAM']
+     tbhdu1.header['FILTER']=hdr['FILTER']
+     tbhdu1.header['OBS_ID']=(hdr['OBS_ID'],'observation id')
+     tbhdu1.header['TARG_ID']=(hdr['TARG_ID'],'Target ID image')
+     tbhdu1.header['EQUINOX']=hdr['EQUINOX']
+     tbhdu1.header['RADECSYS']=hdr['RADECSYS']
+     tbhdu1.header['WHEELPOS']=(hdr['WHEELPOS'],'filterweel position')
+     tbhdu1.header['SPECTORD']=(2,'spectral order')
      try:
-       tbhdu1.header.update('BLOCLOSS',hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
-       tbhdu1.header.update('STALLOSS',hdr['STALLOSS'],'[s] Est DPU stalling time loss')
-       tbhdu1.header.update('TOSSLOSS',hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
-       tbhdu1.header.update('MOD8CORR',hdr['MOD8CORR'],'Was MOD8 correction applied')
-       tbhdu1.header.update('FLATCORR',hdr['FLATCORR'],'was flat field correction applied')
+       tbhdu1.header['BLOCLOSS']=(hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
+       tbhdu1.header['STALLOSS']=(hdr['STALLOSS'],'[s] Est DPU stalling time loss')
+       tbhdu1.header['TOSSLOSS']=(hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
+       tbhdu1.header['MOD8CORR']=(hdr['MOD8CORR'],'Was MOD8 correction applied')
+       tbhdu1.header['FLATCORR']=(hdr['FLATCORR'],'was LSS correction applied')
      except:
         pass   
-     tbhdu1.header.update('ASPCORR',hdr['ASPCORR'],'Aspect correction method')
-     tbhdu1.header.update('HDUCLASS','OGIP','format attemts to follow OGIP standard')
-     tbhdu1.header.update('HDUCLAS1','SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
+     tbhdu1.header['ASPCORR']=(hdr['ASPCORR'],'Aspect correction method')
+     tbhdu1.header['HDUCLASS']=('OGIP','format attemts to follow OGIP standard')
+     tbhdu1.header['HDUCLAS1']=('SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
      if fileversion == 1:
-       tbhdu1.header.update('HDUCLAS2','TOTAL','Gross PHA Spectrum (source + background)')
-       tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
-       tbhdu1.header.update('BACKFILE',backfile2,'Background FITS file')
+       tbhdu1.header['HDUCLAS2']=('TOTAL','Gross PHA Spectrum (source + background)')
+       tbhdu1.header['HDUCLAS3']=('COUNT','PHA data stored as counts (not count/s)')
+       tbhdu1.header['BACKFILE']=(backfile2,'Background FITS file')
      elif fileversion == 2:
-       tbhdu1.header.update('HDUCLAS2','NET','NET PHA Spectrum (background subtracted)')
-       tbhdu1.header.update('HDUCLAS3','RATE','PHA data stored as count/s')
-     tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
-     tbhdu1.header.update('CHANTYPE','PHA','Type of channel PHA/PI')
-     tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
-     tbhdu1.header.update('TLMAX1',len(channel2),'Highest legal channel number')
-     tbhdu1.header.update('POISSERR','F','Poissonian errors not applicable')
-     tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
-     tbhdu1.header.update('DETCHANS',len(channel2),'Total number of detector channels available')
-     tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
-     tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
-     tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-     tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
-     tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
-     tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
-#   tbhdu1.header.update('RESPFILE',respfile,'Redistribution matrix')
-     tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
-#    tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
-     tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-     tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel2))+')','Channel binning of the CHANNEL column')
-     tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-     tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
-     tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
+       tbhdu1.header['HDUCLAS2']=('NET','NET PHA Spectrum (background subtracted)')
+       tbhdu1.header['HDUCLAS3']=('RATE','PHA data stored as count/s')
+     tbhdu1.header['HDUVERS1']=('1.1.0','Version of format (OGIP memo OGIP-92-007a)')
+     tbhdu1.header['CHANTYPE']=('PHA','Type of channel PHA/PI')
+     tbhdu1.header['TLMIN1  ']=(1,'Lowest legal channel number')
+     tbhdu1.header['TLMAX1']=(len(channel2),'Highest legal channel number')
+     tbhdu1.header['POISSERR']=('F','Poissonian errors not applicable')
+     tbhdu1.header['GROUPING']=(0,'No grouping of the data has been defined')
+     tbhdu1.header['DETCHANS']=(len(channel2),'Total number of detector channels available')
+     tbhdu1.header['AREASCAL']=(1,'Area scaling factor')
+     tbhdu1.header['BACKSCAL']=(1,'Background scaling factor')
+     tbhdu1.header['CORRSCAL']=(1,'Correlation scaling factor')
+     tbhdu1.header['BACKFILE']=('NONE','Background FITS file')
+     tbhdu1.header['CORRFILE']=('NONE  ','Correlation FITS file')
+     tbhdu1.header['RESPFILE']=('NONE','Redistribution matrix')
+     tbhdu1.header['ANCRFILE']=('NONE  ','Ancillary response')
+     tbhdu1.header['XFLT0001']=('NONE  ','XSPEC selection filter description')
+     tbhdu1.header['CRPIX1  ']=('(1,'+str(len(channel2))+')','Channel binning of the CHANNEL column')
+     tbhdu1.header['PHAVERSN']=('1992a ','OGIP memo number for file format')   
+     tbhdu1.header['ZERODETX']=(zeroxy[0],'zeroth order position on image')
+     tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
+     tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
      hdulist.append(tbhdu1)
      try:
         hdulist.writeto(outfile2nd,clobber=clobber)
@@ -2769,26 +2776,27 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    # create primary header 
    #
        hdu0 = fits.PrimaryHDU()
-       hdu0.header.update('CREATED','written by uvotio.py '+version)
-       hdu0.header.update('DATE',str(now))
-       hdu0.header.update('AUTHOR','NPM Kuin (UCL/MSSL)')
-       hdu0.header.update('WHEELPOS',hdr['wheelpos'])
-       hdu0.header.update('FILTER',hdr['filter'],comment='UVOT filter used')
-       hdu0.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-       hdu0.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
+       hdu0.header['CREATED']=('written by uvotio.py '+version)
+       hdu0.header['DATE']=str(now)
+       hdu0.header['AUTHOR']='NPM Kuin (UCL/MSSL)'
+       hdu0.header['WHEELPOS']=hdr['wheelpos']
+       hdu0.header['FILTER']=(hdr['filter'],'UVOT filter used')
+       hdu0.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+       hdu0.header['INSTRUME']=('UVOTA   ','Instrument/Detector Name')
+       hdu0.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
        hdulist=fits.HDUList([hdu0])
    #
    #  Main fits part
    #
        hdr0 = hdr.copy()
-       hdr0.update('ORI_FILE',obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
-       hdr0.update('RA_X',ra,'RA of source extracted spectrum')
-       hdr0.update('DEC_X',dec,'DEC of source extracted spectrum')
-       hdr0.update('DETX_X',anker[0],'XDET position source anker in DET coord') 
-       hdr0.update('DETY_X',anker[1],'YDET position source anker in DET coord')
-       hdr0.update('POSX_AS',phx,'angle boresight in deg in DETX direction')
-       hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
-       hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
+       hdr0['ORI_FILE']=(obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
+       hdr0['RA_X']=(ra,'RA of source extracted spectrum')
+       hdr0['DEC_X']=(dec,'DEC of source extracted spectrum')
+       hdr0['DETX_X']=(anker[0],'XDET position source anker in DET coord') 
+       hdr0['DETY_X']=(anker[1],'YDET position source anker in DET coord')
+       hdr0['POSX_AS']=(phx,'angle boresight in deg in DETX direction')
+       hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
+       hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
        if chatter>4: print "uvotio: write bkg 1 order header"
    #  first extension: first order spectrum ; add extname everywhere
@@ -2806,76 +2814,77 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
        tbhdu1 = fits.BinTableHDU.from_columns(cols1)
        try:
-           tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+           tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
        except:
           pass	   
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
-       tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
-       tbhdu1.header.update('FILETAG',filetag,'unique set id')
-       tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-       tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-   #tbhdu1.header.update('CMPOTHRS',hdr['CMPOTHRS'],'overflow of lossy compression algorith')
-   #tbhdu1.header.update('CMPUTHRS',hdr['CMPUTHRS'],'underflow of lossy compression algorith')
-   #tbhdu1.header.update('CMPCNTMN',hdr['CMPCNTMN'],'compression losses have occurred in the image')
-       tbhdu1.header.update('TIMESYS ',hdr['timesys'],'time system')
-       tbhdu1.header.update('MJDREFI ',hdr['mjdrefi'],'Reference MJD time integer part')
-       tbhdu1.header.update('MJDREFF ',hdr['mjdreff'],'Reference MJD fractional part')
-       tbhdu1.header.update('TIMEREF ',hdr['timeref'],'time reference barycentric/local')
-       tbhdu1.header.update('TASSIGN ',hdr['tassign'],'time assigned by clock')
-       tbhdu1.header.update('TIMEUNIT',hdr['timeunit'])
-       tbhdu1.header.update('TIERRELA',hdr['TIERRELA'],'time relative error [s/s]')
-       tbhdu1.header.update('TIERABSO',hdr['TIERABSO'],'timing precision in seconds')
-       tbhdu1.header.update('TSTART',hdr['TSTART'])
-       tbhdu1.header.update('TSTOP',hdr['TSTOP'])
-       tbhdu1.header.update('DATE-OBS',hdr['DATE-OBS'])
-       tbhdu1.header.update('DATE-END',hdr['DATE-END'])
-       tbhdu1.header.update('CLOCKAPP',hdr['CLOCKAPP'],'if clock correction was applied')
-       tbhdu1.header.update('TELAPSE',hdr['TELAPSE'],'Tstop - Tstart')
-       tbhdu1.header.update('EXPOSURE',hdr['EXPOSURE'],'Total exposure, with all known corrections')
-       tbhdu1.header.update('DEADC',hdr['DEADC'],'dead time correction')
-       tbhdu1.header.update('FRAMTIME',hdr['FRAMTIME'],'frame exposure time')
-       tbhdu1.header.update('DETNAM',hdr['DETNAM'])
-       tbhdu1.header.update('FILTER',hdr['FILTER'])
-       tbhdu1.header.update('OBS_ID',hdr['OBS_ID'],'observation id')
-       tbhdu1.header.update('TARG_ID',hdr['TARG_ID'],'Target ID')
-   #tbhdu1.header.update('SEQ_NUM',hdr['SEQ_NUM'])
-       tbhdu1.header.update('EQUINOX',hdr['EQUINOX'])
-       tbhdu1.header.update('RADECSYS',hdr['RADECSYS'])
-       tbhdu1.header.update('WHEELPOS',hdr['WHEELPOS'],'filterweel position')
-       tbhdu1.header.update('SPECTORD',1,'spectral order')
+       tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
+       tbhdu1.header['FILETAG']=(filetag,'unique set id')
+       tbhdu1.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+       tbhdu1.header['INSTRUME']=('UVOTA   ','Instrument Name')
+       if 'CMPOTHRS' in hdr: tbhdu1.header['CMPOTHRS']=(hdr['CMPOTHRS'],'overflow of lossy compression algorith')
+       if 'CMPUTHRS' in hdr: tbhdu1.header['CMPUTHRS']=(hdr['CMPUTHRS'],'underflow of lossy compression algorith')
+       if 'CMPCNTMN' in hdr: tbhdu1.header['CMPCNTMN']=(hdr['CMPCNTMN'],'compression losses have occurred in the image')
+       tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
+       tbhdu1.header['TIMESYS ']=(hdr['timesys'],'time system')
+       tbhdu1.header['MJDREFI ']=(hdr['mjdrefi'],'Reference MJD time integer part')
+       tbhdu1.header['MJDREFF ']=(hdr['mjdreff'],'Reference MJD fractional part')
+       tbhdu1.header['TIMEREF ']=(hdr['timeref'],'time reference barycentric/local')
+       tbhdu1.header['TASSIGN ']=(hdr['tassign'],'time assigned by clock')
+       tbhdu1.header['TIMEUNIT']=(hdr['timeunit'])
+       tbhdu1.header['TIERRELA']=(hdr['TIERRELA'],'time relative error [s/s]')
+       tbhdu1.header['TIERABSO']=(hdr['TIERABSO'],'timing precision in seconds')
+       tbhdu1.header['TSTART']=(hdr['TSTART'])
+       tbhdu1.header['TSTOP']=(hdr['TSTOP'])
+       tbhdu1.header['DATE-OBS']=(hdr['DATE-OBS'])
+       tbhdu1.header['DATE-END']=(hdr['DATE-END'])
+       tbhdu1.header['CLOCKAPP']=(hdr['CLOCKAPP'],'if clock correction was applied')
+       tbhdu1.header['TELAPSE']=(hdr['TELAPSE'],'Tstop - Tstart')
+       tbhdu1.header['EXPOSURE']=(hdr['EXPOSURE'],'Total exposure, with all known corrections')
+       tbhdu1.header['DEADC']=(hdr['DEADC'],'dead time correction')
+       tbhdu1.header['FRAMTIME']=(hdr['FRAMTIME'],'frame exposure time')
+       tbhdu1.header['DETNAM']=(hdr['DETNAM'])
+       tbhdu1.header['FILTER']=(hdr['FILTER'])
+       tbhdu1.header['OBS_ID']=(hdr['OBS_ID'],'observation id')
+       tbhdu1.header['TARG_ID']=(hdr['TARG_ID'],'Target ID')
+       if 'SEQ_NUM' in hdr: tbhdu1.header['SEQ_NUM']=(hdr['SEQ_NUM'])
+       tbhdu1.header['EQUINOX']=(hdr['EQUINOX'])
+       tbhdu1.header['RADECSYS']=(hdr['RADECSYS'])
+       tbhdu1.header['WHEELPOS']=(hdr['WHEELPOS'],'filterweel position')
+       tbhdu1.header['SPECTORD']=(1,'spectral order')
        try:
-          tbhdu1.header.update('BLOCLOSS',hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
-          tbhdu1.header.update('STALLOSS',hdr['STALLOSS'],'[s] Est DPU stalling time loss')
-          tbhdu1.header.update('TOSSLOSS',hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
-          tbhdu1.header.update('MOD8CORR',hdr['MOD8CORR'],'Was MOD8 correction applied')
-          tbhdu1.header.update('FLATCORR',hdr['FLATCORR'],'was flat field correction applied')
+          tbhdu1.header['BLOCLOSS']=(hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
+          tbhdu1.header['STALLOSS']=(hdr['STALLOSS'],'[s] Est DPU stalling time loss')
+          tbhdu1.header['TOSSLOSS']=(hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
+          tbhdu1.header['MOD8CORR']=(hdr['MOD8CORR'],'Was MOD8 correction applied')
+          tbhdu1.header['FLATCORR']=(hdr['FLATCORR'],'LSS correction applied')
        except:
           pass   
        
-       tbhdu1.header.update('ASPCORR','GAUSSIAN','Aspect correction method')
-       tbhdu1.header.update('HDUCLASS','OGIP','format attemts to follow OGIP standard')
-       tbhdu1.header.update('HDUCLAS1','SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
-       tbhdu1.header.update('HDUCLAS2','TOTAL','Gross PHA Spectrum (source + background)')
-       tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
-       tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
-       tbhdu1.header.update('CHANTYPE','PI','Type of channel PHA/PI')
-       tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
-       tbhdu1.header.update('TLMAX1',len(channel),'Highest legal channel number')
-       tbhdu1.header.update('POISSERR',False,'Poissonian errors not applicable')
-       tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
-       tbhdu1.header.update('DETCHANS',len(channel),'Total number of detector channels available')
-       tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
-       tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
-       tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-       tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
-       tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
-       tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
-       tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
-       tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-       tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
-       tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-       tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
-       tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
+       tbhdu1.header['ASPCORR']=('GAUSSIAN','Aspect correction method')
+       tbhdu1.header['HDUCLASS']=('OGIP','format attemts to follow OGIP standard')
+       tbhdu1.header['HDUCLAS1']=('SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
+       tbhdu1.header['HDUCLAS2']=('TOTAL','Gross PHA Spectrum (source + background)')
+       tbhdu1.header['HDUCLAS3']=('COUNT','PHA data stored as counts (not count/s)')
+       tbhdu1.header['HDUVERS1']=('1.1.0','Version of format (OGIP memo OGIP-92-007a)')
+       tbhdu1.header['CHANTYPE']=('PI','Type of channel PHA/PI')
+       tbhdu1.header['TLMIN1  ']=(1,'Lowest legal channel number')
+       tbhdu1.header['TLMAX1']=(len(channel),'Highest legal channel number')
+       tbhdu1.header['POISSERR']=(False,'Poissonian errors not applicable')
+       tbhdu1.header['GROUPING']=(0,'No grouping of the data has been defined')
+       tbhdu1.header['DETCHANS']=(len(channel),'Total number of detector channels available')
+       tbhdu1.header['AREASCAL']=(1,'Area scaling factor')
+       tbhdu1.header['BACKSCAL']=(1,'Background scaling factor')
+       tbhdu1.header['CORRSCAL']=(1,'Correlation scaling factor')
+       tbhdu1.header['BACKFILE']=('NONE','Background FITS file')
+       tbhdu1.header['CORRFILE']=('NONE  ','Correlation FITS file')
+       tbhdu1.header['RESPFILE']=('NONE','Redistribution matrix')
+       tbhdu1.header['ANCRFILE']=('NONE  ','Ancillary response')
+       tbhdu1.header['XFLT0001']=('NONE  ','XSPEC selection filter description')
+       tbhdu1.header['CRPIX1  ']=('(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
+       tbhdu1.header['PHAVERSN']=('1992a ','OGIP memo number for file format')   
+       tbhdu1.header['ZERODETX']=(zeroxy[0],'zeroth order position on image')
+       tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
        hdulist.append(tbhdu1)
        try:
           hdulist.writeto(backfile1,clobber=clobber)
@@ -2890,26 +2899,27 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       #
           if chatter>4: print "uvotio: write bck 2nd order header"
           hdu0 = fits.PrimaryHDU()
-          hdu0.header.update('CREATED','written by uvotio.py '+version)
-          hdu0.header.update('DATE',str(now))
-          hdu0.header.update('AUTHOR','NPM Kuin (UCL/MSSL)')
-          hdu0.header.update('WHEELPOS',hdr['wheelpos'])
-          hdu0.header.update('FILTER',hdr['filter'],comment='UVOT filter used')
-          hdu0.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-          hdu0.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
+          hdu0.header['CREATED']='written by uvotio.py '+version
+          hdu0.header['DATE']=str(now)
+          hdu0.header['AUTHOR']='NPM Kuin (UCL/MSSL)'
+          hdu0.header['WHEELPOS']=hdr['wheelpos']
+          hdu0.header['FILTER']=(hdr['filter'],'UVOT filter used')
+          hdu0.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+          hdu0.header['INSTRUME']=('UVOTA   ','Instrument Name')
+          hdu0.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
           hdulist=fits.HDUList([hdu0])
       #
       #  Main fits part
       #
           hdr0 = hdr.copy()
-          hdr0.update('ORI_FILE',obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
-          hdr0.update('RA_X',ra,'RA of source extracted spectrum')
-          hdr0.update('DEC_X',dec,'DEC of source extracted spectrum')
-          hdr0.update('DETX_X',anker[0],'XDET position source anker in DET coord') 
-          hdr0.update('DETY_X',anker[1],'YDET position source anker in DET coord')
-          hdr0.update('POSX_AS',phx,'angle boresight in deg in DETX direction')
-          hdr0.update('POSY_AS',phy,'angle boresight in deg in DETY direction')
-          hdr0.update('SPEC_OFF',offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
+          hdr0['ORI_FILE']=(obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
+          hdr0['RA_X']=(ra,'RA of source extracted spectrum')
+          hdr0['DEC_X']=(dec,'DEC of source extracted spectrum')
+          hdr0['DETX_X']=(anker[0],'XDET position source anker in DET coord') 
+          hdr0['DETY_X']=(anker[1],'YDET position source anker in DET coord')
+          hdr0['POSX_AS']=(phx,'angle boresight in deg in DETX direction')
+          hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
+          hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
       #
       #  first extension: first order spectrum ; add extname everywhere
       #
@@ -2926,72 +2936,73 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
           tbhdu1 = fits.BinTableHDU.from_columns(cols1)
 	  try:
-              tbhdu1.header.update('EXPID',hdr['expid'],'Exposure ID')
+              tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
 	  except:
 	      pass    
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
-          tbhdu1.header.update('EXTNAME','SPECTRUM','Name of this binary table extension')
-          tbhdu1.header.update('FILETAG',filetag,'unique set id')
-          tbhdu1.header.update('TELESCOP','SWIFT   ',comment='Telescope (mission) name')
-          tbhdu1.header.update('INSTRUME','UVOTA   ',comment='Instrument Name')
-          tbhdu1.header.update('TIMESYS ',hdr['timesys'],'time system')
-          tbhdu1.header.update('MJDREFI ',hdr['mjdrefi'],'Reference MJD time integer part')
-          tbhdu1.header.update('MJDREFF ',hdr['mjdreff'],'Reference MJD fractional part')
-          tbhdu1.header.update('TIMEREF ',hdr['timeref'],'time reference barycentric/local')
-          tbhdu1.header.update('TASSIGN ',hdr['tassign'],'time assigned by clock')
-          tbhdu1.header.update('TIMEUNIT',hdr['timeunit'])
-          tbhdu1.header.update('TIERRELA',hdr['TIERRELA'],'time relative error [s/s]')
-          tbhdu1.header.update('TIERABSO',hdr['TIERABSO'],'timing precision in seconds')
-          tbhdu1.header.update('TSTART',hdr['TSTART'])
-          tbhdu1.header.update('TSTOP',hdr['TSTOP'])
-          tbhdu1.header.update('DATE-OBS',hdr['DATE-OBS'])
-          tbhdu1.header.update('DATE-END',hdr['DATE-END'])
-          tbhdu1.header.update('CLOCKAPP',hdr['CLOCKAPP'],'if clock correction was applied')
-          tbhdu1.header.update('TELAPSE',hdr['TELAPSE'],'Tstop - Tstart')
-          tbhdu1.header.update('EXPOSURE',hdr['EXPOSURE'],'Total exposure, with all known corrections')
-          tbhdu1.header.update('DEADC',hdr['DEADC'],'dead time correction')
-          tbhdu1.header.update('FRAMTIME',hdr['FRAMTIME'],'frame exposure time')
-          tbhdu1.header.update('DETNAM',hdr['DETNAM'])
-          tbhdu1.header.update('FILTER',hdr['FILTER'])
-          tbhdu1.header.update('OBS_ID',hdr['OBS_ID'],'observation id')
-          tbhdu1.header.update('TARG_ID',hdr['TARG_ID'],'Target ID')
+          tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
+          tbhdu1.header['FILETAG']=(filetag,'unique set id')
+          tbhdu1.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
+          tbhdu1.header['INSTRUME']=('UVOTA   ','Instrument Name')
+          tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
+          tbhdu1.header['TIMESYS ']=(hdr['timesys'],'time system')
+          tbhdu1.header['MJDREFI ']=(hdr['mjdrefi'],'Reference MJD time integer part')
+          tbhdu1.header['MJDREFF ']=(hdr['mjdreff'],'Reference MJD fractional part')
+          tbhdu1.header['TIMEREF ']=(hdr['timeref'],'time reference barycentric/local')
+          tbhdu1.header['TASSIGN ']=(hdr['tassign'],'time assigned by clock')
+          tbhdu1.header['TIMEUNIT']=(hdr['timeunit'])
+          tbhdu1.header['TIERRELA']=(hdr['TIERRELA'],'time relative error [s/s]')
+          tbhdu1.header['TIERABSO']=(hdr['TIERABSO'],'timing precision in seconds')
+          tbhdu1.header['TSTART']=hdr['TSTART']
+          tbhdu1.header['TSTOP']=hdr['TSTOP']
+          tbhdu1.header['DATE-OBS']=hdr['DATE-OBS']
+          tbhdu1.header['DATE-END']=hdr['DATE-END']
+          tbhdu1.header['CLOCKAPP']=(hdr['CLOCKAPP'],'if clock correction was applied')
+          tbhdu1.header['TELAPSE']=(hdr['TELAPSE'],'Tstop - Tstart')
+          tbhdu1.header['EXPOSURE']=(hdr['EXPOSURE'],'Total exposure, with all known corrections')
+          tbhdu1.header['DEADC']=(hdr['DEADC'],'dead time correction')
+          tbhdu1.header['FRAMTIME']=(hdr['FRAMTIME'],'frame exposure time')
+          tbhdu1.header['DETNAM']=hdr['DETNAM']
+          tbhdu1.header['FILTER']=hdr['FILTER']
+          tbhdu1.header['OBS_ID']=(hdr['OBS_ID'],'observation id')
+          tbhdu1.header['TARG_ID']=(hdr['TARG_ID'],'Target ID')
    #tbhdu1.header.update('SEQ_NUM',hdr['SEQ_NUM'])
-          tbhdu1.header.update('EQUINOX',hdr['EQUINOX'])
-          tbhdu1.header.update('RADECSYS',hdr['RADECSYS'])
-          tbhdu1.header.update('WHEELPOS',hdr['WHEELPOS'],'filterweel position')
-          tbhdu1.header.update('SPECTORD',2,'spectral order')
+          tbhdu1.header['EQUINOX']=(hdr['EQUINOX'])
+          tbhdu1.header['RADECSYS']=(hdr['RADECSYS'])
+          tbhdu1.header['WHEELPOS']=(hdr['WHEELPOS'],'filterweel position')
+          tbhdu1.header['SPECTORD']=(2,'spectral order')
           try:
-             tbhdu1.header.update('BLOCLOSS',hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
-             tbhdu1.header.update('STALLOSS',hdr['STALLOSS'],'[s] Est DPU stalling time loss')
-             tbhdu1.header.update('TOSSLOSS',hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
-             tbhdu1.header.update('MOD8CORR',hdr['MOD8CORR'],'Was MOD8 correction applied')
-             tbhdu1.header.update('FLATCORR',hdr['FLATCORR'],'was flat field correction applied')
+             tbhdu1.header['BLOCLOSS']=(hdr['BLOCLOSS'],'[s] Exposure time under BLOCKED filter')
+             tbhdu1.header['STALLOSS']=(hdr['STALLOSS'],'[s] Est DPU stalling time loss')
+             tbhdu1.header['TOSSLOSS']=(hdr['TOSSLOSS'],'[s] Est Shift&Toss time loss')
+             tbhdu1.header['MOD8CORR']=(hdr['MOD8CORR'],'Was MOD8 correction applied')
+             tbhdu1.header['FLATCORR']=(hdr['FLATCORR'],'was flat field correction applied')
           except:
              pass   
-          tbhdu1.header.update('ASPCORR',hdr['ASPCORR'],'Aspect correction method')
-          tbhdu1.header.update('HDUCLASS','OGIP','format attemts to follow OGIP standard')
-          tbhdu1.header.update('HDUCLAS1','SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
-          tbhdu1.header.update('HDUCLAS2','TOTAL','Gross PHA Spectrum (source + background)')
-          tbhdu1.header.update('HDUCLAS3','COUNT','PHA data stored as counts (not count/s)')
-          tbhdu1.header.update('HDUVERS1','1.1.0','Version of format (OGIP memo OGIP-92-007a)')
-          tbhdu1.header.update('CHANTYPE','PI','Type of channel PHA/PI')
-          tbhdu1.header.update('TLMIN1  ',1,'Lowest legal channel number')
-          tbhdu1.header.update('TLMAX1',len(channel),'Highest legal channel number')
-          tbhdu1.header.update('POISSERR',False,'Poissonian errors not applicable')
-          tbhdu1.header.update('GROUPING',0,'No grouping of the data has been defined')
-          tbhdu1.header.update('DETCHANS',len(channel),'Total number of detector channels available')
-          tbhdu1.header.update('AREASCAL',1,'Area scaling factor')
-          tbhdu1.header.update('BACKSCAL',1,'Background scaling factor')
-          tbhdu1.header.update('CORRSCAL',1,'Correlation scaling factor')
-          tbhdu1.header.update('BACKFILE','NONE','Background FITS file')
-          tbhdu1.header.update('CORRFILE','NONE  ','Correlation FITS file')
-          tbhdu1.header.update('RESPFILE','NONE','Redistribution matrix')
-          tbhdu1.header.update('ANCRFILE','NONE  ','Ancillary response')
-          tbhdu1.header.update('XFLT0001','NONE  ','XSPEC selection filter description')
-          tbhdu1.header.update('CRPIX1  ','(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
-          tbhdu1.header.update('PHAVERSN','1992a ','OGIP memo number for file format')   
-          tbhdu1.header.update('ZERODETX',zeroxy[0],'zeroth order position on image')
-          tbhdu1.header.update('ZERODETY',zeroxy[1],'zeroth order position on image')   
+          tbhdu1.header['ASPCORR']=(hdr['ASPCORR'],'Aspect correction method')
+          tbhdu1.header['HDUCLASS']=('OGIP','format attemts to follow OGIP standard')
+          tbhdu1.header['HDUCLAS1']=('SPECTRUM','PHA dataset (OGIP memo OGIP-92-007')
+          tbhdu1.header['HDUCLAS2']=('TOTAL','Gross PHA Spectrum (source + background)')
+          tbhdu1.header['HDUCLAS3']=('COUNT','PHA data stored as counts (not count/s)')
+          tbhdu1.header['HDUVERS1']=('1.1.0','Version of format (OGIP memo OGIP-92-007a)')
+          tbhdu1.header['CHANTYPE']=('PI','Type of channel PHA/PI')
+          tbhdu1.header['TLMIN1  ']=(1,'Lowest legal channel number')
+          tbhdu1.header['TLMAX1']=(len(channel),'Highest legal channel number')
+          tbhdu1.header['POISSERR']=(False,'Poissonian errors not applicable')
+          tbhdu1.header['GROUPING']=(0,'No grouping of the data has been defined')
+          tbhdu1.header['DETCHANS']=(len(channel),'Total number of detector channels available')
+          tbhdu1.header['AREASCAL']=(1,'Area scaling factor')
+          tbhdu1.header['BACKSCAL']=(1,'Background scaling factor')
+          tbhdu1.header['CORRSCAL']=(1,'Correlation scaling factor')
+          tbhdu1.header['BACKFILE']=('NONE','Background FITS file')
+          tbhdu1.header['CORRFILE']=('NONE  ','Correlation FITS file')
+          tbhdu1.header['RESPFILE']=('NONE','Redistribution matrix')
+          tbhdu1.header['ANCRFILE']=('NONE  ','Ancillary response')
+          tbhdu1.header['XFLT0001']=('NONE  ','XSPEC selection filter description')
+          tbhdu1.header['CRPIX1  ']=('(1,'+str(len(channel))+')','Channel binning of the CHANNEL column')
+          tbhdu1.header['PHAVERSN']=('1992a ','OGIP memo number for file format')   
+          tbhdu1.header['ZERODETX']=(zeroxy[0],'zeroth order position on image')
+          tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
           hdulist.append(tbhdu1)
           try:
              hdulist.writeto(backfile2,clobber=clobber)
@@ -3485,7 +3496,7 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
           
    #hdulist.update()  
    if chatter > 1: print "updating the LSF in the response file now"     
-   hdu.header.update('HISTORY','Updated LSF by uvotgetspec.uvotio.updateResponseMatrix()')
+   hdu.header['HISTORY']=('Updated LSF by uvotgetspec.uvotio.updateResponseMatrix()')
    hdulist.update_tbhdu()
    print 'updated'
    hdulist.verify()
@@ -3893,7 +3904,7 @@ def _interpolate_lsf(en,lsfener,lsfdata,lsfepix,):
 
 def _read_lsf_file(lsfVersion='003',wheelpos=160,):
     """
-
+    2015-08-19 error in lsfepix order of row and column? 
     """
     import os
     from astropy.io import fits
@@ -3920,7 +3931,7 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
         "until such time as the LSF model for the visible grism can be incorporated" 
         
     lsfener = lsffile[1].data['channel'][0:15]   # energy value (keV)
-    lsfepix = lsffile[1].data['epix'][:,0]         # 156 or 158 values - offset in half pixels (to be converted to wave(wave))
+    lsfepix = lsffile[1].data['epix'][0,:]         # 156 or 158 values - offset in half pixels (to be converted to wave(wave))
     lsfdata = lsffile[1].data['lsf'][:15,:]      # every half pixel a value - - to resolve at shortest wavelengths 
     lsfwav = uvotio.kev2angstrom(lsfener)        # LSF wavelength
     lsflen = lsfdata.shape[1]

@@ -1500,7 +1500,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    # clean up fake file 
    if tempntags.__contains__('fakefilestub'):
          filestub = tempnames[tempntags.index('fakefilestub')]
-         os.system('rm '+filestub+'ufk_??.img ')
+         os.system('rm '+indir+filestub+'ufk_??.img ')
 
    # update Figure 3 to use the flux...
    
@@ -2636,13 +2636,13 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        command = "uvotdetect infile="+infile+ " outfile="+outfile + \
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
-   " clobber="+clobber+" chatter=0 > NULL"
+   " clobber="+clobber+" chatter=0 > /dev/null"
 
    else:
        command = "uvotdetect infile="+infile+ " outfile="+outfile + \
    ' threshold=6 sexargs = "-DEBLEND_MINCONT 0.1"  '+ \
    " expopt = BETA calibrate=NO  expfile=NONE "+ \
-   " clobber="+clobber+" chatter=0 > NULL"
+   " clobber="+clobber+" chatter=0 > /dev/null"
        
    if chatter > 1: 
       print "find_zeroth_orders: trying to detect the zeroth orders in the grism image"
@@ -8334,10 +8334,10 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    '''   
    import uvotmisc
    import numpy as np
-   try:
-     from uvotpy import uvotgetspec as uvotgrism
-   except:  
-     import uvotgrism
+   #try:
+   #  from uvotpy import uvotgetspec as uvotgrism
+   #except:  
+   #  import uvotgrism
    try:
       from convolve import boxcar
    except:
@@ -8576,10 +8576,10 @@ def coi_func(pixno,wave,countrate,bkgrate,
    import sys
    import uvotmisc
    import numpy as np
-   try:
-     from uvotpy import uvotgetspec as uvotgrism
-   except:  
-     import uvotgrism
+   #try:
+   #  from uvotpy import uvotgetspec as uvotgrism
+   #except:  
+   #  import uvotgrism
    try:
       from convolve import boxcar
    except:
