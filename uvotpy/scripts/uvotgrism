@@ -224,8 +224,8 @@ import datetime
 import os
 
 try:
-   from uvotpy.uvotmisc import interpgrid,uvotrec
    from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
+   from uvotpy.uvotmisc import interpgrid,uvotvec
    from uvotpy.uvotgetspec import *
 except:    # old versions 
    from uvotmisc import interpgrid, uvotrotvec
