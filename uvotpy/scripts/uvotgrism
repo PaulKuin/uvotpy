@@ -225,7 +225,7 @@ import os
 
 try:
    from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
-   from uvotpy.uvotmisc import interpgrid,uvotvec
+   from uvotpy.uvotmisc import interpgrid,uvotrotvec
    from uvotpy.uvotgetspec import *
 except:    # old versions 
    from uvotmisc import interpgrid, uvotrotvec
