@@ -395,13 +395,15 @@ def uniq(list):
    return [ set.setdefault(x,x) for x in list if x not in set ]
 
 
-def swtime2JD(TSTART):
+def swtime2JD(TSTART,useFtool=True):
    '''Time converter to JD from swift time 
    
    Parameter
    ---------
    TSTART : float
      swift time in seconds
+   useFtool: if False the time is converted without correction from 
+   spacecraft time to UTC (about a second per year).   
      
    Returns
    -------
@@ -423,14 +425,42 @@ def swtime2JD(TSTART):
        JD=2451910.5
    '''
    import datetime
-   import numpy as np
-   delt = datetime.timedelta(0,TSTART,0)
-   # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
-   swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
-   gregorian = swzero_datetime + delt
-   MJD = np.double(51910.0) + TSTART/(24.*3600)
-   JD = np.double(2451910.5) + TSTART/(24.*3600)
-   outdate = gregorian.isoformat()
+   month2number={'JAN':'01','FEB':'02','MAR':'03','APR':'04','MAY':'05','JUN':'06',
+                 'JUL':'07','AUG':'08','SEP':'09','OCT':'10','NOV':'11','DEC':'12'}
+   if useFtool:
+      import os
+      from numpy.random import rand
+      sout = 'times'+str(int(rand()*1e4))+'.t'
+      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=m outtime=outtime allowcorr=yes swcofile=CALDB > '+sout
+      os.system(command)
+      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=j outtime=outtime allowcorr=yes swcofile=CALDB >> '+sout
+      os.system(command)
+      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=c outtime=outtime allowcorr=yes swcofile=CALDB >> '+sout
+      os.system(command)
+      f = open(sout)
+      s = f.readlines()
+      f.close()
+      command = 'rm -f '+sout
+      os.system(command)
+      MJD = s[1].split()[-1]
+      JD =  s[4].split()[-1]
+      year = s[7].split()[2][:4]
+      mon  = s[7].split()[2][4:7]
+      mo = month2number[mon.upper()]
+      day  = s[7].split()[2][7:]
+      outdate = year+'-'+mo+'-'+day+'T'+s[7].split()[4].split('UTC')[0]
+      hh,mm,ssplus = s[7].split()[4].split(':')
+      ss,ms = ssplus.split('UTC')[0].split('.')
+      gregorian = datetime.datetime(int(year),int(mo),int(day),int(hh),int(mm),int(ss),int(ms))
+   else:
+      import numpy as np
+      delt = datetime.timedelta(0,TSTART,0)
+      # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
+      swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
+      gregorian = swzero_datetime + delt
+      MJD = np.double(51910.0) + TSTART/(24.*3600)
+      JD = np.double(2451910.5) + TSTART/(24.*3600)
+      outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 
 def JD2swift(JD):
@@ -442,10 +472,10 @@ def swift2JD(tswift):
    
 def MJD2swift(MJD):   
    import numpy as np
-   return (MJD - np.double(51910.5))*(86400.0)
+   return (MJD - np.double(51910.0))*(86400.0)
    
 def swift2MJD(tswift):
-   return tswift/86400.0  + 51910.5
+   return tswift/86400.0  + 51910.0
    
 
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
