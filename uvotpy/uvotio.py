@@ -2658,9 +2658,9 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      #  Main fits part
      #
      hdr0 = hdr.copy()
-     hdr0['ORI']=(FILE,obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
+     hdr0['ORI_FILE']=(obsid+'+'+str(ext),'fileid and extension of extracted spectrum')
      hdr0['RA_X']=(ra,'RA of source extracted spectrum')
-     hdr0['DEC_X',]=(dec,'Dec. of source extracted spectrum')
+     hdr0['DEC_X']=(dec,'Dec. of source extracted spectrum')
      hdr0['DETX_X']=(anker[0],'XDET position source anker in DET coord') 
      hdr0['DETY_X']=(anker[1],'YDET position source anker in DET coord')
      hdr0['POSX_AS']=(phx,'angle boresight in deg in DETX direction')
