@@ -210,7 +210,7 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
    # scale the ellipse axes according to Bmag 
    # calibrate to some function of Bmag, limitMag, 
    # probably length depends on sptype brightness, width is limited.
-   Xa1 = 14.0 + 0.* Xa.copy() + 1.5*(19-b2mag)
+   Xa1 = 14.0 + 0.* Xa.copy() + 1.5*(19 - b2mag)
    Yb1 = 5.5  + 0.* Yb.copy()
    
    # plot the ellipses on the current image

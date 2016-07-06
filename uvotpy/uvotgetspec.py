@@ -37,7 +37,7 @@ from __future__ import division
 # uvotpy 
 # (c) 2009-2016, see Licence  
 
-__version__ = '2.4.0 20160116'
+__version__ = '2.4.1 20160706'
  
 import sys
 import optparse
@@ -2714,22 +2714,54 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       blim = set_maglimit
    if blim <  background_source_mag: blim = background_source_mag  
       
-   # if usno-b1 catalog is present, so not retrieve again         
-   if not os.access('search.ub1',os.F_OK):
+   # if usno-b1 catalog is present for this position, 
+   # do not retrieve again      
+   if os.access('searchcenter.ub1',os.F_OK):  
+       searchcenterf = open( 'searchcenter.ub1' )
+       searchcenter= searchcenterf.readline().split(',')
+       searchcenterf.close()
+       racen,decen =  float(searchcenter[0]),float(searchcenter[1])
+       if np.abs(ra-racen) + np.abs(dec-decen) < 0.01:
+           use_previous_search = True
+       else:
+           use_previous_search = False
+   else: 
+       use_previous_search = False       	   
+   if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
       command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
       if chatter > 1: print command
       tt = os.system(command)   # writes the results to seach.ub1
+      tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
       if tt != 0:
          print tt 
          print "find_zeroth_orders: could not get source list from USNO-B1; scat not present?"
    else:
-      if chatter > 1: print "find_zeroth_orders: using the USNO-B1 source list from file search.ub1"
+      if chatter > 1: 
+           print "find_zeroth_orders: using the USNO-B1 source list from file search.ub1"
 
-   tab = ascii.read('search.ub1')
-   M = len(tab)  
-   ra    = tab['col2']
-   dec   = tab['col3']
-   b2mag = tab['col6']
+   # remove reliance on astropy tables as it fails on debian linux
+   searchf = open('search.ub1')
+   stab = searchf.readlines()
+   searchf.close()
+   M = len(stab)  
+   ra    = []
+   dec   = []
+   b2mag = []
+   for row in stab:
+      row_values = row.split()
+      if len(row_values) > 6:
+          ra.append(row_values[1])
+          dec.append(row_values[2])
+          b2mag.append(row_values[5])
+   M = len(ra)  
+   ra = np.asarray(ra,dtype=np.float64)
+   dec = np.asarray(dec,dtype=np.float64)
+   b2mag = np.asarray(b2mag,dtype=np.float)
+   #tab = ascii.read('search.ub1',data_start=0,fill_values=99.99)
+   #M = len(tab)  
+   #ra    = tab['col2']
+   #dec   = tab['col3']
+   #b2mag = tab['col6']
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
