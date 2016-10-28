@@ -19,7 +19,12 @@ except:
 import uvotgetspec as uvotgrism
 
 import numpy as N
-import pyfits
+
+try:
+   import pyfits
+except:
+   from astropy.io import fits as pyfits
+   pass   
 from pylab import ioff,ion,arange, plot, subplot, xlim, ylim, title, xlabel, \
      ylabel, polyval, figure, contour, plt, legend, polyval, polyfit, savefig, \
      text , grid, clf, gca
