@@ -395,7 +395,7 @@ def uniq(list):
    return [ set.setdefault(x,x) for x in list if x not in set ]
 
 
-def swtime2JD(TSTART,useFtool=True):
+def swtime2JD(TSTART,useFtool=False):
    '''Time converter to JD from swift time 
    
    Parameter
@@ -430,28 +430,9 @@ def swtime2JD(TSTART,useFtool=True):
    if useFtool:
       import os
       from numpy.random import rand
-      sout = 'times'+str(int(rand()*1e4))+'.t'
-      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=m outtime=outtime allowcorr=yes swcofile=CALDB > '+sout
-      os.system(command)
-      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=j outtime=outtime allowcorr=yes swcofile=CALDB >> '+sout
-      os.system(command)
-      command = 'swifttime intime='+str(TSTART)+' insystem=m informat=s outsystem=u outformat=c outtime=outtime allowcorr=yes swcofile=CALDB >> '+sout
-      os.system(command)
-      f = open(sout)
-      s = f.readlines()
-      f.close()
-      command = 'rm -f '+sout
-      os.system(command)
-      MJD = s[1].split()[-1]
-      JD =  s[4].split()[-1]
-      year = s[7].split()[2][:4]
-      mon  = s[7].split()[2][4:7]
-      mo = month2number[mon.upper()]
-      day  = s[7].split()[2][7:]
-      outdate = year+'-'+mo+'-'+day+'T'+s[7].split()[4].split('UTC')[0]
-      hh,mm,ssplus = s[7].split()[4].split(':')
-      ss,ms = ssplus.split('UTC')[0].split('.')
-      gregorian = datetime.datetime(int(year),int(mo),int(day),int(hh),int(mm),int(ss),int(ms))
+      delt,status = swclockcorr(TSTART)
+      if not status: print "approximate time correction "
+      return swtime2JD(TSTART+delt,useFtool=False)
    else:
       import numpy as np
       delt = datetime.timedelta(0,TSTART,0)
@@ -513,6 +494,60 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    xdiff = xx-swzero_datetime
    swifttime = xdiff.total_seconds() 
    return swifttime
+  
+def swclockcorr(met):
+    """ 
+    Swift MET correction for clock drift etc. 
+    
+    Parameters:
+    
+    met: float
+       the swift mission elapsed time
+       
+    output parameters:
+    
+    tcorr : float 
+       time correction in seconds
+    success: bool      
+       True: time corr computed from the CALDB file
+       False: rough estimate (to ~2 sec)
+       
+    For a mission time of T, the correction in seconds is computed
+    with the following:
+    T1 = (T-TSTART)/86400
+    TCORR = TOFFSET + (C0 + C1*T1 + C2*T1*T1)*1E-6
+    """
+    import os
+    import numpy as np
+    from astropy.io import fits
+    # uncorrected date and time
+    times=swtime2JD(met,useFtool=False)
+    date = times[3][:10]
+    time = times[3][11:19]
+    # get file with corrections
+    caldb = os.getenv("CALDB")
+    command="quzcif swift sc - -  clock  "+date+" "+time+" - > quzcif.out"
+    os.system(command)
+    f = open("quzcif.out")
+    try:
+       tcorfile, ext = f.read().split()
+       ext = int(ext)
+       f.close()
+    except:
+       f.close()
+       return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), False   
+    os.system("rm -f quzcif.out")
+    xx = fits.open(tcorfile)
+    x = xx[ext].data
+    k = (met >= x['tstart']) & (met < x['tstop'])
+    if np.sum(k) != 1: 
+        return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), False
+
+    t1 = (met - x['tstart'][k])/86400.0
+    tcorr = x['toffset'][k] + ( x['C0'][k] + 
+       x['C1'][k]*t1 + x['C2'][k]*t1*t1)*1.0e-6
+    xx.close()
+    return tcorr[0], True   
    
 def get_dispersion_from_header(header,order=1):
    """retrieve the dispersion coefficients from the FITS header """ 
