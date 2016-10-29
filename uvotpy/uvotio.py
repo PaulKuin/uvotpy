@@ -1181,7 +1181,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
    2013-05-05 NPMKuin
    """
    try:  
-     from astropy import fits
+     from astropy.io import fits
    except:
      import pyfits as fits
    import os 
