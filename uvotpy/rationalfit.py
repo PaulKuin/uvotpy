@@ -6,6 +6,9 @@
 
    The LSF is done using curve_fit from scipy.optimize.minpack
 '''
+from __future__ import division
+from __future__ import print_function
+from past.utils import old_div
 import numpy as np
 from scipy.optimize.minpack import curve_fit
 from scipy import odr
@@ -32,13 +35,13 @@ def ratfunct(x, A, full=False,chatter=0):
    Nn = len(Cn)       # number of coefficients is Nn+1
    Nd = len(Cd)       # number of coefficients is Nd+1
    if chatter > 2: 
-     print 'Cn ', Cn
-     print 'Cd ', Cd
+     print('Cn ', Cn)
+     print('Cd ', Cd)
    Cn = np.asarray(Cn)
    Cd = np.asarray(Cd)
    Den = np.polyval(Cd,x)  # value of numerator polynomial in points x
    Nom = np.polyval(Cn,x)  # value of denominator polynomial in points x  
-   R = Den/Nom
+   R = old_div(Den,Nom)
    #Poles = np.roots(Den) oversensitive 
    p = np.poly1d(Cn)
    Cn1 = np.polyder(p)
@@ -46,7 +49,7 @@ def ratfunct(x, A, full=False,chatter=0):
    p = np.poly1d(Cd)
    cd1 = np.polyder(p)
    Nom_deriv = np.polyval(Cn1,x)
-   dR = (Nom_deriv - R*Den_deriv)/Den
+   dR = old_div((Nom_deriv - R*Den_deriv),Den)
    if full:
       return R, dR, Poles 
    else:
@@ -95,7 +98,7 @@ def ratfunctinit(x,y,Nn,Nd):
    -------
    starting guess for function
    '''
-   A = (np.ones(Nn),np.ones(Nd)/2**np.arange(Nd)) 
+   A = (np.ones(Nn),old_div(np.ones(Nd),2**np.arange(Nd))) 
    return A
 
 def ratfit(x, y, Nom_deg, Den_deg, full=False):
@@ -156,17 +159,17 @@ def ratfit(x, y, Nom_deg, Den_deg, full=False):
     
     # check arguments.
     if Nom_deg < 0 :
-        raise ValueError, "expected Nominator Nom_deg >= 0"
+        raise ValueError("expected Nominator Nom_deg >= 0")
     if Den_deg < 0 :
-        raise ValueError, "expected Denomination Den_deg >= 0"
+        raise ValueError("expected Denomination Den_deg >= 0")
     if x.ndim != 1:
-        raise TypeError, "expected 1D vector for x"
+        raise TypeError("expected 1D vector for x")
     if x.size == 0:
-        raise TypeError, "expected non-empty vector for x"
+        raise TypeError("expected non-empty vector for x")
     if y.ndim < 1 or y.ndim > 2 :
-        raise TypeError, "expected 1D or 2D array for y"
+        raise TypeError("expected 1D or 2D array for y")
     if x.shape[0] != y.shape[0] :
-        raise TypeError, "expected x and y to have same length"
+        raise TypeError("expected x and y to have same length")
    
     Cn = np.ones(Nom_deg+1)
     Cd = np.ones(Den_deg+1)

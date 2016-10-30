@@ -12,11 +12,17 @@
      
      
 '''
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from past.utils import old_div
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-import uvotgetspec as uvotgrism
+  import uvotgetspec as uvotgrism
 
 import numpy as N
 
@@ -36,49 +42,49 @@ def binplot(*args, **kwargs):
       Same parameters as used by plot (pyplot)
    
    '''
-   if 'bin' in kwargs.keys():
+   if 'bin' in list(kwargs.keys()):
       nbin = kwargs['bin']
       del kwargs['bin']
-      print 'uvotplot nbin = ', nbin
+      print('uvotplot nbin = ', nbin)
       nargs = len(args)
-      print 'uvotplot nargs = ',nargs
+      print('uvotplot nargs = ',nargs)
       if nargs == 1:
          x = args[0]
-	 m = int( (len(x)+0.5*nbin)/nbin)+1
-	 print 'uvotplot m = ', m
-	 xx = 0.0*x[0:m].copy()
-	 for i in range(len(x)): 
-	    j = int(i/nbin)
-	    xx[j] = xx[j] + x[i]
-	 if xx[m-1] == 0.0: xx = xx[0:m-1]   
-	 args = (xx)
+         m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         print('uvotplot m = ', m)
+         xx = 0.0*x[0:m].copy()
+         for i in range(len(x)): 
+            j = int(old_div(i,nbin))
+            xx[j] = xx[j] + x[i]
+         if xx[m-1] == 0.0: xx = xx[0:m-1]   
+         args = (xx)
       else:
          x = args[0]
          y = args[1]
-	 m = int( (len(x)+0.5*nbin)/nbin)+1
-	 print 'uvotplot m = ', m,' len(x) = ',len(x)
-	 xx = 0.0*x[0:m].copy()
-	 yy = xx.copy()
-	 for i in range(len(x)): 
-	    j = int(i/nbin)
-	    xx[j] = xx[j] + x[i]
-	    yy[j] = yy[j] + y[i]
-	 if xx[m-1] == 0.0:
-	    xx = xx[0:m-1]
-	    yy = yy[0:m-1]   
-	 xx = xx/nbin   
-	 if nargs == 2: 
-	    args = xx, yy
+         m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         print('uvotplot m = ', m,' len(x) = ',len(x))
+         xx = 0.0*x[0:m].copy()
+         yy = xx.copy()
+         for i in range(len(x)): 
+            j = int(old_div(i,nbin))
+            xx[j] = xx[j] + x[i]
+            yy[j] = yy[j] + y[i]
+         if xx[m-1] == 0.0:
+            xx = xx[0:m-1]
+            yy = yy[0:m-1]   
+         xx = old_div(xx,nbin)   
+         if nargs == 2: 
+            args = xx, yy
          elif nargs == 3:
-	    z1 = args[2] 
-	    args = xx, yy, z1
-	 elif nargs == 4: 
-	    z1 = args[2]
-	    z2 = args[3]
-	    args = xx, yy, z1, z2
-	 else:
-	    print 'cannot handle more than 4 arguments'
-	    args = xx,yy   
+            z1 = args[2] 
+            args = xx, yy, z1
+         elif nargs == 4: 
+            z1 = args[2]
+            z2 = args[3]
+            args = xx, yy, z1, z2
+         else:
+            print('cannot handle more than 4 arguments')
+            args = xx,yy   
       plot(*args, **kwargs)
    else:
       plot(*args, **kwargs)
@@ -123,16 +129,16 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
    ----------------  
    img_angle : float
          rotation of the detector image (to left) 
-	  
+          
    img_pivot_ori : list,ndarray[2]
          the original X,Y detector coordinate of the center of rotation 
-	
+        
    img_pivot : list, ndarray[2]
          the coordinate of the center of rotation in the rotated image
-	 
+         
    img_size : list, ndarray[2]
          the size of the image
-	  
+          
     Parameters map
     --------------
     lmap : bool 
@@ -148,22 +154,22 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
    ann_size = 49.0
    
    # validate the input (TBD)
-   if (chatter > 1) & makeplot: print "plotting ellipsoid regions on image for zeroth orders"
+   if (chatter > 1) & makeplot: print("plotting ellipsoid regions on image for zeroth orders")
    if chatter > 2:
-      print 'plot_ellipsoid_regions input data: shape Xim, etc ', Xim.shape
-      print 'Yim ',Yim.shape,'  Xa ',Xa.shape,'  Yb ',Yb.shape,'  Thet ',Thet.shape
-      print 'img_pivot = ',img_pivot
-      print 'omg_pivot_ori = ',img_pivot_ori
-      print 'img_size = ',img_size
-      print 'limitMag = ',limitMag
-      print 'img_angle = ',img_angle
-      print 'lmap = ',lmap
-      print 'annulusmag = ',annulusmag
+      print('plot_ellipsoid_regions input data: shape Xim, etc ', Xim.shape)
+      print('Yim ',Yim.shape,'  Xa ',Xa.shape,'  Yb ',Yb.shape,'  Thet ',Thet.shape)
+      print('img_pivot = ',img_pivot)
+      print('omg_pivot_ori = ',img_pivot_ori)
+      print('img_size = ',img_size)
+      print('limitMag = ',limitMag)
+      print('img_angle = ',img_angle)
+      print('lmap = ',lmap)
+      print('annulusmag = ',annulusmag)
    if chatter > 3:   
-      print 'B2mag :',b2mag
+      print('B2mag :',b2mag)
    img_size = asarray(img_size)   
    if len(img_size) != 2:
-      print "error img_size must be the x and y dimensions of the image"   
+      print("error img_size must be the x and y dimensions of the image")   
       return   
       
    # rotate the ellipse data and place on the coordinate system of the image
@@ -189,7 +195,7 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
       ymin = ylimits[0] # -img_pivot[1]
       ymax = ylimits[1] #  img_size[1] + ymin
    if chatter > 2:
-      print "Plot_ellipsoid_regions center limits to  X:", xmin, xmax,"   Y:",ymin,ymax   
+      print("Plot_ellipsoid_regions center limits to  X:", xmin, xmax,"   Y:",ymin,ymax)   
    
    q = where((b2mag < limitMag) & (X > xmin) & (X < xmax) & (Y > ymin) & (Y < ymax))
    nq = len(q[0])
@@ -199,18 +205,18 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
    nqsat = len(qsat[0])
    
    if chatter > 4: 
-      print 'xmin, xmax, ymin, ymax = ', xmin,xmax, ymin, ymax
-      print 'normal selection q = ',q
-      print 'len(q[0]) ', nq
-      print 'saturated selection qsat = ',qsat
-      print 'len(qsat[0]) ', nqsat
+      print('xmin, xmax, ymin, ymax = ', xmin,xmax, ymin, ymax)
+      print('normal selection q = ',q)
+      print('len(q[0]) ', nq)
+      print('saturated selection qsat = ',qsat)
+      print('len(qsat[0]) ', nqsat)
    
    if nq == 0: 
-      if chatter > 2: print "no zeroth order regions within magnitude bounds found "
+      if chatter > 2: print("no zeroth order regions within magnitude bounds found ")
       makeplot = False
       
    if chatter > 1:
-      print "found ",nqsat," bright source(s) which may have a bright annulus on the image"   
+      print("found ",nqsat," bright source(s) which may have a bright annulus on the image")   
    
    # scale the ellipse axes according to Bmag 
    # calibrate to some function of Bmag, limitMag, 
@@ -224,8 +230,8 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
         qq = q[0][i]
         ang = Thet[qq]-img_angle
         if chatter>4: 
-           print 'plotting ellipse number ',qq
-	   print 'angle = ',ang
+           print('plotting ellipse number ',qq)
+           print('angle = ',ang)
       
         Ellipse( (X[qq],Y[qq]), (Xa1[qq], Yb1[qq]), ang, lw=1, color=color )
       
@@ -235,17 +241,17 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
            qq = qsat[0][i]
            ang = Thet[qq]-img_angle
            if chatter>4: 
-              print 'plotting annulus number ',qq
-	      print 'angle = ',ang 
+              print('plotting annulus number ',qq)
+              print('angle = ',ang) 
            Ellipse( (X[qq],Y[qq]), (ann_size, ann_size), ang, lw=1, color=color )
-	 
+         
    if lmap: 
    # create a truth map for the image excluding the ellipses
       mapimg = ones(img_size, dtype=bool) 
       
       if nq == 0:
          if chatter > 1:
-	    print 'no zeroth orders to put on map. mapimg.shape = ',mapimg.shape
+            print('no zeroth orders to put on map. mapimg.shape = ',mapimg.shape)
          return mapimg
 
       else:
@@ -260,8 +266,8 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
             qq = qsat[0][i]
             x,y,a,b,th = X[qq],Y[qq], ann_size, ann_size, Thet[qq]-img_angle 
             mapimg = maskEllipse(mapimg, x,y,a,b,th)
-	    if chatter > 1: print "masked bright source annulus at position [",x,",",y,"]"
-	 		
+            if chatter > 1: print("masked bright source annulus at position [",x,",",y,"]")
+                        
       return mapimg    
 
 
@@ -288,20 +294,20 @@ def maskEllipse(maskimg, x,y,a,b,theta, test=0, chatter=1):
    
    note
    ----
-    x and y , a and b are interchanged 	  
+    x and y , a and b are interchanged    
    '''
    from numpy import sin, cos, abs, arange, ones, where, outer, asarray, pi
    
    maskimg = asarray(maskimg)
-   ca = 1./(a*a)
-   cb = 1./(b*b)
+   ca = old_div(1.,(a*a))
+   cb = old_div(1.,(b*b))
    th = theta / 180. * pi
    m11 = cos(th)
    m12 = sin(th)
    m21 = -sin(th)
    m22 = cos(th)
-	  # locate coordinates (xmin, ymin) (xmax, ymax)
-	  # and operate on the subset 
+          # locate coordinates (xmin, ymin) (xmax, ymax)
+          # and operate on the subset 
    xmin, xmax = x-abs(a), x+abs(a)+1
    ymin, ymax = y-abs(a), y+abs(a)+1
    x8,x9 = xmin, xmax
@@ -325,20 +331,20 @@ def maskEllipse(maskimg, x,y,a,b,theta, test=0, chatter=1):
           zx = m11*x1+m12*y1
           zy = m21*x1+m22*y1
           maskimg[where(ca*zx*zx+cb*zy*zy <= 1.0)] = False
-   if chatter > 2:	    
-      print 'center (',x,',',y,')'
-      print 'ellipse a = ',a,'  b = ',b,'    theta = ',theta
-      print ca,cb,m11,m12,m21,m22
-      print xmin,xmax,ymin,ymax
-      print x8,x9,y8,y9
-      print subimsize
-      print x7
-      print y7
-      print x1,y1
-      print maskimg.shape
+   if chatter > 2:          
+      print('center (',x,',',y,')')
+      print('ellipse a = ',a,'  b = ',b,'    theta = ',theta)
+      print(ca,cb,m11,m12,m21,m22)
+      print(xmin,xmax,ymin,ymax)
+      print(x8,x9,y8,y9)
+      print(subimsize)
+      print(x7)
+      print(y7)
+      print(x1,y1)
+      print(maskimg.shape)
    return maskimg
-	  
-def Ellipse((x,y), (rx, ry), angle=0.0, resolution=200,  **kwargs):
+          
+def Ellipse(xxx_todo_changeme, xxx_todo_changeme1, angle=0.0, resolution=200,  **kwargs):
     ''' 
     plot an ellipse using an N-sided polygon 
     
@@ -362,6 +368,8 @@ def Ellipse((x,y), (rx, ry), angle=0.0, resolution=200,  **kwargs):
     ----
     Can only plot one ellipse at a time.
     '''
+    (x,y) = xxx_todo_changeme
+    (rx, ry) = xxx_todo_changeme1
     from numpy import arange, cos, sin, pi
     from matplotlib.pylab import plot
     from uvotmisc import uvotrotvec
@@ -374,7 +382,7 @@ def Ellipse((x,y), (rx, ry), angle=0.0, resolution=200,  **kwargs):
     if angle != 0.0:
         xs, ys = uvotrotvec(xs,ys,angle)
     xs += x
-    ys += y	
+    ys += y     
     return plot(xs,ys,'-', **kwargs)
    
 
@@ -493,7 +501,7 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
    dcoef = polyfit(wave_obs,pix_obs,order)
    doff=polyval(dcoef,ref_wave)
    pix_obs = pix_obs - doff
-   print "fit through observations pixel position of anchor = ",doff
+   print("fit through observations pixel position of anchor = ",doff)
    
    n1, n2 = len(pix_obs), len(pix_zmx)
    pix1 = N.zeros( (n1+n2) )
@@ -513,14 +521,14 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
    if acc == None:
       wave_off = (wave_obs-polyval(disp_coef, pix_obs+doff) )
       acc = wave_off.std()
-      print ' initial acc (all points) = ',acc 
+      print(' initial acc (all points) = ',acc) 
       # remove outlyers
       q_in = N.where(abs(wave_off-zo) < 3.* acc)
       acc = (wave_off[q_in]).std()
-      print ' after removing outliers: acc = ', acc 
-      print 'accuracy of the fit = ',acc, ' angstrom'
-   stracc =    str(((10*acc+0.5).__int__())/10.) +'$\AA$'
-   zero_offset = ((10*zero_offset+0.5).__int__())/10.
+      print(' after removing outliers: acc = ', acc) 
+      print('accuracy of the fit = ',acc, ' angstrom')
+   stracc =    str(old_div(((10*acc+0.5).__int__()),10.)) +'$\AA$'
+   zero_offset = old_div(((10*zero_offset+0.5).__int__()),10.)
    txt = '<$\Delta\lambda$> = '+str(zero_offset)+'$\AA\ \ \ \sigma_{observed-model}$ = '+stracc
 
    figure( num=figureno )
@@ -586,7 +594,7 @@ def make_spec_plot(nspec=10, parmfile='plotparm.par',wheelpos=160):
    plines = f.readlines()
    f.close()
    nfig = len(plines)
-   nplot = (nfig+1)/nspec
+   nplot = old_div((nfig+1),nspec)
    pwd = os.getcwd()
    NN = nspec*3000
    if wheelpos == 160: clocked = True
@@ -599,68 +607,68 @@ def make_spec_plot(nspec=10, parmfile='plotparm.par',wheelpos=160):
       id  = N.empty(nspec,dtype='|S40')
       nsubplot = 0
       for kf in range(nspec):   # process the data
-         print 'length list ' , len(xwa), len(xsp)
+         print('length list ' , len(xwa), len(xsp))
          nfig -= 1  
-	 if nfig < 0: break
-	 nsubplot += 1
+         if nfig < 0: break
+         nsubplot += 1
          k = kf+nspec*kp  # specific plot
-	 dir_,filestub,ra,dec,ext1,lfilt1,ext2,filt2,wpixscale,spextwid = (plines[k]).split(',')
-	 ra = float(ra)
-	 dec = float(dec)
-	 print "procesing: ",dir_,filestub,ra,dec,ext1,lfilt1,ext2,filt2,wpixscale,spextwid
-	 print "filestub = ", filestub
-	 print "extension= ", ext1
-	 print "width spectral extraction = ",spextwid
-	 print "changing directory . . ."
-	 os.chdir(dir_)
-	 print "new directory = ", os.getcwd()
-	 print "processing figure ",k," . . . "
-	 if filt2 == "None" : filt2 = None
-	 out = uvotgetspec.getSpec(ra,dec,filestub,int(ext1),lfilter=lfilt1, lfilt2=filt2,chatter=1,lfilt2_ext=int(ext2), spextwidth=int(spextwid), clocked=clocked)    
-	 ( (dis, spnet, angle, anker, anker2, anker_field, ank_c), \
+         dir_,filestub,ra,dec,ext1,lfilt1,ext2,filt2,wpixscale,spextwid = (plines[k]).split(',')
+         ra = float(ra)
+         dec = float(dec)
+         print("procesing: ",dir_,filestub,ra,dec,ext1,lfilt1,ext2,filt2,wpixscale,spextwid)
+         print("filestub = ", filestub)
+         print("extension= ", ext1)
+         print("width spectral extraction = ",spextwid)
+         print("changing directory . . .")
+         os.chdir(dir_)
+         print("new directory = ", os.getcwd())
+         print("processing figure ",k," . . . ")
+         if filt2 == "None" : filt2 = None
+         out = uvotgetspec.getSpec(ra,dec,filestub,int(ext1),lfilter=lfilt1, lfilt2=filt2,chatter=1,lfilt2_ext=int(ext2), spextwidth=int(spextwid), clocked=clocked)    
+         ( (dis, spnet, angle, anker, anker2, anker_field, ank_c), \
             (bg, bg1, bg2, extimg, spimg, spnetimg, offset) , \
             (C_1,C_2, img, H_lines, WC_lines), hdr ) = out
-	 exposure = hdr['EXPOSURE']   
-	 pos = ank_c[1]   # anchor in extracted image
-	 ll = max( (pos-350,0) )  
-	 #ul = min( (pos+1900, len(dis)-pos) ) 
-	 print 'ul' , (pos+1900, len(dis))
-	 ul = pos+1900        
-	 print "exposure time = ", exposure
-	 print "spectrum pixel range = ",ll," -- ",ul
-	 print "saving spectrum . . . number ", kf 
-	 wav = (polyval(C_1,dis[ll:ul]))
-	 spe = (spnet[ll:ul])
-	 speclen[kf] = len(wav)
-	 figure(4+kp); plot(wav,spe/exposure); xlim(1700,6500)
-	 xsp[:speclen[kf],kf]  = spe/exposure 
-	 xwa[:speclen[kf],kf]  = wav
-	 texp[kf] = exposure
-	 id[kf] = filestub+'['+str(ext1)+']'
+         exposure = hdr['EXPOSURE']   
+         pos = ank_c[1]   # anchor in extracted image
+         ll = max( (pos-350,0) )  
+         #ul = min( (pos+1900, len(dis)-pos) ) 
+         print('ul' , (pos+1900, len(dis)))
+         ul = pos+1900        
+         print("exposure time = ", exposure)
+         print("spectrum pixel range = ",ll," -- ",ul)
+         print("saving spectrum . . . number ", kf) 
+         wav = (polyval(C_1,dis[ll:ul]))
+         spe = (spnet[ll:ul])
+         speclen[kf] = len(wav)
+         figure(4+kp); plot(wav,old_div(spe,exposure)); xlim(1700,6500)
+         xsp[:speclen[kf],kf]  = old_div(spe,exposure) 
+         xwa[:speclen[kf],kf]  = wav
+         texp[kf] = exposure
+         id[kf] = filestub+'['+str(ext1)+']'
          #
       # calculate # plots left
       grid
       xlim(1750,6500)
-      ylim(0,8)	         
+      ylim(0,8)          
       savefig('/Volumes/users/Users/kuin/caldata/specplot_sums'+str(kp)+'.png')
       spmax = 0.7*xsp.max()
-      print "plotting spectra . . ."
+      print("plotting spectra . . .")
       clf()
       for kf in range(nsubplot):   # make the plots
          subplot(nspec,1,kf)
          #k = kf+nspec*kp  ; specific plot
-	 #
-	 wl = xwa[:speclen[kf],kf]
-	 sp = xsp[:speclen[kf],kf]
-	 texpo = texp[kf]
-	 plot(wl, sp, 'k', ls='steps') 
-	 xlim(1700,6000)
-	 ylim(0,spmax)
-	 #
+         #
+         wl = xwa[:speclen[kf],kf]
+         sp = xsp[:speclen[kf],kf]
+         texpo = texp[kf]
+         plot(wl, sp, 'k', ls='steps') 
+         xlim(1700,6000)
+         ylim(0,spmax)
+         #
          text(1800,0.85*spmax,id[kf]+' '+str(texp[kf])+'s')
          grid
       xlabel('wavelength')
-      ylabel('countrate')	 
+      ylabel('countrate')        
       savefig('/Volumes/users/Users/kuin/caldata/specplot_'+str(kp)+'.png')
       # perhaps make here a summed spectrum
    os.chdir(pwd)

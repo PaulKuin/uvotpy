@@ -3,7 +3,11 @@
 '''
    These are some general purpose routines
 '''
+from __future__ import division
+from __future__ import print_function
 # Developed by N.P.M. Kuin (MSSL/UCL)
+from builtins import range
+from past.utils import old_div
 __version__ = '20140501-0.5.0'
 
 import numpy as N
@@ -47,7 +51,7 @@ def rdTab(file, symb=' ', commentsymb='#',get_comments=False):
       comments = []
       for line in l:
          if line[0] == commentsymb:
-	    comments.append(line)
+            comments.append(line)
       return comments  
    ni = list(l)
    k = 0
@@ -70,7 +74,7 @@ def rdTab(file, symb=' ', commentsymb='#',get_comments=False):
       if symb != ' ': 
          xx = l[i].split(symb)
       else: 
-         xx = l[i].split()	  
+         xx = l[i].split()        
       if len(xx) == nc: 
          data[j,:] = N.array(xx)
          j += 1
@@ -123,10 +127,10 @@ def rdList(file, symb=' ',chatter=0,line1=None,line2=None,skip='#'):
    for i in range(ngood): 
      if symb == ' ':
         k = l[q[i]].split()
-     else:	
+     else:      
         k = l[q[i]].split(symb)
      out.append( k )
-     if chatter > 4: print 'rdList: ',i,' - ',k 
+     if chatter > 4: print('rdList: ',i,' - ',k) 
    return out
 
 def uvotrotvec(X, Y, theta):
@@ -173,15 +177,15 @@ def bilinear1(x1,x2,x1a,x2a,f,chatter=0):
    
    requirement: x1a[i] is increasing with i 
                 x2a[j] is increasing with j
-		
-		**BROKEN**: need to search for 4 points around x1,y1, then 
-		interpolate just in those 4 points. Interp2d should do 
-		the same. Now the indexing doesnot work right.
+                
+                **BROKEN**: need to search for 4 points around x1,y1, then 
+                interpolate just in those 4 points. Interp2d should do 
+                the same. Now the indexing doesnot work right.
 
    No special treatment to handle points near the borders 
-     (see uvotgrism.bilinear)		
-		
-   20080826 NPMK		
+     (see uvotgrism.bilinear)           
+                
+   20080826 NPMK                
    '''
    import numpy as np
    # check that the arrays are numpy arrays 
@@ -191,7 +195,7 @@ def bilinear1(x1,x2,x1a,x2a,f,chatter=0):
    ki = x1a.searchsorted(x1)-1
    kj = x2a.searchsorted(x2)-1
    if ((ki+1 >= len(x1a)) ^ (kj+1 >= len(x2a)) ^ (ki < 0) ^ (kj < 0) ):
-      print 'bilinear. point outside grid x - nearest neighbor '
+      print('bilinear. point outside grid x - nearest neighbor ')
       if ki + 1 > len(x1a) : ki = len(x1a) - 1
       if ki < 0 : ki = 0
       if kj + 1 > len(x2a) : kj = len(x2a) - 1
@@ -203,18 +207,18 @@ def bilinear1(x1,x2,x1a,x2a,f,chatter=0):
    y3 = f[ki+1,kj+1]
    y4 = f[ki  ,kj+1]
    # 
-   t = (x1 - x1a[ki])/(x1a[ki+1]-x1a[ki])
-   u = (x2 - x2a[kj])/(x2a[kj+1]-x2a[kj])
+   t = old_div((x1 - x1a[ki]),(x1a[ki+1]-x1a[ki]))
+   u = old_div((x2 - x2a[kj]),(x2a[kj+1]-x2a[kj]))
    #
    y = (1.-t)*(1.-u)*y1 + t*(1.-u)*y2 + t*u*y3 + (1.-t)*u*y4
    if chatter > 1: 
-      print 'bilinear.                   x         y          f[x,y]    '
-      print 'bilinear.   first  point ',x1a[ki  ],x2a[kj],  f[ki,kj]
-      print 'bilinear.   second point ',x1a[ki+1],x2a[kj],  f[ki+1,kj]
-      print 'bilinear.   third  point ',x1a[ki+1],x2a[kj+1],  f[ki+1,kj+1]
-      print 'bilinear.   fourth point ',x1a[ki  ],x2a[kj+1],  f[ki,kj+1]
-      print 'bilinear. fractions t, u ', t, u
-      print 'bilinear. interpolate at ', x1, x2, y
+      print('bilinear.                   x         y          f[x,y]    ')
+      print('bilinear.   first  point ',x1a[ki  ],x2a[kj],  f[ki,kj])
+      print('bilinear.   second point ',x1a[ki+1],x2a[kj],  f[ki+1,kj])
+      print('bilinear.   third  point ',x1a[ki+1],x2a[kj+1],  f[ki+1,kj+1])
+      print('bilinear.   fourth point ',x1a[ki  ],x2a[kj+1],  f[ki,kj+1])
+      print('bilinear. fractions t, u ', t, u)
+      print('bilinear. interpolate at ', x1, x2, y)
    return y    
    
 
@@ -277,7 +281,7 @@ def hydrogenlines(dis_zmx,wav_zmx,xpix,ypix,wave,
       lines = H_lines,
       c_offset = c_offset, 
       order = order, wheelpos=wheelpos)
-	    
+            
 def WC_zemaxlines(dis_zmx,wav_zmx,xpix,ypix,wave, 
       wpixscale=0.960, 
       cpixscale = 1.0,
@@ -339,10 +343,10 @@ def WC_zemaxlines(dis_zmx,wav_zmx,xpix,ypix,wave,
     
     # find scaled position (add position anker back in)
     xplines = N.polyval(cx,lines) + xa
-    yplines = N.polyval(cy,lines)	+ ya
+    yplines = N.polyval(cy,lines)       + ya
     
     return (xplines, yplines, dislines, lines)    
-	   
+           
 def get_keyword_from_history(hist,key):
    '''Utility to get the keyword from the history list.
    
@@ -367,7 +371,7 @@ def get_keyword_from_history(hist,key):
    for h in hist:
       if h[0:n] == key1:
          return h.split('=')[1]
-   else: return None	
+   else: return None    
    
 def GaussianHalfIntegralFraction(x):
    ''' 
@@ -379,12 +383,12 @@ def GaussianHalfIntegralFraction(x):
    Abramowitz & Stegun, par. 26.2 
    '''
    import numpy as np    
-   Z_x = np.exp( -x*x/2.) / np.sqrt(2.* np.pi)
+   Z_x = old_div(np.exp( -x*x/2.), np.sqrt(2.* np.pi))
    p = .33267
    a1 =  .4361836
    a2 = -.1201676
    a3 =  .9372980
-   t = 1./(1.+p*x)
+   t = old_div(1.,(1.+p*x))
    P_x = 1. - Z_x * t* (a1 + t*(a2 + a3*t) ) 
    A_x = 2.*P_x - 1
    return  A_x  
@@ -431,7 +435,7 @@ def swtime2JD(TSTART,useFtool=False):
       import os
       from numpy.random import rand
       delt,status = swclockcorr(TSTART)
-      if not status: print "approximate time correction "
+      if not status: print("approximate time correction ")
       return swtime2JD(TSTART+delt,useFtool=False)
    else:
       import numpy as np
@@ -439,8 +443,8 @@ def swtime2JD(TSTART,useFtool=False):
       # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
       swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
       gregorian = swzero_datetime + delt
-      MJD = np.double(51910.0) + TSTART/(24.*3600)
-      JD = np.double(2451910.5) + TSTART/(24.*3600)
+      MJD = np.double(51910.0) + old_div(TSTART,(24.*3600))
+      JD = np.double(2451910.5) + old_div(TSTART,(24.*3600))
       outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 
@@ -449,14 +453,14 @@ def JD2swift(JD):
    return (JD - np.double(2451910.5))*(86400.0)
 
 def swift2JD(tswift):
-   return tswift/86400.0  + 2451910.5
+   return old_div(tswift,86400.0)  + 2451910.5
    
 def MJD2swift(MJD):   
    import numpy as np
    return (MJD - np.double(51910.0))*(86400.0)
    
 def swift2MJD(tswift):
-   return tswift/86400.0  + 51910.0
+   return old_div(tswift,86400.0)  + 51910.0
    
 
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
@@ -483,12 +487,12 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''
    import datetime
    import numpy as np
-   if chatter > 1: print year, type(year), month, type(month), day,type(day), hour,type(hour), minute, type(minute), second, type(second), millisecond, type(millisecond)
+   if chatter > 1: print(year, type(year), month, type(month), day,type(day), hour,type(hour), minute, type(minute), second, type(second), millisecond, type(millisecond))
    swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
    if type(month) == str:
       defmonths={'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12} 
       imon = defmonths[month.upper()]   
-      if chatter > 1: print imon, type(imon)
+      if chatter > 1: print(imon, type(imon))
    else: imon = month   
    xx = datetime.datetime(year,imon,day,hour,minute,second,millisecond*1000)  
    xdiff = xx-swzero_datetime
@@ -543,7 +547,7 @@ def swclockcorr(met):
     if np.sum(k) != 1: 
         return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), False
 
-    t1 = (met - x['tstart'][k])/86400.0
+    t1 = old_div((met - x['tstart'][k]),86400.0)
     tcorr = x['toffset'][k] + ( x['C0'][k] + 
        x['C1'][k]*t1 + x['C2'][k]*t1*t1)*1.0e-6
     xx.close()
@@ -563,18 +567,18 @@ def get_dispersion_from_header(header,order=1):
       try:
          coef = get_keyword_from_history(hist,'DISP'+n+'_2')
          if coef != None: C.append(coef)
-	 try:
-	    coef = get_keyword_from_history(hist,'DISP'+n+'_3')
-	    if coef != None: C.append(coef)
-	    try:
-	       coef=get_keyword_from_history(hist,'DISP'+n+'_4')
-	       if coef != None: C.append(coef)
-	    except:
-	       pass
-	 except:
-	    pass   
+         try:
+            coef = get_keyword_from_history(hist,'DISP'+n+'_3')
+            if coef != None: C.append(coef)
+            try:
+               coef=get_keyword_from_history(hist,'DISP'+n+'_4')
+               if coef != None: C.append(coef)
+            except:
+               pass
+         except:
+            pass   
       except:
-         pass	 
+         pass    
    except:
       pass   
    return np.array(C,dtype=float)
@@ -590,19 +594,19 @@ def get_sigCoef(header,order=1):
       if coef != None: SIG1.append(coef)
       try:
          coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_2')
-	 if coef != None: SIG1.append(coef)
-	 try:
-	    coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_3')
-	    if coef != None: SIG1.append(coef)
-	    try:
-	       coef = get_keyword_from_history(hist,'SIGCOEF'+n+'_4')
-	       if coef != None: SIG1.append(coef)
-	    except:
-	       pass
-	 except:
-	    pass   
+         if coef != None: SIG1.append(coef)
+         try:
+            coef=get_keyword_from_history(hist,'SIGCOEF'+n+'_3')
+            if coef != None: SIG1.append(coef)
+            try:
+               coef = get_keyword_from_history(hist,'SIGCOEF'+n+'_4')
+               if coef != None: SIG1.append(coef)
+            except:
+               pass
+         except:
+            pass   
       except:
-         pass	 
+         pass    
    except:
       pass   
    return np.array(SIG1,dtype=float)
@@ -618,19 +622,19 @@ def get_curvatureCoef(header,order=1):
       if coef != None: CURVE.append(coef)
       try:
          coef=get_keyword_from_history(hist,'COEF'+n+'_2')
-	 if coef != None: CURVE.append(coef)
-	 try:
-	    coef=get_keyword_from_history(hist,'COEF'+n+'_3')
-	    if coef != None: CURVE.append(coef)
-	    try:
-	       coef = get_keyword_from_history(hist,'COEF'+n+'_4')
-	       if coef != None: CURVE.append(coef)
-	    except:
-	       pass
-	 except:
-	    pass   
+         if coef != None: CURVE.append(coef)
+         try:
+            coef=get_keyword_from_history(hist,'COEF'+n+'_3')
+            if coef != None: CURVE.append(coef)
+            try:
+               coef = get_keyword_from_history(hist,'COEF'+n+'_4')
+               if coef != None: CURVE.append(coef)
+            except:
+               pass
+         except:
+            pass   
       except:
-         pass	 
+         pass    
    except:
       pass   
    return np.array(CURVE,dtype=float)
@@ -664,60 +668,60 @@ def parse_DS9regionfile(file,chatter=0):
       wcs = 'wcs'
       r = f[3].split("\n")[0].split(":")
       if len(r) > 1:  # other coordinate system definition 
-         wcs = r[1]			    	 
+         wcs = r[1]                              
    except:
-     print "Error reading region file : ",file
+     print("Error reading region file : ",file)
    try: 
      r = f[4].split("\n")[0]
      if chatter > 3: 
-        print "line# 4",r
+        print("line# 4",r)
      if r[0:4].upper() == "WCS":
         wcs = r
      elif len(r) == 0:
-        do_nothing = True	
+        do_nothing = True       
      elif r.split("(")[0] == "circle" :
         signs.append("+")
-     	boxtype.append("circle")
-	values = r.split("(")[0].split(")")[0].split(",")
-	position.append(values[0:2])
-	box.append(values[2:])
+        boxtype.append("circle")
+        values = r.split("(")[0].split(")")[0].split(",")
+        position.append(values[0:2])
+        box.append(values[2:])
      elif r.split("(")[0] == "-circle" :
         signs.append("-")
-     	boxtype.append("circle")
-	values = r.split("(")[0].split(")")[0].split(",")
-	position.append(values[0:2])
-	box.append(values[2:])	
+        boxtype.append("circle")
+        values = r.split("(")[0].split(")")[0].split(",")
+        position.append(values[0:2])
+        box.append(values[2:])  
      else:
-        print "problem with unknown region type - update _parse_DS9regionfile() "
-	 	
+        print("problem with unknown region type - update _parse_DS9regionfile() ")
+                
    except:
-     print "problem reading end header region file "   
+     print("problem reading end header region file ")   
    
    for k in range(5,len(f)):
      try:
         r = f[k].split("\n")[0]
-	if chatter > 3:
-	   print "line# ",k,' line=',r
+        if chatter > 3:
+           print("line# ",k,' line=',r)
         elif r == "\n":
            continue
         elif r.split("(")[0] == "circle" :
            signs.append("+")
-     	   boxtype.append("circle")
+           boxtype.append("circle")
            values = r.split("(")[1].split(")")[0].split(",")
-	   position.append(values[0:2])
-	   box.append(values[2:])
+           position.append(values[0:2])
+           box.append(values[2:])
         elif r.split("(")[0] == "-circle" :
            signs.append("-")
-     	   boxtype.append("circle")
-	   values = r.split("(")[1].split(")")[0].split(",")
-	   position.append(values[0:2])
-	   box.append(values[2:])	
+           boxtype.append("circle")
+           values = r.split("(")[1].split(")")[0].split(",")
+           position.append(values[0:2])
+           box.append(values[2:])       
         else:
-           print "problem with unknown region type - update _parse_DS9regionfile() "
-	 	
+           print("problem with unknown region type - update _parse_DS9regionfile() ")
+                
      except:
-        print "problem reading region record number = ",k
-     	
+        print("problem reading region record number = ",k)
+        
    return (version,filename,epoch,wcs),(signs,boxtype,position,box)
 
 
@@ -750,19 +754,19 @@ def encircled_energy(uvotfilter, areapix):
    if uvotfilter == 'wh': uvotfilter = 'white'
    command="quzcif swift uvota - "+uvotfilter.upper()+\
            " REEF 2009-10-30 12:00:00 - > quzcif.out"
-   print command	   
+   print(command)          
    if not os.system(command):
-      print "not " +command	   
+      print("not " +command)       
    f = open("quzcif.out")
    reeffile, ext = f.read().split()
    ext = int(ext)
    f.close()
    os.system("rm -f quzcif.out")
-   print reeffile, ext
+   print(reeffile, ext)
    f = fits.getdata(reeffile,ext)
    r = f['radius'] # in arc sec
    E = f['reef'] 
-   x = sqrt(areapix/pi)*0.502 # lookup radius
+   x = sqrt(old_div(areapix,pi))*0.502 # lookup radius
    f = interp1d(r,E)
    return f(x)
    
@@ -812,7 +816,7 @@ def polyfit_with_fixed_points(n, x, y, xf, yf):
     idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
     mat[:n + 1, :n + 1] = np.take(x_n, idx)
     xf_n = xf**np.arange(n + 1)[:, None]
-    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[:n + 1, n + 1:] = old_div(xf_n, 2)
     mat[n + 1:, :n + 1] = xf_n.T
     mat[n + 1:, n + 1:] = 0
     vec[:n + 1] = yx_n

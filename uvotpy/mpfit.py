@@ -441,7 +441,13 @@ Perform Levenberg-Marquardt least-squares minimization, based on MINPACK-1.
    August, 2002.  Mark Rivers
    Converted from Numeric to numpy (Sergey Koposov, July 2008)
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import numpy
 import types
 import scipy.linalg.blas
@@ -628,7 +634,7 @@ import scipy.linalg.blas
 #
 #	 **********
 
-class mpfit:
+class mpfit(object):
 
 	blas_enorm32, = scipy.linalg.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float32))
 	blas_enorm64, = scipy.linalg.blas.get_blas_funcs(['nrm2'],numpy.array([0],dtype=numpy.float64))
@@ -906,11 +912,11 @@ class mpfit:
 
 		# Be sure that PARINFO is of the right type
 		if parinfo is not None:
-			if type(parinfo) != types.ListType:
+			if type(parinfo) != list:
 				self.errmsg = 'ERROR: PARINFO must be a list of dictionaries.'
 				return
 			else:
-				if type(parinfo[0]) != types.DictionaryType:
+				if type(parinfo[0]) != dict:
 					self.errmsg = 'ERROR: PARINFO must be a list of dictionaries.'
 					return
 			if ((xall is not None) and (len(xall) != len(parinfo))):
@@ -1177,8 +1183,8 @@ class mpfit:
 				for j in range(n):
 					l = ipvt[j]
 					if wa2[l] != 0:
-						sum0 = sum(fjac[0:j+1,j]*qtf[0:j+1])/self.fnorm
-						gnorm = numpy.max([gnorm,numpy.abs(sum0/wa2[l])])
+						sum0 = old_div(sum(fjac[0:j+1,j]*qtf[0:j+1]),self.fnorm)
+						gnorm = numpy.max([gnorm,numpy.abs(old_div(sum0,wa2[l]))])
 
 			# Test for convergence of the gradient norm
 			if gnorm <= gtol:
@@ -1224,13 +1230,13 @@ class mpfit:
 						dwa1 = numpy.abs(wa1) > machep
 						whl = (numpy.nonzero(((dwa1!=0.) & qllim) & ((x + wa1) < llim)))[0]
 						if len(whl) > 0:
-							t = ((llim[whl] - x[whl]) /
-								  wa1[whl])
+							t = (old_div((llim[whl] - x[whl]),
+								  wa1[whl]))
 							alpha = numpy.min([alpha, numpy.min(t)])
 						whu = (numpy.nonzero(((dwa1!=0.) & qulim) & ((x + wa1) > ulim)))[0]
 						if len(whu) > 0:
-							t = ((ulim[whu] - x[whu]) /
-								  wa1[whu])
+							t = (old_div((ulim[whu] - x[whu]),
+								  wa1[whu]))
 							alpha = numpy.min([alpha, numpy.min(t)])
 
 					# Obey any max step values.
@@ -1238,10 +1244,10 @@ class mpfit:
 						nwa1 = wa1 * alpha
 						whmax = (numpy.nonzero((qmax != 0.) & (maxstep > 0)))[0]
 						if len(whmax) > 0:
-							mrat = numpy.max(numpy.abs(nwa1[whmax]) /
-									   numpy.abs(maxstep[ifree[whmax]]))
+							mrat = numpy.max(old_div(numpy.abs(nwa1[whmax]),
+									   numpy.abs(maxstep[ifree[whmax]])))
 							if mrat > 1:
-								alpha = alpha / mrat
+								alpha = old_div(alpha, mrat)
 
 					# Scale the resulting vector
 					wa1 = wa1 * alpha
@@ -1284,7 +1290,7 @@ class mpfit:
 				catch_msg = 'computing convergence criteria'
 				actred = -1.
 				if (0.1 * fnorm1) < self.fnorm:
-					actred = - (fnorm1/self.fnorm)**2 + 1.
+					actred = - (old_div(fnorm1,self.fnorm))**2 + 1.
 
 				# Compute the scaled predicted reduction and the scaled directional
 				# derivative
@@ -1294,15 +1300,15 @@ class mpfit:
 
 				# Remember, alpha is the fraction of the full LM step actually
 				# taken
-				temp1 = self.enorm(alpha*wa3)/self.fnorm
-				temp2 = (numpy.sqrt(alpha*par)*pnorm)/self.fnorm
-				prered = temp1*temp1 + (temp2*temp2)/0.5
+				temp1 = old_div(self.enorm(alpha*wa3),self.fnorm)
+				temp2 = old_div((numpy.sqrt(alpha*par)*pnorm),self.fnorm)
+				prered = temp1*temp1 + old_div((temp2*temp2),0.5)
 				dirder = -(temp1*temp1 + temp2*temp2)
 				
 				# Compute the ratio of the actual to the predicted reduction.
 				ratio = 0.
 				if prered != 0:
-					ratio = actred/prered
+					ratio = old_div(actred,prered)
 
 				# Update the step bound
 				if ratio <= 0.25:
@@ -1312,11 +1318,11 @@ class mpfit:
 						temp = .5*dirder/(dirder + .5*actred)
 					if ((0.1*fnorm1) >= self.fnorm) or (temp < 0.1):
 						temp = 0.1
-					delta = temp*numpy.min([delta,pnorm/0.1])
-					par = par/temp
+					delta = temp*numpy.min([delta,old_div(pnorm,0.1)])
+					par = old_div(par,temp)
 				else:
 					if (par == 0) or (ratio >= 0.75):
-						delta = pnorm/.5
+						delta = old_div(pnorm,.5)
 						par = .5*par
 
 				# Test for successful iteration
@@ -1441,7 +1447,7 @@ class mpfit:
 					   format=None, pformat='%.10g', dof=1):
 
 		if self.debug:
-			print 'Entering defiter...'
+			print('Entering defiter...')
 		if quiet:
 			return
 		if fnorm is None:
@@ -1450,18 +1456,18 @@ class mpfit:
 
 		# Determine which parameters to print
 		nprint = len(x)
-		print "Iter ", ('%6i' % iter),"   CHI-SQUARE = ",('%.10g' % fnorm)," DOF = ", ('%i' % dof)
+		print("Iter ", ('%6i' % iter),"   CHI-SQUARE = ",('%.10g' % fnorm)," DOF = ", ('%i' % dof))
 		for i in range(nprint):
-			if (parinfo is not None) and (parinfo[i].has_key('parname')):
+			if (parinfo is not None) and ('parname' in parinfo[i]):
 				p = '   ' + parinfo[i]['parname'] + ' = '
 			else:
 				p = '   P' + str(i) + ' = '
-			if (parinfo is not None) and (parinfo[i].has_key('mpprint')):
+			if (parinfo is not None) and ('mpprint' in parinfo[i]):
 				iprint = parinfo[i]['mpprint']
 			else:
 				iprint = 1
 			if iprint:
-				print p + (pformat % x[i]) + '  '
+				print(p + (pformat % x[i]) + '  ')
 		return 0
 
 	#  DO_ITERSTOP:
@@ -1484,7 +1490,7 @@ class mpfit:
 	# Procedure to parse the parameter values in PARINFO, which is a list of dictionaries
 	def parinfo(self, parinfo=None, key='a', default=None, n=0):
 		if self.debug:
-			print 'Entering parinfo...'
+			print('Entering parinfo...')
 		if (n == 0) and (parinfo is not None):
 			n = len(parinfo)
 		if n == 0:
@@ -1493,18 +1499,18 @@ class mpfit:
 			return values
 		values = []
 		for i in range(n):
-			if (parinfo is not None) and (parinfo[i].has_key(key)):
+			if (parinfo is not None) and (key in parinfo[i]):
 				values.append(parinfo[i][key])
 			else:
 				values.append(default)
 
 		# Convert to numeric arrays if possible
 		test = default
-		if type(default) == types.ListType:
+		if type(default) == list:
 			test=default[0]
-		if isinstance(test, types.IntType):
+		if isinstance(test, int):
 			values = numpy.asarray(values, int)
-		elif isinstance(test, types.FloatType):
+		elif isinstance(test, float):
 			values = numpy.asarray(values, float)
 		return values
 	
@@ -1512,7 +1518,7 @@ class mpfit:
 	# derivatives or not.
 	def call(self, fcn, x, functkw, fjac=None):
 		if self.debug:
-			print 'Entering call...'
+			print('Entering call...')
 		if self.qanytied:
 			x = self.tie(x, self.ptied)
 		self.nfev = self.nfev + 1
@@ -1522,7 +1528,7 @@ class mpfit:
 				# Apply the damping if requested.  This replaces the residuals
 				# with their hyperbolic tangent.  Thus residuals larger than
 				# DAMP are essentially clipped.
-				f = numpy.tanh(f/self.damp)
+				f = numpy.tanh(old_div(f,self.damp))
 			return [status, f]
 		else:
 			return fcn(x, fjac=fjac, **functkw)
@@ -1538,7 +1544,7 @@ class mpfit:
 			   functkw=None, xall=None, ifree=None, dstep=None):
 
 		if self.debug:
-			print 'Entering fdjac2...'
+			print('Entering fdjac2...')
 		machep = self.machar.machep
 		if epsfcn is None:
 			epsfcn = machep
@@ -1562,7 +1568,7 @@ class mpfit:
 			[status, fp] = self.call(fcn, xall, functkw, fjac=fjac)
 
 			if len(fjac) != m*nall:
-				print 'ERROR: Derivative matrix was not computed properly.'
+				print('ERROR: Derivative matrix was not computed properly.')
 				return None
 
 			# This definition is consistent with CURVEFIT
@@ -1620,7 +1626,7 @@ class mpfit:
 			if numpy.abs(dside[ifree[j]]) <= 1:
 				# COMPUTE THE ONE-SIDED DERIVATIVE
 				# Note optimization fjac(0:*,j)
-				fjac[0:,j] = (fp-fvec)/h[j]
+				fjac[0:,j] = old_div((fp-fvec),h[j])
 
 			else:
 				# COMPUTE THE TWO-SIDED DERIVATIVE
@@ -1632,7 +1638,7 @@ class mpfit:
 					return None
 
 				# Note optimization fjac(0:*,j)
-				fjac[0:,j] = (fp-fm)/(2*h[j])
+				fjac[0:,j] = old_div((fp-fm),(2*h[j]))
 		return fjac
 	
 	
@@ -1771,7 +1777,7 @@ class mpfit:
 
 	def qrfac(self, a, pivot=0):
 
-		if self.debug: print 'Entering qrfac...'
+		if self.debug: print('Entering qrfac...')
 		machep = self.machar.machep
 		sz = a.shape
 		m = sz[0]
@@ -1816,7 +1822,7 @@ class mpfit:
 			if a[j,lj] < 0:
 				ajnorm = -ajnorm
 
-			ajj = ajj / ajnorm
+			ajj = old_div(ajj, ajnorm)
 			ajj[0] = ajj[0] + 1
 			# *** Note optimization a(j:*,j)
 			a[j:,lj] = ajj
@@ -1836,9 +1842,9 @@ class mpfit:
 					if a[j,lj] != 0:
 						a[j:,lk] = ajk - ajj * sum(ajk*ajj)/a[j,lj]
 						if (pivot != 0) and (rdiag[k] != 0):
-							temp = a[j,lk]/rdiag[k]
+							temp = old_div(a[j,lk],rdiag[k])
 							rdiag[k] = rdiag[k] * numpy.sqrt(numpy.max([(1.-temp**2), 0.]))
-							temp = rdiag[k]/wa[k]
+							temp = old_div(rdiag[k],wa[k])
 							if (0.05*temp*temp) <= machep:
 								rdiag[k] = self.enorm(a[j+1:,lk])
 								wa[k] = rdiag[k]
@@ -1926,7 +1932,7 @@ class mpfit:
 	
 	def qrsolv(self, r, ipvt, diag, qtb, sdiag):
 		if self.debug:
-			print 'Entering qrsolv...'
+			print('Entering qrsolv...')
 		sz = r.shape
 		m = sz[0]
 		n = sz[1]
@@ -1956,12 +1962,12 @@ class mpfit:
 				if sdiag[k] == 0:
 					break
 				if numpy.abs(r[k,k]) < numpy.abs(sdiag[k]):
-					cotan  = r[k,k]/sdiag[k]
-					sine   = 0.5/numpy.sqrt(.25 + .25*cotan*cotan)
+					cotan  = old_div(r[k,k],sdiag[k])
+					sine   = old_div(0.5,numpy.sqrt(.25 + .25*cotan*cotan))
 					cosine = sine*cotan
 				else:
-					tang   = sdiag[k]/r[k,k]
-					cosine = 0.5/numpy.sqrt(.25 + .25*tang*tang)
+					tang   = old_div(sdiag[k],r[k,k])
+					cosine = old_div(0.5,numpy.sqrt(.25 + .25*tang*tang))
 					sine   = cosine*tang
 
 				# Compute the modified diagonal element of r and the
@@ -1988,11 +1994,11 @@ class mpfit:
 			wa[nsing:] = 0
 
 		if nsing >= 1:
-			wa[nsing-1] = wa[nsing-1]/sdiag[nsing-1] # Degenerate case
+			wa[nsing-1] = old_div(wa[nsing-1],sdiag[nsing-1]) # Degenerate case
 			# *** Reverse loop ***
 			for j in range(nsing-2,-1,-1):
 				sum0 = sum(r[j+1:nsing,j]*wa[j+1:nsing])
-				wa[j] = (wa[j]-sum0)/sdiag[j]
+				wa[j] = old_div((wa[j]-sum0),sdiag[j])
 
 		# Permute the components of z back to components of x
 		x[ipvt] = wa
@@ -2098,7 +2104,7 @@ class mpfit:
 	def lmpar(self, r, ipvt, diag, qtb, delta, x, sdiag, par=None):
 
 		if self.debug:
-			print 'Entering lmpar...'
+			print('Entering lmpar...')
 		dwarf = self.machar.minnum
 		machep = self.machar.machep
 		sz = r.shape
@@ -2117,7 +2123,7 @@ class mpfit:
 		if nsing >= 1:
 			# *** Reverse loop ***
 			for j in range(nsing-1,-1,-1):
-				wa1[j] = wa1[j]/r[j,j]
+				wa1[j] = old_div(wa1[j],r[j,j])
 				if j-1 >= 0:
 					wa1[0:j] = wa1[0:j] - r[0:j,j]*wa1[j]
 
@@ -2140,22 +2146,22 @@ class mpfit:
 		parl = 0.
 		if nsing >= n:
 			wa1 = diag[ipvt] * wa2[ipvt] / dxnorm
-			wa1[0] = wa1[0] / r[0,0] # Degenerate case
+			wa1[0] = old_div(wa1[0], r[0,0]) # Degenerate case
 			for j in range(1,n):   # Note "1" here, not zero
 				sum0 = sum(r[0:j,j]*wa1[0:j])
-				wa1[j] = (wa1[j] - sum0)/r[j,j]
+				wa1[j] = old_div((wa1[j] - sum0),r[j,j])
 
 			temp = self.enorm(wa1)
-			parl = ((fp/delta)/temp)/temp
+			parl = old_div((old_div((old_div(fp,delta)),temp)),temp)
 
 		# Calculate an upper bound, paru, for the zero of the function
 		for j in range(n):
 			sum0 = sum(r[0:j+1,j]*qtb[0:j+1])
-			wa1[j] = sum0/diag[ipvt[j]]
+			wa1[j] = old_div(sum0,diag[ipvt[j]])
 		gnorm = self.enorm(wa1)
-		paru = gnorm/delta
+		paru = old_div(gnorm,delta)
 		if paru == 0:
-			paru = dwarf/numpy.min([delta,0.1])
+			paru = old_div(dwarf,numpy.min([delta,0.1]))
 
 		# If the input par lies outside of the interval (parl,paru), set
 		# par to the closer endpoint
@@ -2163,7 +2169,7 @@ class mpfit:
 		par = numpy.max([par,parl])
 		par = numpy.min([par,paru])
 		if par == 0:
-			par = gnorm/dxnorm
+			par = old_div(gnorm,dxnorm)
 
 		# Beginning of an interation
 		while(1):
@@ -2189,12 +2195,12 @@ class mpfit:
 			wa1 = diag[ipvt] * wa2[ipvt] / dxnorm
 
 			for j in range(n-1):
-				wa1[j] = wa1[j]/sdiag[j]
+				wa1[j] = old_div(wa1[j],sdiag[j])
 				wa1[j+1:n] = wa1[j+1:n] - r[j+1:n,j]*wa1[j]
-			wa1[n-1] = wa1[n-1]/sdiag[n-1] # Degenerate case
+			wa1[n-1] = old_div(wa1[n-1],sdiag[n-1]) # Degenerate case
 
 			temp = self.enorm(wa1)
-			parc = ((fp/delta)/temp)/temp
+			parc = old_div((old_div((old_div(fp,delta)),temp)),temp)
 
 			# Depending on the sign of the function, update parl or paru
 			if fp > 0:
@@ -2214,7 +2220,7 @@ class mpfit:
 	# Procedure to tie one parameter to another.
 	def tie(self, p, ptied=None):
 		if self.debug:
-			print 'Entering tie...'
+			print('Entering tie...')
 		if ptied is None:
 			return
 		for i in range(len(ptied)):
@@ -2295,14 +2301,14 @@ class mpfit:
 	def calc_covar(self, rr, ipvt=None, tol=1.e-14):
 
 		if self.debug:
-			print 'Entering calc_covar...'
+			print('Entering calc_covar...')
 		if numpy.array(rr).ndim != 2:
-			print 'ERROR: r must be a two-dimensional matrix'
+			print('ERROR: r must be a two-dimensional matrix')
 			return -1
 		s = rr.shape
 		n = s[0]
 		if s[0] != s[1]:
-			print 'ERROR: r must be a square matrix'
+			print('ERROR: r must be a square matrix')
 			return -1
 
 		if ipvt is None:
@@ -2316,7 +2322,7 @@ class mpfit:
 		for k in range(n):
 			if numpy.abs(r[k,k]) <= tolr:
 				break
-			r[k,k] = 1./r[k,k]
+			r[k,k] = old_div(1.,r[k,k])
 			for j in range(k):
 				temp = r[k,k] * r[j,k]
 				r[j,k] = 0.
@@ -2356,7 +2362,7 @@ class mpfit:
 
 		return r
 
-class machar:
+class machar(object):
 	def __init__(self, double=1):
 		if double == 0:
 			info = numpy.finfo(numpy.float32)

@@ -33,11 +33,16 @@
 #
 
 from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
 # (c) 2009-2016, see Licence  
 
-__version__ = '2.4.1 20160706'
+from builtins import str
+from builtins import input
+from builtins import range
+__version__ = '2.7.0 20161031'
  
 import sys
 import optparse
@@ -109,11 +114,11 @@ calmode=True
 typeNone = type(None)
 senscorr = True # do sensitivity correction
 
-print 66*"="
-print "uvotpy module uvotgetspec version=",__version__
-print "N.P.M. Kuin (c) 2009-2016, see uvotpy licence." 
-print "please use reference provided at http://github.com/PaulKuin/uvotpy"
-print 66*"=","\n"
+print(66*"=")
+print("uvotpy module uvotgetspec version=",__version__)
+print("N.P.M. Kuin (c) 2009-2016, see uvotpy licence.") 
+print("please use reference provided at http://github.com/PaulKuin/uvotpy")
+print(66*"=","\n")
 
 def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True, 
       outfile=None, calfile=None, fluxcalfile=None, 
@@ -149,156 +154,156 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       optional keyword arguments, possible values are:
 
       - **fit_second** : bool
-	
+        
         fit the second order. Off since it sometimes causes problems when the
         orders overlap completely. Useful for spectra in top part detector
      
       - **background_lower** : list
-	
+        
         instead of default background list offset from spectrum as list 
         of two numbers, like [20, 40]. Distance relative to spectrum 
      
       - **background_upper** : list
-	
+        
         instead of default background list offset from spectrum as list 
         of two numbers, like [20, 40]. Distance relative to spectrum 
      
       - **offsetlimit** : None,int,[center,range]
-	
-	Default behaviour is to determine automatically any required offset from 
-	the predicted anchor position to the spectrum, and correct for that. 
-	The automated method may fail in the case of a weak spectrum and strong zeroth 
-	or first order next to the spectrum. Two methods are provided:
-	
+        
+        Default behaviour is to determine automatically any required offset from 
+        the predicted anchor position to the spectrum, and correct for that. 
+        The automated method may fail in the case of a weak spectrum and strong zeroth 
+        or first order next to the spectrum. Two methods are provided:
+        
         (1) provide a number which will be used to limit the allowed offset. If 
-	within that limit no peak is identified, the program will stop and require 
-	you to provide a manual offset value. Try small numbers like 1, -1, 3, etc..
-	
-	(2) if you already know the approximate y-location of the spectrum at the 
-	anchor x-position in the rotated small image strip around the spectrum, you 
-	can give this with a small allowed range for fine tuning as a list of two
-	parameter values. The first value in the list must be the y-coordinate 
-	(by default the spectrum falls close to y=100 pixels), the second parameter
-	the allowed adjustment to a peak value in pixels. For example, [105,2]. 
-	This will require no further interactive input, and the spectrum will be 
-	extracted using that offset. 
-	
+        within that limit no peak is identified, the program will stop and require 
+        you to provide a manual offset value. Try small numbers like 1, -1, 3, etc..
+        
+        (2) if you already know the approximate y-location of the spectrum at the 
+        anchor x-position in the rotated small image strip around the spectrum, you 
+        can give this with a small allowed range for fine tuning as a list of two
+        parameter values. The first value in the list must be the y-coordinate 
+        (by default the spectrum falls close to y=100 pixels), the second parameter
+        the allowed adjustment to a peak value in pixels. For example, [105,2]. 
+        This will require no further interactive input, and the spectrum will be 
+        extracted using that offset. 
+        
       - **wheelpos**: {160,200,955,1000}
         
-	filter wheel position for the grism filter mode used. Helpful for 
-	forcing Vgrism or UVgrism input when both are present in the directory.
-	160:UV Clocked, 200:UV Nominal, 955:V clocked, 1000:V nominal 	
+        filter wheel position for the grism filter mode used. Helpful for 
+        forcing Vgrism or UVgrism input when both are present in the directory.
+        160:UV Clocked, 200:UV Nominal, 955:V clocked, 1000:V nominal   
       
       - **zoom** : bool
-	
+        
         when False, the whole extracted region is displayed, including zeroth 
         order when present. 
      
       - **clobber** : bool
-	
+        
         When True, overwrite earlier output (see also outfile)
-	
+        
       - **write_RMF** : bool
       
-        When True, write the rmf file (will take extra time due to large matrix operations)	
+        When True, write the rmf file (will take extra time due to large matrix operations)     
      
       - **use_lenticular_image** : bool
 
         When True and a lenticular image is present, it is used. If False, 
-	the grism image header WCS-S system will be used for the astrometry, 
-	with an automatic call to uvotgraspcorr for refinement. 
-	
+        the grism image header WCS-S system will be used for the astrometry, 
+        with an automatic call to uvotgraspcorr for refinement. 
+        
       - **sumimage** : str
-	
+        
         Name summed image generated using ``sum_Extimage()``, will extract spectrum 
         from summed image.
      
       - **wr_outfile** : bool
-	
+        
         If False, no output file is written
      
       - **outfile** : path, str
-	
+        
         Name of output file, other than automatically generated.
        
       - **calfile** : path, str
-	
+        
         calibration file name 
      
       - **fluxcalfile** : path, str
-	
+        
         flux calibration file name  or "CALDB" or None 
                
       - **predict2nd** : bool
-	
+        
         predict the second order flux from the first. Overestimates in centre a lot.
      
       - **skip_field_src** : bool
-	
+        
         if True do not locate zeroth order positions. Can be used if 
         absence internet connection or USNO-B1 server causes problems.
       
       - **optimal_extraction** : bool, obsolete
-	
+        
         Do not use.Better results with other implementation.
      
       
       - **catspec** : path
-	
+        
         optional full path to the catalog specification file for uvotgraspcorr.
      
       - **get_curve** : bool
-	
+        
         option to supply the curvature coefficients of all orders by hand.
         implemented but not tested.
      
       - **fit_sigmas** : bool
-	
+        
         fit the sigma of trackwidths if True (not implemented, always on)
      
       - **get_sigma_poly** : bool
-	
+        
         option to supply the polynomial for the sigma (not implemented) 
      
       - **lfilt1**, **lfilt2** : str
-	
+        
         name if the lenticular filter before and after the grism exposure 
-	(now supplied by fileinfo())
+        (now supplied by fileinfo())
      
       - **lfilt1_ext**, **lfilt2_ext** : int 
-	
+        
         extension of the lenticular filter (now supplied by fileinfo())
                
       - **plot_img** : bool
-	
+        
         plot the first figure with the det image
      
       - **plot_raw** : bool
-	
+        
         plot the raw spectrum data 
      
       - **plot_spec** : bool
-	
+        
         plot the flux spectrum
      
       - **highlight** : bool
-	
+        
         add contours to the plots to highlight contrasts
      
       - **chatter** : int
-	
+        
         verbosity of program
-	
-      - **set_maglimit** : int	
+        
+      - **set_maglimit** : int  
       
         specify a magnitude limit to seach for background sources in the USNO-B1 catalog  
   
       - **background_template** : numpy 2D array
         
-	User provides a background template that will be used instead 
-	determining background. Must be in counts. Size and alignment 
-	must exactly match detector image.  
-	
+        User provides a background template that will be used instead 
+        determining background. Must be in counts. Size and alignment 
+        must exactly match detector image.  
+        
   
    Returns 
    -------   
@@ -333,7 +338,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
   
    - **give_result** : bool
      set to False since a call to getSpec with this set will return all the 
-     intermediate results.	See returns 
+     intermediate results.      See returns 
  
    When the extraction slit is set to be straight ``curved="straight"`` it cuts off the UV part of the 
    spectrum for spectra located in the top left and bottom right of the image. 
@@ -366,13 +371,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #
    #( (dis,spnet,angle,anker,anker2,anker_field,ank_c), (bg,bg1,bg2,extimg,spimg,spnetimg,offset), 
    #  (C_1,C_2,img),  hdr,m1,m2,aa,wav1 ) = Y1 
-   #	     
-   #fit,(coef0,coef1,coef2,coef3),(bg_zeroth,bg_first,bg_second,bg_third),(borderup,borderdown),apercorr,expospec=Y2	
+   #         
+   #fit,(coef0,coef1,coef2,coef3),(bg_zeroth,bg_first,bg_second,bg_third),(borderup,borderdown),apercorr,expospec=Y2    
    #
    #counts, variance, borderup, borderdown, (fractions,cnts,vars,newsigmas) = Y3
    #
    #wav2p, dis2p, flux2p, qual2p, dist12p = Y4[0]
-   #	   	 
+   #             
    #     where, 
    #     
    #(present0,present1,present2,present3),(q0,q1,q2,q3), \
@@ -382,7 +387,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     
    #     dis = dispersion with zero at ~260nm[UV]/420nm[V] ; spnet = background-substracted spectrum from 'spnetimg'
    #     angle  = rotation-angle used to extract 'extimg'  ; anker = first order anchor position in DET coordinates
-   #     anker2 = second order anker X,Y position 	       ; anker_field = Xphi,Yphy input angles with respect to reference  
+   #     anker2 = second order anker X,Y position              ; anker_field = Xphi,Yphy input angles with respect to reference  
    #     ank_c  = X,Y position of axis of rotation (anker) in 'extimg'    
    #     bg = mean background, smoothed, with sources removed 
    #     bg1 = one-sided background, sources removed, smoothed ; bg2 = same for background opposite side
@@ -391,7 +396,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     offset = offset of spectrum from expected position based on 'anchor' at 260nm[UVG]/420nm[VG], first order
    #     C_1 = dispersion coefficients [python] first order; C_2 = same for second order
    #     img = original image                              ;
-   #     WC_lines positions for selected WC star lines     ; hdr = header for image	  
+   #     WC_lines positions for selected WC star lines     ; hdr = header for image       
    #     m1,m2 = index limits spectrum                     ; aa = indices spectrum (e.g., dis[aa])
    #     wav1 = wavelengths for dis[aa] first order (combine with spnet[aa])
    #     
@@ -421,21 +426,21 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    elif type(get_curve) == bool:
        if get_curve: 
           get_curve_filename = None
-          print "requires input of curvature coefficients"
+          print("requires input of curvature coefficients")
 
    # check environment
    CALDB = os.getenv('CALDB')
    if CALDB == '': 
-      print 'WARNING: The CALDB environment variable has not been set'
+      print('WARNING: The CALDB environment variable has not been set')
    
    HEADAS = os.getenv('HEADAS')
    if HEADAS == '': 
-      print 'WARNING: The HEADAS environment variable has not been set'
-      print 'That is needed for the calls to uvot Ftools '
+      print('WARNING: The HEADAS environment variable has not been set')
+      print('That is needed for the calls to uvot Ftools ')
    
    SCAT_PRESENT = os.system('which scat > /dev/null')
    if SCAT_PRESENT != 0:
-      print 'WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n'
+      print('WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n')
       
    SESAME_PRESENT = os.system('which sesame > /dev/null')
    #if SESAME_PRESENT != 0:
@@ -485,7 +490,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       try:
         ext = int(ext)
       except:
-        print "fatal error in extension number: must be an integer value"	
+        print("fatal error in extension number: must be an integer value")      
    
       # locate related lenticular images 
       specfile, lfilt1_, lfilt1_ext_, lfilt2_, lfilt2_ext_, attfile = \
@@ -504,41 +509,41 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if ((type(lfilt1) == typeNone)&(type(lfilt1_) != typeNone)): 
          lfilt1 = lfilt1_   
          lfilt1_ext = lfilt1_ext_
-         if chatter > 0: print "lenticular filter 1 from search lenticular images"+lfilt1+"+"+str(lfilt1_ext)
+         if chatter > 0: print("lenticular filter 1 from search lenticular images"+lfilt1+"+"+str(lfilt1_ext))
          lfiltflag = True
-	 lfilt1_aspcorr = None
-	 try: 
-	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img",lfilt1_ext)
-	   lfilt1_aspcorr = hdu_1["ASPCORR"]  
-	 except:
-	   hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img.gz",lfilt1_ext)
-	   lfilt1_aspcorr = hdu_1["ASPCORR"]  
+         lfilt1_aspcorr = None
+         try: 
+           hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img",lfilt1_ext)
+           lfilt1_aspcorr = hdu_1["ASPCORR"]  
+         except:
+           hdu_1 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt1]+"_sk.img.gz",lfilt1_ext)
+           lfilt1_aspcorr = hdu_1["ASPCORR"]  
       if ((type(lfilt2) == typeNone)&(type(lfilt2_) != typeNone)):
          lfilt2 = lfilt2_
          lfilt2_ext = lfilt2_ext_    
-         if chatter > 0: print "lenticular filter 2 from search lenticular images"+lfilt2+"+"+str(lfilt2_ext)
+         if chatter > 0: print("lenticular filter 2 from search lenticular images"+lfilt2+"+"+str(lfilt2_ext))
          lfiltflag = True
-	 lfilt2_aspcorr = None
-	 try: 
-	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img",lfilt2_ext)
-	   lfilt2_aspcorr = hdu_2["ASPCORR"]  
-	 except:
-	   hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img.gz",lfilt2_ext)
-	   lfilt2_aspcorr = hdu_2["ASPCORR"]  
+         lfilt2_aspcorr = None
+         try: 
+           hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img",lfilt2_ext)
+           lfilt2_aspcorr = hdu_2["ASPCORR"]  
+         except:
+           hdu_2 = pyfits.getheader(indir+"/sw"+obsid+"u"+filt_id[lfilt2]+"_sk.img.gz",lfilt2_ext)
+           lfilt2_aspcorr = hdu_2["ASPCORR"]  
 
       # report       
       if chatter > 4:
          msg2 += "getSpec: image parameter values\n"
          msg2 += "ra, dec = (%6.1f,%6.1f)\n" % (RA,DEC)
          msg2 += "filestub, extension = %s[%i]\n"% (filestub, ext)
-	 if lfiltpresent & use_lenticular_image:
+         if lfiltpresent & use_lenticular_image:
              msg2 += "first/only lenticular filter = "+lfilt1+" extension first filter = "+str(lfilt1_ext)+'\n'
-	     msg2 += "   Aspect correction keyword : %s\n"%(lfilt1_aspcorr)
+             msg2 += "   Aspect correction keyword : %s\n"%(lfilt1_aspcorr)
              if lfilt2_ext != None: 
-	         msg2 += "second lenticular filter = "+lfilt2+" extension second filter = "+str(lfilt2_ext)+'\n'
-	         msg2 += "   Aspect correction keyword : %s\n"%(lfilt2_aspcorr)
-	 if not use_lenticular_image:
-	     msg2 += "anchor position derived without lenticular filter\n"	 
+                 msg2 += "second lenticular filter = "+lfilt2+" extension second filter = "+str(lfilt2_ext)+'\n'
+                 msg2 += "   Aspect correction keyword : %s\n"%(lfilt2_aspcorr)
+         if not use_lenticular_image:
+             msg2 += "anchor position derived without lenticular filter\n"       
          msg2 += "spectrum extraction preset width = "+str(spextwidth)+'\n'
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
@@ -546,18 +551,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if chatter > -1:
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
-	   msg += ' Start date-time  : '+str(hdr['date-obs'])+'\n'
+           msg += ' Start date-time  : '+str(hdr['date-obs'])+'\n'
            msg += ' grism file       : '+specfile.split('/')[-1]+'['+str(ext)+']\n'
            msg += ' attitude file    : '+attfile.split('/')[-1]+'\n'
-	   if lfiltpresent & use_lenticular_image:
-	      if ((lfilt1 != None) & (lfilt1_ext != None)): 
-	         msg += ' lenticular file 1: '+lfilt1+'['+str(lfilt1_ext)+']\n'
-		 msg += '           aspcorr: '+lfilt1_aspcorr+'\n'
-	      if ((lfilt2 != None) & (lfilt2_ext != None)):
-	         msg += ' lenticular file 2: '+lfilt2+'['+str(lfilt2_ext)+']\n'
-		 msg += '           aspcorr: '+lfilt2_aspcorr+'\n'
-	   if not use_lenticular_image:
-	      msg += "anchor position derived without lenticular filter\n"	 
+           if lfiltpresent & use_lenticular_image:
+              if ((lfilt1 != None) & (lfilt1_ext != None)): 
+                 msg += ' lenticular file 1: '+lfilt1+'['+str(lfilt1_ext)+']\n'
+                 msg += '           aspcorr: '+lfilt1_aspcorr+'\n'
+              if ((lfilt2 != None) & (lfilt2_ext != None)):
+                 msg += ' lenticular file 2: '+lfilt2+'['+str(lfilt2_ext)+']\n'
+                 msg += '           aspcorr: '+lfilt2_aspcorr+'\n'
+           if not use_lenticular_image:
+              msg += "anchor position derived without lenticular filter\n"       
 
       if not 'ASPCORR' in hdr: hdr['ASPCORR'] = 'UNKNOWN'
       Yout.update({'hdr':hdr})
@@ -574,12 +579,12 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         #deadc = hdr['deadc']
         #deadtime = 600*285*1e-9 # 600ns x 285 CCD lines seconds
         #framtime = deadtime/(1.0-deadc)
-	framtime = 0.0110329
+        framtime = 0.0110329
         hdr.update('framtime',framtime,comment='frame time computed from deadc ')
         Yout.update({'hdr':hdr})
-	if chatter > 1:
-	    print "frame time computed from deadc - added to hdr"
-	    print "with a value of ",hdr['framtime'],"   ",Yout['hdr']['framtime']
+        if chatter > 1:
+            print("frame time computed from deadc - added to hdr")
+            print("with a value of ",hdr['framtime'],"   ",Yout['hdr']['framtime'])
 
       if not 'detnam' in hdr:
         hdr.update('detnam',str(hdr['wheelpos']))    
@@ -589,17 +594,17 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
       if chatter > 0:
            msg += ' wheel position   : '+str(wheelpos)+'\n'
-	   msg += ' roll angle       : %5.1f\n'% (hdr['pa_pnt'])
-	   msg += 'coincidence loss version: 2 (2014-07-23)\n'
+           msg += ' roll angle       : %5.1f\n'% (hdr['pa_pnt'])
+           msg += 'coincidence loss version: 2 (2014-07-23)\n'
            msg += '======================================\n'
-	
+        
       try: 
          if ( (np.abs(RA - hdr['RA_OBJ']) > 0.4) ^ (np.abs(DEC - hdr['DEC_OBJ']) > 0.4) ): 
-            sys.stderr.write("\nWARNING:  It looks like the input RA,DEC and target position in header are different fields\n")	  
-	 	
+            sys.stderr.write("\nWARNING:  It looks like the input RA,DEC and target position in header are different fields\n")   
+                
       except (RuntimeError, TypeError, NameError, KeyError):
          pass 
-         msg2 += " cannot read target position from header for verification\n"	
+         msg2 += " cannot read target position from header for verification\n"  
        
       if lfiltinput:
          #  the lenticular filter(s) were specified on the command line.
@@ -633,18 +638,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       else: 
          method = None   
       
-      if not senscorr: msg += "WARNING: No correction for sensitivity degradation applied.\n"	 
-      # retrieve the input angle relative to the boresight	 
+      if not senscorr: msg += "WARNING: No correction for sensitivity degradation applied.\n"    
+      # retrieve the input angle relative to the boresight       
       Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext, msg="", \
            wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
-	   method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
+           method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
       Yout.update({"Xphi":Xphi,"Yphi":Yphi}) 
       Yout.update({'lenticular_anchors':lenticular_anchors})
 
-      # read the anchor and dispersion out of the wavecal file  	      
+      # read the anchor and dispersion out of the wavecal file                
       anker, anker2, C_1, C_2, angle, calibdat, msg4 = getCalData(Xphi,Yphi,wheelpos, date1, \
          calfile=calfile, chatter=chatter)    
-	 
+         
       hdrr = pyfits.getheader(specfile,int(ext))
       if (hdrr['aspcorr'] == 'UNKNOWN') & (not lfiltpresent):
          msg += "WARNING: No aspect solution found. Anchor uncertainty large.\n"
@@ -716,59 +721,59 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       msg += "1st order anchor on image at (%7.1f,%7.1f)\n"%(ankerimg[0],ankerimg[1])
    
       if chatter > 4: msg += "Found anchor point; now extracting spectrum.\n"
-      if chatter > 2: print "==========Found anchor point; now extracting spectrum ========"
+      if chatter > 2: print("==========Found anchor point; now extracting spectrum ========")
    
       if type(offsetlimit) == typeNone:
          if wheelpos > 300:
             offsetlimit = 9
-	    sys.stdout.write("automatically set the value for the offsetlimit = "+str(offsetlimit)+'\n') 
+            sys.stdout.write("automatically set the value for the offsetlimit = "+str(offsetlimit)+'\n') 
    
       # find position zeroth order on detector from WCS-S after update from uvotwcs
       #if 'hdr' not in Yout: 
       #   hdr = pyfits.getheader(specfile,int(ext))
       #   Yout.update({'hdr':hdr})
       zero_xy_imgpos = [-1,-1]
-      if chatter > 1: print "zeroth order position on image..."
+      if chatter > 1: print("zeroth order position on image...")
       try:
           wS =wcs.WCS(header=hdr,key='S',relax=True,)
-	  zero_xy_imgpos = wS.wcs_world2pix([[RA,DEC]],0)
-	  print "position not corrected for SIP = ", zero_xy_imgpos[0][0],zero_xy_imgpos[0][1]
+          zero_xy_imgpos = wS.wcs_world2pix([[RA,DEC]],0)
+          print("position not corrected for SIP = ", zero_xy_imgpos[0][0],zero_xy_imgpos[0][1])
           zero_xy_imgpos = wS.sip_pix2foc(zero_xy_imgpos, 0)[0]
-	  if chatter > 1: 
-	     "print zeroth order position on image:",zero_xy_imgpos
+          if chatter > 1: 
+             "print zeroth order position on image:",zero_xy_imgpos
       except:
           pass
-      Yout.update({'zeroxy_imgpos':zero_xy_imgpos})	  
+      Yout.update({'zeroxy_imgpos':zero_xy_imgpos})       
 
    # provide some checks on background inputs:
    if background_lower[0] != None:
       background_lower =  np.abs(background_lower)
       if np.sum(background_lower) >= 190.0: 
          background_lower = [None,None]
-	 msg += "WARNING: background_lower set too close to edge image\n          Using default\n"	 
+         msg += "WARNING: background_lower set too close to edge image\n          Using default\n"       
    if background_upper[0] != None:
       background_upper =  np.abs(background_upper)
       if np.sum(background_upper) >= 190.0: 
          background_upper = [None,None]
-	 msg += "WARNING: background_upper set too close to edge image\n          Using default\n"	 
+         msg += "WARNING: background_upper set too close to edge image\n          Using default\n"       
 
    #  find background, extract straight slit spectrum
 
    if sumimage != None:
       # initialize parameters for extraction summed extracted image    
-      print 'reading summed image file : '+sumimage
-      print 'ext label for output file is set to : ', ext
+      print('reading summed image file : '+sumimage)
+      print('ext label for output file is set to : ', ext)
       Y6 = sum_Extimage (None, sum_file_name=sumimage, mode='read')
       extimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, \
       (coef0, coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr = Y6
       
       if background_template != None:
-  	  background_template = {'extimg': background_template,
-	                             'sumimg': True}
+          background_template = {'extimg': background_template,
+                                     'sumimg': True}
           if (background_template['extimg'].size != extimg.size):
-            print "ERROR"
-            print "background_template.size=",background_template['extimg'].size
-	    print "extimg.size=",extimg.size
+            print("ERROR")
+            print("background_template.size=",background_template['extimg'].size)
+            print("extimg.size=",extimg.size)
             raise IOError("The template does not match the sumimage dimensions")
       
       msg += "order distance 1st-2nd anchors :\n"
@@ -779,9 +784,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       msg += "   highest term first)\n"
       for k in range(len(C_2)):
          msg += "DISP2_"+str(k)+"=%12.4e\n" % (C_2[k])
-      print "first order anchor = ",anker
-      print "first order dispersion = %s"%(str(C_1))
-      print "second order dispersion = %s"%(str(C_2))
+      print("first order anchor = ",anker)
+      print("first order dispersion = %s"%(str(C_1)))
+      print("second order dispersion = %s"%(str(C_2)))
       
       tstart = hdr['tstart']
       ank_c = [100,500,0,2000]
@@ -789,10 +794,10 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         offset = 0
       elif type(offsetlimit) == list:
         offset = offsetlimit[0]-96
-	ank_c[0] = offsetlimit[0]
-      else:	
+        ank_c[0] = offsetlimit[0]
+      else:     
         offset = offsetlimit  # for sumimage used offsetlimit to set the offset
-	ank_c[0] = 96+offsetlimit 	
+        ank_c[0] = 96+offsetlimit       
       dis = np.arange(-500,1500)
       img = extimg
       # get background
@@ -814,18 +819,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       "C_1":C_1,"C_2":C_2,
       "Xphi":0.0,"Yphi":0.0,
       "wheelpos":wheelpos,"dist12":dist12,
-      "hdr":hdr,"offset":offset})    	 	
+      "hdr":hdr,"offset":offset})               
       Yout.update({"background_1":bg1,"background_2":bg2})
       dropout_mask = None
       Yout.update({"zeroxy_imgpos":[1000,1000]}) 
    else:
       # default extraction 
       
-      # start with a quick straight slit extraction	
+      # start with a quick straight slit extraction     
       exSpIm = extractSpecImg(specfile,ext,ankerimg,angle,spwid=spextwidth,
-	      background_lower=background_lower, background_upper=background_upper,
-	      template = background_template, 
-              offsetlimit=offsetlimit,  chatter=chatter)	      
+              background_lower=background_lower, background_upper=background_upper,
+              template = background_template, 
+              offsetlimit=offsetlimit,  chatter=chatter)              
       dis         = exSpIm['dis'] 
       spnet       = exSpIm['spnet'] 
       bg          = exSpIm['bg']
@@ -845,17 +850,17 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          Yout.update({"template":exSpIm["template_extimg"]})
       if exSpIm['dropouts']: 
          dropout_mask = exSpIm['dropout_mask']
-      else: dropout_mask = None	 
-	 
+      else: dropout_mask = None  
+         
       Yout.update({"background_1":bg1,"background_2":bg2})
       #msg += "1st order anchor offset from spectrum = %7.1f\n"%(offset)
       #msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],ank_c[0])
 
-      calibdat = None #  free the memory  	
+      calibdat = None #  free the memory        
    
-      if chatter > 2: print "============ straight slit extraction complete ================="
-		
-      if np.max(spnet) < maxcounts: maxcounts = 2.0*np.max(spnet) 		
+      if chatter > 2: print("============ straight slit extraction complete =================")
+                
+      if np.max(spnet) < maxcounts: maxcounts = 2.0*np.max(spnet)               
 
       # initial limits spectrum (pixels)
       m1 = ank_c[1]-400 
@@ -866,7 +871,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if wheelpos > 500: m2 = ank_c[1]+1000 
       if m2 >= len(dis): m2 = len(dis)-2
       if m2 > (ank_c[3]-40): m2=(ank_c[3]-40) 
-      aa = range(int(m1),int(m2)) 
+      aa = list(range(int(m1),int(m2))) 
       wav1 = polyval(C_1,dis[aa])
 
       # get grism det image 
@@ -891,7 +896,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    msg += "TRACKWID=%4.1f\n" % (trackwidth)
    
    if (not skip_field_src) & (sumimage == None):
-      if chatter > 2: print "================== locate zeroth orders due to field sources ============="
+      if chatter > 2: print("================== locate zeroth orders due to field sources =============")
       if wheelpos > 500: zeroth_blim_offset = 2.5 
       ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", )
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
@@ -922,16 +927,16 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       poly_3 = None
       if get_curve_filename == None:
          try: 
-            poly_1 = input("give coefficients of first order polynomial array( [X^3,X^2,X,C] )")
-            poly_2 = input("give coefficients of second order polynomial array( [X^2,X,C] )")
-            poly_3 = input("give coefficients of third order polynomial array( [X,C] )")
+            poly_1 = eval(input("give coefficients of first order polynomial array( [X^3,X^2,X,C] )"))
+            poly_2 = eval(input("give coefficients of second order polynomial array( [X^2,X,C] )"))
+            poly_3 = eval(input("give coefficients of third order polynomial array( [X,C] )"))
          except:
-            print "failed"
+            print("failed")
       
          if (type(poly_1) != list) | (type(poly_2) != list) | (type(poly_3) != list):
-            print "poly_1 type = ",type(poly_1)
-            print "poly_2 type = ",type(poly_2)
-            print "poly_3 type = ",type(poly_3)
+            print("poly_1 type = ",type(poly_1))
+            print("poly_2 type = ",type(poly_2))
+            print("poly_3 type = ",type(poly_3))
             raise IOError("the coefficients must be a list")
          poly_1 = np.asarray(poly_1)
          poly_2 = np.asarray(poly_2)
@@ -943,39 +948,39 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             poly_2 = np.array(curfile[1][0].split(','),dtype=float)
             poly_3 = np.array(curfile[2][0].split(','),dtype=float)
          except:
-            print "There seems to be a problem when readin the coefficients out of the file"
-            print "The format is a list of coefficient separated by comma's, highest order first"
-            print "The first line for the first order"
-            print "The second line for the secons order"
-            print "The third line for the third order"
-            print "like, \n1.233e-10,-7.1e-7,3.01e-3,0.0.\n1.233e-5,-2.3e-2,0.03.0\n1.7e-1,0.9\n"
-            print get_curve_filename
-            print curfile
-            print poly_1
-            print poly_2
-            print poly_3
+            print("There seems to be a problem when readin the coefficients out of the file")
+            print("The format is a list of coefficient separated by comma's, highest order first")
+            print("The first line for the first order")
+            print("The second line for the secons order")
+            print("The third line for the third order")
+            print("like, \n1.233e-10,-7.1e-7,3.01e-3,0.0.\n1.233e-5,-2.3e-2,0.03.0\n1.7e-1,0.9\n")
+            print(get_curve_filename)
+            print(curfile)
+            print(poly_1)
+            print(poly_2)
+            print(poly_3)
             
             raise IOError("ERROR whilst reading curvature polynomial from file\n")
              
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
-	  bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
+          bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
           =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, offsetlimit=offsetlimit, 
-	     predict_second_order=predict2nd,background_template=background_template,
+             predict_second_order=predict2nd,background_template=background_template,
              angle=angle,offset=offset,  poly_1=poly_1,poly_2=poly_2,poly_3=poly_3,
-	     msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
-	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
-	     dropout_mask=dropout_mask, chatter=chatter) 
-	 # fit_sigmas parameter needs passing 
-	 
+             msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
+             fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
+             dropout_mask=dropout_mask, chatter=chatter) 
+         # fit_sigmas parameter needs passing 
+         
       (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	      y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
               y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	      y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
-	      x,xstart,xend,sp_all,quality,co_back)  = fitorder
+              y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
+              x,xstart,xend,sp_all,quality,co_back)  = fitorder
 
-      # update the anchor y-coordinate	      
-      ank_c[0] = y1[ank_c[1]]	      
+      # update the anchor y-coordinate        
+      ank_c[0] = y1[ank_c[1]]         
       
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
       "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
@@ -990,30 +995,30 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
       "apercorr":apercorr,"expospec":expospec})
        
-      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	 	      
-		
+      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})                            
+                
    # curvature from calibration
    
    if spextwidth != None:
       
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
-	  bg_second,bg_third), (borderup,borderdown) , apercorr, expospec, msg, curved \
+          bg_second,bg_third), (borderup,borderdown) , apercorr, expospec, msg, curved \
           =  curved_extraction(extimg,ank_c,anker, wheelpos, \
-	     ZOpos=ZOpos, skip_field_sources=skip_field_src, offsetlimit=offsetlimit,\
-	     background_lower=background_lower, background_upper=background_upper, \
-	     background_template=background_template,\
+             ZOpos=ZOpos, skip_field_sources=skip_field_src, offsetlimit=offsetlimit,\
+             background_lower=background_lower, background_upper=background_upper, \
+             background_template=background_template,\
              angle=angle,offset=offset,  outfull=True, expmap=expmap, \
-	     msg = msg, curved=curved, fit_second=fit_second, 
-	     fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
-	     dropout_mask=dropout_mask, chatter=chatter) 
-	     
+             msg = msg, curved=curved, fit_second=fit_second, 
+             fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
+             dropout_mask=dropout_mask, chatter=chatter) 
+             
       (present0,present1,present2,present3),(q0,q1,q2,q3), \
           (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	  y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
+          y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),\
           (y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	  y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
-	  (x,xstart,xend,sp_all,quality,co_back)  = fitorder
-	
+          y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),\
+          (x,xstart,xend,sp_all,quality,co_back)  = fitorder
+        
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
       "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
       "borderup":borderup,"borderdown":borderdown,
@@ -1026,17 +1031,17 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
       "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
       "apercorr":apercorr,"expospec":expospec})  
-        	 	
-      ank_c[0] = y1[ank_c[1]]	      
-      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})   	 	
-	 
+                        
+      ank_c[0] = y1[ank_c[1]]         
+      Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})              
+         
       msg += "orders present:"
       if present0: msg += "0th order, "
       if present1: msg += "first order"
       if present2: msg += ", second order"
       if present3: msg += ", third order "
       
-      msg += '\nparametrized order curvature:\n'	 
+      msg += '\nparametrized order curvature:\n'         
       if present0: 
          for k in range(len(coef0)):
             msg += "COEF0_"+str(k)+"=%12.4e\n" % (coef0[k])  
@@ -1045,12 +1050,12 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             msg += "COEF1_"+str(k)+"=%12.4e\n" % (coef1[k])     
       if present2: 
          for k in range(len(coef2)):
-	    msg += "COEF2_"+str(k)+"=%12.4e\n" % (coef2[k])     
+            msg += "COEF2_"+str(k)+"=%12.4e\n" % (coef2[k])     
       if present3: 
          for k in range(len(coef3)):
             msg += "COEF3_"+str(k)+"=%12.4e\n" % (coef3[k])
       
-      msg += '\nparametrized width slit:\n'	 
+      msg += '\nparametrized width slit:\n'      
       if present0: 
          for k in range(len(sig0coef)):
             msg += "SIGCOEF0_"+str(k)+"=%12.4e\n" % (sig0coef[k])  
@@ -1059,12 +1064,12 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             msg += "SIGCOEF1_"+str(k)+"=%12.4e\n" % (sig1coef[k])     
       if present2: 
          for k in range(len(sig2coef)):
-	    msg += "SIGCOEF2_"+str(k)+"=%12.4e\n" % (sig2coef[k])     
+            msg += "SIGCOEF2_"+str(k)+"=%12.4e\n" % (sig2coef[k])     
       if present3: 
          for k in range(len(sig3coef)):
             msg += "SIGCOEF3_"+str(k)+"=%12.4e\n" % (sig3coef[k])
 
-   offset = ank_c[0]-100.0	      		
+   offset = ank_c[0]-100.0                      
    msg += "best fit 1st order anchor offset from spectrum = %7.1f\n"%(offset)
    msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],y1[int(ank_c[1])])
    msg += msg4
@@ -1082,8 +1087,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       # also requires a good second order flux and coi calibration for 
       # possible further development of order splitting. 
       # result in not consistent now.
-      print "Starting optimal extraction:  This can take a few minutes ......\n\t "\
-            "........\n\t\t ............."
+      print("Starting optimal extraction:  This can take a few minutes ......\n\t "\
+            "........\n\t\t .............")
       Y3 = get_initspectrum(net,var,fit,160,ankerimg,C_1=C_1,C_2=C_2,dist12=dist12,
            predict2nd=predict2nd,
            chatter=1)
@@ -1118,381 +1123,383 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #xa = np.where( (dis < 1400) & (dis > -300) )
          bga = bg.copy()
          fig1 = plt.figure(1); plt.clf()
+         img[img <=0 ] = 1e-16
          plt.imshow(np.log(img),vmin=np.log(bga.mean()*0.1),vmax=np.log(bga.mean()*4))
          levs = np.array([5,15,30,60,120,360]) * bg.mean()
          if highlight: plt.contour(img,levels=levs)
          #  plot yellow wavelength marker 
-	 #  TBD : add curvature 
+         #  TBD : add curvature 
          plt.plot(xpnt,ypnt,'+k',markersize=14)
-	 if not skip_field_src:   
+         if not skip_field_src:   
             uvotplot.plot_ellipsoid_regions(Xim,Yim,
-	               Xa,Yb,Thet,b2mag,matched,ondetector,
-		       pivot_ori,pivot_ori,dims,17.,)
+                       Xa,Yb,Thet,b2mag,matched,ondetector,
+                       pivot_ori,pivot_ori,dims,17.,)
          if zoom:
             plt.xlim(np.max(np.array([0.,0.])),np.min(np.array([hdr['NAXIS1'],ankerimg[0]+400])))
-	    plt.ylim(np.max(np.array([0.,ankerimg[1]-400 ])),   hdr['NAXIS2'])
+            plt.ylim(np.max(np.array([0.,ankerimg[1]-400 ])),   hdr['NAXIS2'])
          else:
-	    plt.xlim(0,2000)
-	    plt.ylim(0,2000)
+            plt.xlim(0,2000)
+            plt.ylim(0,2000)
 
       if (plot_raw):
          plt.winter()
          nsubplots = 4
-	 if not fit_second: nsubplots=3
+         if not fit_second: nsubplots=3
          #   make plot of spectrum [figure 2]
          fig2 = plt.figure(2); plt.clf()
-	 
-	 # image slice 
-	 ax21 = plt.subplot(nsubplots,1,1)
-	 ac = -ank_c[1]
-	 plt.winter()
-	 plt.imshow(np.log10(net),vmin=-0.8,vmax=0.8,extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
-	 plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]))
-	 #plt.imshow( extimg,vmin= (bg1.mean())*0.1,vmax= (bg1.mean()+bg1.std())*2, extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
+         
+         # image slice 
+         ax21 = plt.subplot(nsubplots,1,1)
+         ac = -ank_c[1]
+         plt.winter()
+         net[net<0.] = 1e-16
+         plt.imshow(np.log10(net),vmin=-0.8,vmax=0.8,extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
+         plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]))
+         #plt.imshow( extimg,vmin= (bg1.mean())*0.1,vmax= (bg1.mean()+bg1.std())*2, extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
          #levels = np.array([5,10,20,40,70,90.])
-	 #levels = spnet[ank_c[2]:ank_c[3]].max()  * levels * 0.01		    		    
+         #levels = spnet[ank_c[2]:ank_c[3]].max()  * levels * 0.01                                  
          #if highlight: plt.contour(net,levels=levels,extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]))
          #  cross_section_plot: 
          cp2 = cp2/np.max(cp2)*100
          plt.plot(ac+cp2+ank_c[1],np.arange(len(cp2)),'k',lw=2,alpha=0.6,ls='steps')
-	 # plot zeroth orders
+         # plot zeroth orders
          if not skip_field_src:
             pivot= np.array([ank_c[1],ank_c[0]-offset])
             #pivot_ori=ankerimg
-	    mlim = 17.
-	    if wheelpos > 500: mlim = 15.5
+            mlim = 17.
+            if wheelpos > 500: mlim = 15.5
             uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
-	             matched,ondetector,
-		     pivot,pivot_ori,
-		     dims2,mlim,
-		     img_angle=angle-180.0,ax=ax21)
+                     matched,ondetector,
+                     pivot,pivot_ori,
+                     dims2,mlim,
+                     img_angle=angle-180.0,ax=ax21)
          # plot line on anchor location 
          plt.plot([ac+ank_c[1],ac+ank_c[1]],[0,200],'k',lw=2) 
-	 # plot position centre of orders  
+         # plot position centre of orders  
          if present0: plt.plot(ac+q0[0],y0[q0[0]],'k--',lw=1.2)
          plt.plot(             ac+q1[0],y1[q1[0]],'k--',lw=1.2)
          if present2: plt.plot(ac+q2[0],y2[q2[0]],'k--',alpha=0.6,lw=1.2)
          if present3: plt.plot(ac+q3[0],y3[q3[0]],'k--',alpha=0.3,lw=1.2)
-	 # plot borders slit region
-	 if present0:
+         # plot borders slit region
+         if present0:
             plt.plot(ac+q0[0],borderup  [0,q0[0]],'r-')
             plt.plot(ac+q0[0],borderdown[0,q0[0]],'r-')
-	 if present1:   
+         if present1:   
             plt.plot(ac+q1[0],borderup  [1,q1[0]],'r-',lw=1.2)
             plt.plot(ac+q1[0],borderdown[1,q1[0]],'r-',lw=1.2)
-	 if present2:   
+         if present2:   
             plt.plot(ac+q2[0],borderup  [2,q2[0]],'r-',alpha=0.6,lw=1)
             plt.plot(ac+q2[0],borderdown[2,q2[0]],'r-',alpha=0.6,lw=1)
-	 if present3:   
+         if present3:   
             plt.plot(ac+q3[0],borderup  [3,q3[0]],'r-',alpha=0.3,lw=1.2)
             plt.plot(ac+q3[0],borderdown[3,q3[0]],'r-',alpha=0.3,lw=1.2)
-	 # plot limits background
-	 plt_bg = np.ones(len(q1[0]))
-	 if (background_lower[0] == None) & (background_upper[0] == None):
-	    background_lower = [0,50] ; background_upper = [150,200] 
-	    plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 ) 
-	    plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
-	 else:   
-	  if background_lower[0] != None:
-	    plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[0]),'-k',lw=1.5 )
-	    plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[1]),'-k',lw=1.5 ) 
-	  elif background_lower[1] != None:
-	    plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 ) 	      
-	  if background_upper[1] != None:     
-	    plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[0]),'-k',lw=1.5 )
-	    plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[1]),'-k',lw=1.5 )   
-	  elif background_upper[0] != None:
-	    plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
-	    
-	 # rescale, title   
+         # plot limits background
+         plt_bg = np.ones(len(q1[0]))
+         if (background_lower[0] == None) & (background_upper[0] == None):
+            background_lower = [0,50] ; background_upper = [150,200] 
+            plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 ) 
+            plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
+         else:   
+          if background_lower[0] != None:
+            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[1]),'-k',lw=1.5 ) 
+          elif background_lower[1] != None:
+            plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 )              
+          if background_upper[1] != None:     
+            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[1]),'-k',lw=1.5 )   
+          elif background_upper[0] != None:
+            plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
+            
+         # rescale, title   
          plt.ylim(0,200)
-	 if not zoom:
-	    xlim1 = ac+ank_c[2]
-	    xlim2 = ac+ank_c[3]            
-	 else:
-	    xlim1 = max(ac+ank_c[2], -420)
-	    xlim2 = min(ac+ank_c[3],1400)
-	 plt.xlim(xlim1,xlim2)
-	 plt.title(obsid+'+'+str(ext))
+         if not zoom:
+            xlim1 = ac+ank_c[2]
+            xlim2 = ac+ank_c[3]            
+         else:
+            xlim1 = max(ac+ank_c[2], -420)
+            xlim2 = min(ac+ank_c[3],1400)
+         plt.xlim(xlim1,xlim2)
+         plt.title(obsid+'+'+str(ext))
 
          # first order raw data plot
-	 ax22 = plt.subplot(nsubplots,1,2) 
-	 plt.rcParams['legend.fontsize'] = 'small'
-	 if curved == 'straight':
+         ax22 = plt.subplot(nsubplots,1,2) 
+         plt.rcParams['legend.fontsize'] = 'small'
+         if curved == 'straight':
             p1, = plt.plot( dis[ank_c[2]:ank_c[3]], spnet[ank_c[2]:ank_c[3]],'k',
-	              ls='steps',lw=0.5,alpha=0.5,label='straight')
+                      ls='steps',lw=0.5,alpha=0.5,label='straight')
             p2, = plt.plot( dis[ank_c[2]:ank_c[3]], 
-	              spextwidth*(bg1[ank_c[2]:ank_c[3]]+bg2[ank_c[2]:ank_c[3]])*0.5, 
-		      'b',alpha=0.5,label='background')
-	    plt.legend([p1,p2],['straight','background'],loc=0,)
-	 
-	 if curved != "straight":
-	    p3, = plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'r',ls='steps',label='spectrum') 	    
-	    plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'k',alpha=0.2,ls='steps',label='_nolegend_') 	    
-	    p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.5,lw=1.1,ls='steps',label='background') 
-	    #    bad pixels:	    
-	    qbad = np.where(quality[q1[0]] > 0)
-	    p4, = plt.plot(x[qbad],(sp_first-bg_first)[qbad],'xk',markersize=4)
-	    #p7, = plt.plot(x[q1[0]],(bg_first)[q1[0]],'r-',alpha=0.3,label='curve_bkg') 
-	    #    annotation
-	    plt.legend([p3,p4,p7],['spectrum','suspect','background'],loc=0,)
-	    maxbg = np.max(bg_first[q1[0]][np.isfinite(bg_first[q1[0]])])
-	    topcnt = 1.2 * np.max([np.max(spnet[q1[0]]),maxbg, np.max((sp_first-bg_first)[q1[0]])])
-	    plt.ylim(np.max([ -20, np.min((sp_first-bg_first)[q1[0]])]), np.min([topcnt, maxcounts]))
+                      spextwidth*(bg1[ank_c[2]:ank_c[3]]+bg2[ank_c[2]:ank_c[3]])*0.5, 
+                      'b',alpha=0.5,label='background')
+            plt.legend([p1,p2],['straight','background'],loc=0,)
+         
+         if curved != "straight":
+            p3, = plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'r',ls='steps',label='spectrum')             
+            plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'k',alpha=0.2,ls='steps',label='_nolegend_')       
+            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.5,lw=1.1,ls='steps',label='background') 
+            #    bad pixels:        
+            qbad = np.where(quality[q1[0]] > 0)
+            p4, = plt.plot(x[qbad],(sp_first-bg_first)[qbad],'xk',markersize=4)
+            #p7, = plt.plot(x[q1[0]],(bg_first)[q1[0]],'r-',alpha=0.3,label='curve_bkg') 
+            #    annotation
+            plt.legend([p3,p4,p7],['spectrum','suspect','background'],loc=0,)
+            maxbg = np.max(bg_first[q1[0]][np.isfinite(bg_first[q1[0]])])
+            topcnt = 1.2 * np.max([np.max(spnet[q1[0]]),maxbg, np.max((sp_first-bg_first)[q1[0]])])
+            plt.ylim(np.max([ -20, np.min((sp_first-bg_first)[q1[0]])]), np.min([topcnt, maxcounts]))
          if optimal_extraction:
-	    p5, = plt.plot(x[q1[0]],counts[1,q1[0]],'g',alpha=0.5,ls='steps',lw=1.2,label='optimal' )
-	    p6, = plt.plot(x[q1[0]],counts[1,q1[0]],'k',alpha=0.5,ls='steps',lw=1.2,label='_nolegend_' )
-	    p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.7,lw=1.1,ls='steps',label='background') 	    
-	    plt.legend([p3,p5,p7],['spectrum','optimal','background'],loc=0,)
-	    topcnt = 1.2 * np.max((sp_first-bg_first)[q1[0]])	    
-	    ylim1,ylim2 = -10,  np.min([topcnt, maxcounts])
-	    plt.ylim( ylim1,  ylim2 )
-	    
-	 #plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
-	 plt.xlim(xlim1,xlim2)
-	 plt.ylabel('1st order counts')
-	 
-	 # plot second order 
-	 ax23 = plt.subplot(nsubplots,1,3) 
-	 plt.rcParams['legend.fontsize'] = 'small'
+            p5, = plt.plot(x[q1[0]],counts[1,q1[0]],'g',alpha=0.5,ls='steps',lw=1.2,label='optimal' )
+            p6, = plt.plot(x[q1[0]],counts[1,q1[0]],'k',alpha=0.5,ls='steps',lw=1.2,label='_nolegend_' )
+            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.7,lw=1.1,ls='steps',label='background')            
+            plt.legend([p3,p5,p7],['spectrum','optimal','background'],loc=0,)
+            topcnt = 1.2 * np.max((sp_first-bg_first)[q1[0]])       
+            ylim1,ylim2 = -10,  np.min([topcnt, maxcounts])
+            plt.ylim( ylim1,  ylim2 )
+            
+         #plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
+         plt.xlim(xlim1,xlim2)
+         plt.ylabel('1st order counts')
+         
+         # plot second order 
+         ax23 = plt.subplot(nsubplots,1,3) 
+         plt.rcParams['legend.fontsize'] = 'small'
          #plt.xlim(ank_c[2],ank_c[3])
-	 if fit_second:
-	    if curved != 'straight':
-	       p1, = plt.plot(x[q2[0]],(sp_second-bg_second)[q2[0]],'r',label='spectrum') 	    
-	       plt.plot(x[q2[0]],(sp_second-bg_second)[q2[0]],'k',alpha=0.2,label='_nolegend_') 	    
-	       p7, = plt.plot(x[q2[0]],(bg_second)[q2[0]],'y',alpha=0.7,lw=1.1,label='background') 	    
-	       qbad = np.where(quality[q2[0]] > 0)
-	       p2, = plt.plot(x[qbad],(sp_second-bg_second)[qbad],'+k',alpha=0.3,label='suspect')
-	       plt.legend((p1,p7,p2),('spectrum','background','suspect'),loc=2)
-	       plt.ylim(np.max([ -100, np.min((sp_second-bg_second)[q2[0]])]), \
-	          np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
+         if fit_second:
+            if curved != 'straight':
+               p1, = plt.plot(x[q2[0]],(sp_second-bg_second)[q2[0]],'r',label='spectrum')           
+               plt.plot(x[q2[0]],(sp_second-bg_second)[q2[0]],'k',alpha=0.2,label='_nolegend_')             
+               p7, = plt.plot(x[q2[0]],(bg_second)[q2[0]],'y',alpha=0.7,lw=1.1,label='background')          
+               qbad = np.where(quality[q2[0]] > 0)
+               p2, = plt.plot(x[qbad],(sp_second-bg_second)[qbad],'+k',alpha=0.3,label='suspect')
+               plt.legend((p1,p7,p2),('spectrum','background','suspect'),loc=2)
+               plt.ylim(np.max([ -100, np.min((sp_second-bg_second)[q2[0]])]), \
+                  np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
             plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
             if optimal_extraction:
-	       p3, = plt.plot(x[q2[0]],counts[2,q2[0]],'g',alpha=0.5,ls='steps',label='optimal' )
-	       plt.legend((p1,p7,p2,p3),('spectrum','background','suspect','optimal',),loc=2)
-	       #plt.ylim(np.max([ -10,np.min(counts[2,q2[0]]), np.min((sp_second-bg_second)[q2[0]])]),\
-	       #   np.min([np.max(counts[2,q2[0]]), np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
-	       plt.ylim( ylim1,ylim2 )
-	 if predict2nd :
-	       p4, = plt.plot(dis2p+dist12,flux2p, ls='steps',label='predicted')
-	       p5, = plt.plot(dis2p[np.where(qual2p != 0)]+dist12,flux2p[np.where(qual2p != 0)],'+k',label='suspect',markersize=4)         
-	       if optimal_extraction & fit_second:
-	          plt.legend((p1,p2,p3,p4,p5),('curved','suspect','optimal','predicted','suspect'),loc=2)
-	          #plt.ylim(np.max([ -100,np.min(counts[2,q2[0]]), np.min((sp_second-bg_second)[q2[0]])]),\
-		  #   np.min([np.max(counts[2,q2[0]]), np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
-	          plt.ylim( ylim1,ylim2 )
-	       elif optimal_extraction:
-	          plt.legend((p1,p7,p4,p5),('curved','background','predicted','suspect'),loc=2)
-	          plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
-		     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))	
-	       elif fit_second:
-	          plt.legend((p1,p2,p4,p5),('curved','suspect','predicted','suspect'),loc=2)
-	          plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
-		     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))	
-	       else:
-	          plt.legend((p4,p5),('predicted','suspect'),loc=2)
-	          plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
-		     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))	
+               p3, = plt.plot(x[q2[0]],counts[2,q2[0]],'g',alpha=0.5,ls='steps',label='optimal' )
+               plt.legend((p1,p7,p2,p3),('spectrum','background','suspect','optimal',),loc=2)
+               #plt.ylim(np.max([ -10,np.min(counts[2,q2[0]]), np.min((sp_second-bg_second)[q2[0]])]),\
+               #   np.min([np.max(counts[2,q2[0]]), np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
+               plt.ylim( ylim1,ylim2 )
+         if predict2nd :
+               p4, = plt.plot(dis2p+dist12,flux2p, ls='steps',label='predicted')
+               p5, = plt.plot(dis2p[np.where(qual2p != 0)]+dist12,flux2p[np.where(qual2p != 0)],'+k',label='suspect',markersize=4)         
+               if optimal_extraction & fit_second:
+                  plt.legend((p1,p2,p3,p4,p5),('curved','suspect','optimal','predicted','suspect'),loc=2)
+                  #plt.ylim(np.max([ -100,np.min(counts[2,q2[0]]), np.min((sp_second-bg_second)[q2[0]])]),\
+                  #   np.min([np.max(counts[2,q2[0]]), np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
+                  plt.ylim( ylim1,ylim2 )
+               elif optimal_extraction:
+                  plt.legend((p1,p7,p4,p5),('curved','background','predicted','suspect'),loc=2)
+                  plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
+                     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts])) 
+               elif fit_second:
+                  plt.legend((p1,p2,p4,p5),('curved','suspect','predicted','suspect'),loc=2)
+                  plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
+                     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts])) 
+               else:
+                  plt.legend((p4,p5),('predicted','suspect'),loc=2)
+                  plt.ylim(np.max([ -10, np.min((sp_second-bg_second)[q2[0]])]), \
+                     np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts])) 
                   plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
-	                      
-	 plt.xlim(xlim1,xlim2)
-	 plt.ylabel('2nd order counts')      
-	 
-	 if fit_second:	 
-	    ax24 = plt.subplot(nsubplots,1,4) 
-	    plt.rcParams['legend.fontsize'] = 'small'
-	    if (len(q3[0]) > 1) & (curved != "xxx"):
-	       p1, = plt.plot(x[q3[0]],(sp_third-bg_third)[q3[0]],'r',label='spectrum') 	    
-	       plt.plot(x[q3[0]],(sp_third-bg_third)[q3[0]],'k',alpha=0.2,label='_nolegend_') 	    
-	       qbad = np.where(quality[q3[0]] > 0)
-	       p2, = plt.plot(x[qbad],(sp_third-bg_third)[qbad],'xk',alpha=0.3,label='suspect')
-	       p3, = plt.plot(x[q3[0]],bg_third[q3[0]],'y',label='background') 	    
-	       plt.legend([p1,p3,p2],['spectrum','background','suspect'],loc=2)
-	       plt.ylim(np.max([ -100, np.min((sp_second-bg_second)[q3[0]])]),\
-	          np.min([np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
+                              
+         plt.xlim(xlim1,xlim2)
+         plt.ylabel('2nd order counts')      
+         
+         if fit_second:  
+            ax24 = plt.subplot(nsubplots,1,4) 
+            plt.rcParams['legend.fontsize'] = 'small'
+            if (len(q3[0]) > 1) & (curved != "xxx"):
+               p1, = plt.plot(x[q3[0]],(sp_third-bg_third)[q3[0]],'r',label='spectrum')             
+               plt.plot(x[q3[0]],(sp_third-bg_third)[q3[0]],'k',alpha=0.2,label='_nolegend_')       
+               qbad = np.where(quality[q3[0]] > 0)
+               p2, = plt.plot(x[qbad],(sp_third-bg_third)[qbad],'xk',alpha=0.3,label='suspect')
+               p3, = plt.plot(x[q3[0]],bg_third[q3[0]],'y',label='background')      
+               plt.legend([p1,p3,p2],['spectrum','background','suspect'],loc=2)
+               plt.ylim(np.max([ -100, np.min((sp_second-bg_second)[q3[0]])]),\
+                  np.min([np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
             if optimal_extraction:
-	       p4, = plt.plot(x[q3[0]],counts[3,q3[0]],'b',alpha=0.5,ls='steps',label='optimal' )
-	       plt.legend([p1,p3,p2,p4],['spectrum','background','suspect','optimal',],loc=2)
-	       #plt.ylim(np.max([ -100,np.min(counts[3,q3[0]]), np.min((sp_second-bg_second)[q3[0]])]),\
-	       #   np.min([np.max(counts[3,q3[0]]), np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
-	       plt.ylim( ylim1,ylim2 )
+               p4, = plt.plot(x[q3[0]],counts[3,q3[0]],'b',alpha=0.5,ls='steps',label='optimal' )
+               plt.legend([p1,p3,p2,p4],['spectrum','background','suspect','optimal',],loc=2)
+               #plt.ylim(np.max([ -100,np.min(counts[3,q3[0]]), np.min((sp_second-bg_second)[q3[0]])]),\
+               #   np.min([np.max(counts[3,q3[0]]), np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
+               plt.ylim( ylim1,ylim2 )
             #plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
-	    plt.xlim(xlim1,xlim2)
-	    plt.ylabel(u'3rd order counts')
-	    plt.xlabel(u'pixel distance from anchor position')
+            plt.xlim(xlim1,xlim2)
+            plt.ylabel(u'3rd order counts')
+            plt.xlabel(u'pixel distance from anchor position')
 
 
       if (plot_spec):
          plt.winter()
       #  NEED the flux cal applied!
          nsubplots = 2
-	 if not fit_second: 
-	    nsubplots = 1
+         if not fit_second: 
+            nsubplots = 1
          fig3 = plt.figure(3)
-	 plt.clf()
+         plt.clf()
          wav1 = polyval(C_1,x[q1[0]])
-	 ax31 = plt.subplot(nsubplots,1,1) 
-	 if curved != "xxx":
-	    # PSF aperture correction applies on net rate, but background 
-	    # needs to be corrected to default trackwidth linearly 
-	    rate1 = ((sp_first[q1[0]]-bg_first[q1[0]] ) * apercorr[1,[q1[0]]]
-	            /expospec[1,[q1[0]]]).flatten()
-	    bkgrate1 = ((bg_first)[q1[0]] * (2.5/trackwidth)
-	            /expospec[1,[q1[0]]]).flatten()
-	    print "computing flux for plot; frametime =",framtime	    
+         ax31 = plt.subplot(nsubplots,1,1) 
+         if curved != "xxx":
+            # PSF aperture correction applies on net rate, but background 
+            # needs to be corrected to default trackwidth linearly 
+            rate1 = ((sp_first[q1[0]]-bg_first[q1[0]] ) * apercorr[1,[q1[0]]]
+                    /expospec[1,[q1[0]]]).flatten()
+            bkgrate1 = ((bg_first)[q1[0]] * (2.5/trackwidth)
+                    /expospec[1,[q1[0]]]).flatten()
+            print("computing flux for plot; frametime =",framtime)          
             flux1,wav1,coi_valid1 = rate2flux(wav1,rate1, wheelpos, 
-	                bkgrate=bkgrate1, 
+                        bkgrate=bkgrate1, 
                         co_sprate = (co_first[q1[0]]/expospec[1,[q1[0]]]).flatten(),
                         co_bgrate = (co_back [q1[0]]/expospec[1,[q1[0]]]).flatten(),
-	                pixno=x[q1[0]], 
-			#sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
-			arf1=fluxcalfile, arf2=None, effarea1=EffArea1,
-			spectralorder=1, swifttime=tstart, 
-			#trackwidth = trackwidth, 
-			anker=anker, 
-			#option=1, fudgespec=1.32,
-			frametime=framtime, 
-	                debug=False,chatter=1)
+                        pixno=x[q1[0]], 
+                        #sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
+                        arf1=fluxcalfile, arf2=None, effarea1=EffArea1,
+                        spectralorder=1, swifttime=tstart, 
+                        #trackwidth = trackwidth, 
+                        anker=anker, 
+                        #option=1, fudgespec=1.32,
+                        frametime=framtime, 
+                        debug=False,chatter=1)
             #flux1_err = 0.5*(rate2flux(,,rate+err,,) - rate2flux(,,rate-err,,))
-	    p1, = plt.plot(wav1[np.isfinite(flux1)],flux1[np.isfinite(flux1)],
-	                   color='darkred',label=u'curved') 
-	    p11, = plt.plot(wav1[np.isfinite(flux1)&(coi_valid1==False)],
-	           flux1[np.isfinite(flux1)&(coi_valid1==False)],'.',
-		   color='lawngreen',
-		   label="too bright")		   	    
-	    	    
-	    #  PROBLEM quality flags !!!
-	    qbad1 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] < 16))
-	    qbad2 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] == qflag.get("bad")))
-	    plt.legend([p1,p11],[u'calibrated spectrum',u'too bright - not calibrated'])
-	    if len(qbad2[0]) > 0:      
+            p1, = plt.plot(wav1[np.isfinite(flux1)],flux1[np.isfinite(flux1)],
+                           color='darkred',label=u'curved') 
+            p11, = plt.plot(wav1[np.isfinite(flux1)&(coi_valid1==False)],
+                   flux1[np.isfinite(flux1)&(coi_valid1==False)],'.',
+                   color='lawngreen',
+                   label="too bright")                      
+                    
+            #  PROBLEM quality flags !!!
+            qbad1 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] < 16))
+            qbad2 = np.where((quality[np.array(x[q1[0]],dtype=int)] > 0) & (quality[np.array(x[q1[0]],dtype=int)] == qflag.get("bad")))
+            plt.legend([p1,p11],[u'calibrated spectrum',u'too bright - not calibrated'])
+            if len(qbad2[0]) > 0:      
                p2, = plt.plot(wav1[qbad2],flux1[qbad2],
-	             '+k',markersize=4,label=u'bad data')
-	       plt.legend([p1,p2],[u'curved',u'bad data'])
-	    plt.ylabel(u'1st order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
-	    # find reasonable limits flux 
-	    qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
-	    if qf > 2e-12: qf = 2e-12
-	    plt.ylim(0.001*qf,1.2*qf)
-	    plt.xlim(1600,6000)
+                     '+k',markersize=4,label=u'bad data')
+               plt.legend([p1,p2],[u'curved',u'bad data'])
+            plt.ylabel(u'1st order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
+            # find reasonable limits flux 
+            qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
+            if qf > 2e-12: qf = 2e-12
+            plt.ylim(0.001*qf,1.2*qf)
+            plt.xlim(1600,6000)
 
-	 if optimal_extraction:   # no longer supported (2013-04-24)
-	    print "OPTIMAL EXTRACTION IS NO LONGER SUPPORTED"
-	    wav1 = np.polyval(C_1,x[q1[0]])
-	    #flux1 = rate2flux(wav1, counts[1,q1[0]]/expo, wheelpos, spectralorder=1, arf1=fluxcalfile)
+         if optimal_extraction:   # no longer supported (2013-04-24)
+            print("OPTIMAL EXTRACTION IS NO LONGER SUPPORTED")
+            wav1 = np.polyval(C_1,x[q1[0]])
+            #flux1 = rate2flux(wav1, counts[1,q1[0]]/expo, wheelpos, spectralorder=1, arf1=fluxcalfile)
             flux1,wav1,coi_valid1 = rate2flux(wav1,counts[1,q1[0]]/expo, wheelpos, bkgrate=bgkrate1, 
                co_sprate = (co_first[q1[0]]/expospec[1,[q1[0]]]).flatten(),
                co_bgrate = (co_back [q1[0]]/expospec[1,[q1[0]]]).flatten(),
-	       pixno=x[q1[0]], #sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
-	       arf1=fluxcalfile, arf2=None, spectralorder=1, swifttime=tstart,
-	       #trackwidth = trackwidth, 
-	       anker=anker, #option=1, fudgespec=1.32,
-	       frametime=framtime, 
-	       debug=False,chatter=1)
-	    p3, = plt.plot(wav1, flux1,'g',alpha=0.5,ls='steps',lw=2,label='optimal' )
-	    p4, = plt.plot(wav1,flux1,'k',alpha=0.5,ls='steps',lw=2,label='_nolegend_' )
-	    plt.legend([p1,p2,p3],['curved','suspect','optimal'],loc=0,)
+               pixno=x[q1[0]], #sig1coef=sig1coef, sigma1_limits=[2.6,4.0], 
+               arf1=fluxcalfile, arf2=None, spectralorder=1, swifttime=tstart,
+               #trackwidth = trackwidth, 
+               anker=anker, #option=1, fudgespec=1.32,
+               frametime=framtime, 
+               debug=False,chatter=1)
+            p3, = plt.plot(wav1, flux1,'g',alpha=0.5,ls='steps',lw=2,label='optimal' )
+            p4, = plt.plot(wav1,flux1,'k',alpha=0.5,ls='steps',lw=2,label='_nolegend_' )
+            plt.legend([p1,p2,p3],['curved','suspect','optimal'],loc=0,)
 
-	    qf = (flux1 > 0.) & (flux1 < 1.0e-11)
-	    plt.ylim( -0.01*np.max(flux1[qf]),  1.2*np.max(flux1[qf]) )
-	    plt.ylabel(u'1st order count rate')
+            qf = (flux1 > 0.) & (flux1 < 1.0e-11)
+            plt.ylim( -0.01*np.max(flux1[qf]),  1.2*np.max(flux1[qf]) )
+            plt.ylabel(u'1st order count rate')
          plt.xlim(np.min(wav1)-10,np.max(wav1))
-	 plt.title(obsid+'+'+str(ext))
-	 
-	 if fit_second:
+         plt.title(obsid+'+'+str(ext))
+         
+         if fit_second:
             ax32 = plt.subplot(nsubplots,1,2) 
-	    plt.plot([1650,3200],[0,1])
-	    plt.text(2000,0.4,'NO SECOND ORDER DATA',fontsize=16)	 	    
-	    if curved != 'xxx':
-	       wav2 = polyval(C_2,x[q2[0]]-dist12)
-	       rate2 = ((sp_second[q2[0]]-bg_second[q2[0]])* 
-	           apercorr[2,[q2[0]]].flatten()/expospec[2,[q2[0]]].flatten() )
+            plt.plot([1650,3200],[0,1])
+            plt.text(2000,0.4,'NO SECOND ORDER DATA',fontsize=16)                   
+            if curved != 'xxx':
+               wav2 = polyval(C_2,x[q2[0]]-dist12)
+               rate2 = ((sp_second[q2[0]]-bg_second[q2[0]])* 
+                   apercorr[2,[q2[0]]].flatten()/expospec[2,[q2[0]]].flatten() )
                flux2,wav1,coi_valid2 = rate2flux(wav2, rate2, wheelpos,
-	               co_sprate = co_second[q2[0]]/expospec[2,[q2[0]]],
+                       co_sprate = co_second[q2[0]]/expospec[2,[q2[0]]],
                        co_bgrate = co_back [q2[0]]/expospec[2,[q2[0]]],
-	               frametime=framtime, 
+                       frametime=framtime, 
                        spectralorder=2,swifttime=tstart,)
                #flux1_err = rate2flux(wave,rate_err, wheelpos, spectralorder=1,)
-	       plt.cla()
-	       p1, = plt.plot(wav2,flux2,'r',label='curved') 	    
-	       plt.plot(wav2,flux2,'k',alpha=0.2,label='_nolegend_') 	    
-	       qbad1 = np.where((quality[np.array(x[q2[0]],dtype=int)] > 0) & (quality[np.array(x[q2[0]],dtype=int)] < 16))
-	       p2, = plt.plot(wav2[qbad1],flux2[qbad1],'+k',markersize=4,label='suspect data')
-	       plt.legend(['uncalibrated','suspect data'])
-	       plt.ylabel(u'estimated 2nd order flux')
+               plt.cla()
+               p1, = plt.plot(wav2,flux2,'r',label='curved')        
+               plt.plot(wav2,flux2,'k',alpha=0.2,label='_nolegend_')        
+               qbad1 = np.where((quality[np.array(x[q2[0]],dtype=int)] > 0) & (quality[np.array(x[q2[0]],dtype=int)] < 16))
+               p2, = plt.plot(wav2[qbad1],flux2[qbad1],'+k',markersize=4,label='suspect data')
+               plt.legend(['uncalibrated','suspect data'])
+               plt.ylabel(u'estimated 2nd order flux')
             plt.xlim(1600,3200)
 
-	    qf = (flux1 > 0.) & (flux1 < 1.0e-11)
-	    if np.sum(qf[0]) > 0:
+            qf = (flux1 > 0.) & (flux1 < 1.0e-11)
+            if np.sum(qf[0]) > 0:
                plt.ylim( -0.01*np.max(flux1[qf]),  1.2*np.max(flux1[qf]) )
-	    else: plt.ylim(1e-16,2e-12)  
-	 # final fix to limits of fig 3,1   
-	 y31a,y31b = ax31.get_ylim()
-	 setylim = False
-	 if y31a < 1e-16: 
-	    y31a = 1e-16
-	    setylim = True
-	 if y31b > 1e-12:
-	    y31b = 1e-12
-	    setylim = True
-	 if setylim: ax31.set_ylim(bottom=y31a,top=y31b)           
+            else: plt.ylim(1e-16,2e-12)  
+         # final fix to limits of fig 3,1   
+         y31a,y31b = ax31.get_ylim()
+         setylim = False
+         if y31a < 1e-16: 
+            y31a = 1e-16
+            setylim = True
+         if y31b > 1e-12:
+            y31b = 1e-12
+            setylim = True
+         if setylim: ax31.set_ylim(bottom=y31a,top=y31b)           
          #
-	 plt.xlabel(u'$\lambda(\AA)$',fontsize=16)
+         plt.xlabel(u'$\lambda(\AA)$',fontsize=16)
       
       
    # output parameter 
    Y1 = ( (dis,spnet,angle,anker,anker2,anker_field,ank_c), (bg,bg1,bg2,extimg,spimg,spnetimg,offset), 
-           (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )	 
-	     
+           (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )   
+             
    # output parameter 
    Y2 = fit, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,
-        bg_second,bg_third), (borderup,borderdown), apercorr, expospec	
-   Yout.update({"Yfit":Yfit})	       
+        bg_second,bg_third), (borderup,borderdown), apercorr, expospec  
+   Yout.update({"Yfit":Yfit})          
 
    # writing output to a file 
    #try:
    if wr_outfile:      # write output file
     
-      if ((chatter > 0) & (not clobber)): print "trying to write output files"
+      if ((chatter > 0) & (not clobber)): print("trying to write output files")
       import uvotio
       
       if (curved == 'straight') & (not optimal_extraction): 
          ank_c2 = np.copy(ank_c) ; ank_c2[1] -= m1
          F = uvotio.wr_spec(RA,DEC,filestub,ext,
-	         hdr,anker,anker_field[0],anker_field[1],
-		 dis[aa],wav1,
-		 spnet[aa]/expo,bg[aa]/expo,
-		 bg1[aa]/expo,bg2[aa]/expo,
-		 offset,ank_c2,extimg, C_1, 
+                 hdr,anker,anker_field[0],anker_field[1],
+                 dis[aa],wav1,
+                 spnet[aa]/expo,bg[aa]/expo,
+                 bg1[aa]/expo,bg2[aa]/expo,
+                 offset,ank_c2,extimg, C_1, 
                  history=None,chatter=1,
-		 clobber=clobber, 
-		 calibration_mode=calmode,
-		 interactive=interactive)  
-		  
+                 clobber=clobber, 
+                 calibration_mode=calmode,
+                 interactive=interactive)  
+                  
       elif not optimal_extraction:
          if fileversion == 2:
             Y = Yout
-	 elif fileversion == 1:
+         elif fileversion == 1:
             Y = (Y0,Y1,Y2,Y4)
          F = uvotio.writeSpectrum(RA,DEC,filestub,ext, Y,  
-	      fileoutstub=outfile, 
-	      arf1=fluxcalfile, arf2=None, 
-	      fit_second=fit_second, 
-	      write_rmffile=write_RMF, fileversion=2,
-	      used_lenticular=use_lenticular_image,
-	      history=msg, 
-	      calibration_mode=calmode,
-	      chatter=chatter, 
-	      clobber=clobber ) 
-	  
-	    
+              fileoutstub=outfile, 
+              arf1=fluxcalfile, arf2=None, 
+              fit_second=fit_second, 
+              write_rmffile=write_RMF, fileversion=2,
+              used_lenticular=use_lenticular_image,
+              history=msg, 
+              calibration_mode=calmode,
+              chatter=chatter, 
+              clobber=clobber ) 
+          
+            
       elif optimal_extraction:
          Y = (Y0,Y1,Y2,Y3,Y4)
          F = uvotio.OldwriteSpectrum(RA,DEC,filestub,ext, Y, mode=2, 
-	    quality=quality, interactive=False,fileout=outfile,
-	    updateRMF=write_rmffile, \
-	    history=msg, chatter=5, clobber=clobber)
-      		  
+            quality=quality, interactive=False,fileout=outfile,
+            updateRMF=write_rmffile, \
+            history=msg, chatter=5, clobber=clobber)
+                  
    #except (RuntimeError, IOError, ValueError):
    #   print "ERROR writing output files. Try to call uvotio.wr_spec."  
    #   pass
@@ -1523,9 +1530,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
 def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
         searchwidth=35,spwid=13,offsetlimit=None, fixoffset=None, 
-	background_lower=[None,None], background_upper=[None,None],
-	template=None,
-	clobber=True,chatter=2):
+        background_lower=[None,None], background_upper=[None,None],
+        template=None,
+        clobber=True,chatter=2):
    '''
    extract the grism image of spectral orders plus background
    using the reference point at 2600A in first order.
@@ -1542,7 +1549,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       angle of the spectrum at 2600A in first order from zemax    e.g., 28.8  
    searchwidth : float
       find spectrum with this possible offset ( in crowded fields
-      it should be set to a smaller value)	
+      it should be set to a smaller value)      
    template : dictionary    
       template for the background. 
       
@@ -1560,7 +1567,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    History
    -------
    2011-09-05 NPMK changed interpolation in rotate to linear, added a mask image to 
-   make sure to keep track of the new pixel area.  	     
+   make sure to keep track of the new pixel area.            
    2011-09-08 NPMK incorporated rectext as new extraction and removed interactive plot, 
      curved, and optimize which are now olsewhere.
    2014-02-28 Add template for the background as an option 
@@ -1583,24 +1590,24 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
          raise IOError("extractSpecImg should not be called when there is sumimage input")    
 
    if chatter > 4:
-      print 'extractSpecImg parameters: file, ext, anker, angle'
-      print file,ext
-      print anker,angle
-      print 'searchwidth,chatter,spwid,offsetlimit, :'
-      print searchwidth,chatter,spwid,offsetlimit
+      print('extractSpecImg parameters: file, ext, anker, angle')
+      print(file,ext)
+      print(anker,angle)
+      print('searchwidth,chatter,spwid,offsetlimit, :')
+      print(searchwidth,chatter,spwid,offsetlimit)
 
    img, hdr = pyfits.getdata(file,ext,header=True)
    # wcs_ = wcs.WCS(header=hdr,)  # detector coordinates DETX,DETY in mm   
    # wcsS = wcs.WCS(header=hdr,key='S',relax=True,)  # TAN-SIP coordinate type  
    if Tmpl:
       if (img.shape != template['template'].shape) : 
-         print "ERROR"
-         print "img.shape=", img.shape
-         print "background_template.shape=",template['template'].shape 
+         print("ERROR")
+         print("img.shape=", img.shape)
+         print("background_template.shape=",template['template'].shape) 
          raise IOError("The templare array does not match the image")  
    wheelpos = hdr['WHEELPOS']
 
-   if chatter > 4: print 'wheelpos:', wheelpos
+   if chatter > 4: print('wheelpos:', wheelpos)
 
    if not use_rectext:
       # now we want to extend the image array and place the anchor at the centre
@@ -1617,7 +1624,11 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       if 2*int(n2/2) == int(n2): n2 = n2 + 1
       c1 = n1 / 2 - anker[1] 
       c2 = n2 / 2 - anker[0]
-      if chatter > 3: print 'array info : ',img.shape,d1,d2,n1,n2,c1,c2
+      n1 = int(n1)
+      n2 = int(n2)
+      c1 = int(c1)
+      c2 = int(c2)
+      if chatter > 3: print('array info : ',img.shape,d1,d2,n1,n2,c1,c2)
    
       # the ankor is now centered in array a; initialize a with out_of_img_val
       a = np.zeros( (n1,n2), dtype=float) + cval
@@ -1638,7 +1649,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       a[np.where(aanan)] = aaave
       if len( np.where(aanan)[0]) > 0 :
          dropouts = True
-         print "extractSpecImg WARNING: BAD IMAGE DATA fixed by setting to mean of good data whole image " 
+         print("extractSpecImg WARNING: BAD IMAGE DATA fixed by setting to mean of good data whole image ") 
    
    # now we want to rotate the array to have the dispersion in the x-direction 
    if angle < 40. : 
@@ -1651,7 +1662,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
          b_ = ndimage.rotate(a_,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
       if dropouts: #try to rotate the boolean image
          aanan = ndimage.rotate(aanan,theta,reshape = False,order = 1,mode = 'constant',)
-      e2 = 0.5*b.shape[0]
+      e2 = int(0.5*b.shape[0])
       c = b[e2-100:e2+100,:]
       if Tmpl: c_ = b_[e2-100:e2+100,:]
       if dropouts: aanan = aanan[e2-100:e2+100,:]
@@ -1682,7 +1693,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       command+=" height="+str(dy)+" x0="+str(x0)+" y0="+str(y0)
       command+=" null="+str(cval)
       command+=" chatter=5 clobber=yes"
-      print command
+      print(command)
       os.system(command)
       c = extimg = pyfits.getdata(outfile,0)
       ank_c = np.array([100,dx_ank,0,extimg.shape[1]])
@@ -1690,7 +1701,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
       if clobber:
          os.system("rm "+outfile)
       if Tmpl: 
-         raise("background_template cannot be used with use_rectext option")	 
+         raise("background_template cannot be used with use_rectext option")     
        
    # version 2016-01-16 revision:
    #   the background can be extracted via a method from the strip image 
@@ -1716,9 +1727,9 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    if chatter > 1: 
       #print 'image was rotated; anchor in extracted image is ', ank_c[:2]
       #print 'limits spectrum are ',ank_c[2:]
-      print 'finding location spectrum from a slice around anchor x-sized:',minrange,':',maxrange
-      print 'offsetlimit = ', offsetlimit  
-   d = (c[:,(ank_c[1]-minrange):(ank_c[1]+maxrange)]).sum(axis=1).squeeze()
+      print('finding location spectrum from a slice around anchor x-sized:',minrange,':',maxrange)
+      print('offsetlimit = ', offsetlimit)  
+   d = (c[:,int(ank_c[1]-minrange):int(ank_c[1]+maxrange)]).sum(axis=1).squeeze()
    if len(qofd[0]) > 0:
      ank_c[2] = min(qofd[0])
      ank_c[3] = max(qofd[0])
@@ -1735,7 +1746,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
            if (offsetlimit[0] > 50) & (offsetlimit[0] < 150):
                y_default=int(offsetlimit[0]+0.5)  # round to nearest pixel
            else: 
-               raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))	
+               raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))        
            if offsetlimit[1] < 1:
                fixoffset = offsetlimit[0]-100
            else:  
@@ -1743,47 +1754,47 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
 
    if fixoffset == None:
       offset = ( (np.where(d == (d[y_default-searchwidth:y_default+searchwidth]).max() ) )[0] - y_default )
-      if chatter>0: print 'offset found from y=%i is %i '%(y_default ,-offset)
+      if chatter>0: print('offset found from y=%i is %i '%(y_default ,-offset))
       if len(offset) == 0:
-         print 'offset problem: offset set to zero'
+         print('offset problem: offset set to zero')
          offset = 0
       offset = offset[0]
       if (type(offsetlimit) != list):
           if (offsetlimit != None):
               if abs(offset) >= offsetlimit: 
                  offset = 0 
-	         print 'This is larger than the offsetlimit. The offset has been set to 0'
-	         if interactive: 
-	            offset = float(raw_input('Please give a value for the offset:  '))
+                 print('This is larger than the offsetlimit. The offset has been set to 0')
+                 if interactive: 
+                    offset = float(input('Please give a value for the offset:  '))
    else: 
-       offset = fixoffset	
+       offset = fixoffset       
          
    if chatter > 0: 
-      print 'offset used is : ', -offset	 
+      print('offset used is : ', -offset)        
    
    if (type(offsetlimit) == list) & (fixoffset == None):
       ank_c[0] = offsetlimit[0]-offset
    else:    
       ank_c[0] += offset  
  
-   print 'image was rotated; anchor in extracted image is [', ank_c[0],',',ank_c[1],']'
-   print 'limits spectrum on image in dispersion direction are ',ank_c[2],' - ',ank_c[3] 
+   print('image was rotated; anchor in extracted image is [', ank_c[0],',',ank_c[1],']')
+   print('limits spectrum on image in dispersion direction are ',ank_c[2],' - ',ank_c[3]) 
    
    # Straight slit extraction (most basic extraction, no curvature):
    sphalfwid = int(spwid-0.5)/2
    splim1 = 100+offset-sphalfwid+1
    splim2 = splim1 + spwid
-   spimg  = c[splim1:splim2,:]
-	 
+   spimg  = c[int(splim1):int(splim2),:]
+         
    if chatter > 0: 
-      print 'Extraction limits across dispersion: splim1,splim2 = ',splim1,' - ',splim2
+      print('Extraction limits across dispersion: splim1,splim2 = ',splim1,' - ',splim2)
       
    bg, bg1, bg2, bgsigma, bgimg, bg_limits, bgextras = findBackground(c, 
        background_lower=background_lower, background_upper=background_upper,yloc_spectrum=ank_c[0] )
        
    bgmean = bg
    bg = 0.5*(bg1+bg2)
-   if chatter > 0: print 'Background : %10.2f  +/- %10.2f (1-sigma error)'%( bgmean,bgsigma) 
+   if chatter > 0: print('Background : %10.2f  +/- %10.2f (1-sigma error)'%( bgmean,bgsigma)) 
    # define the dispersion with origen at the projected position of the 
    # 2600 point in first order
    dis = np.arange((c.shape[1]),dtype=np.int16) - ank_c[1] 
@@ -1795,11 +1806,11 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
    spnet = spnetimg.sum(axis=0)
    result = {"dis":dis,"spnet":spnet,"bg":bg,"bg1":bg1,
             "bg2":bg2,"bgsigma":bgsigma,"bgimg":bgimg,
-	    "bg_limits_used":bg_limits,"bgextras":bgextras,
-	    "extimg":c,"spimg":spimg,"spnetimg":spnetimg,
-	    "offset":offset,"ank_c":ank_c,'dropouts':dropouts}   
+            "bg_limits_used":bg_limits,"bgextras":bgextras,
+            "extimg":c,"spimg":spimg,"spnetimg":spnetimg,
+            "offset":offset,"ank_c":ank_c,'dropouts':dropouts}   
    if dropouts: result.update({"dropout_mask":aanan})
-   if Tmpl: result.update({"template_extimg":c_})	    
+   if Tmpl: result.update({"template_extimg":c_})           
    return result
    
 
@@ -1830,9 +1841,9 @@ def sigclip1d_mask(array1d, sigma, badval=None, conv=1e-5, maxloop=30):
     while (np.abs(ym_-ymean) > conv*np.abs(ymean)) & (maxloop > 0):
          ym_ = ymean
          mask = ( yv < (yv.mean() + sigma * yv.std()) )
-	 yv = yv[mask]
-	 ymean = yv.mean()
-	 maxloop -= 1
+         yv = yv[mask]
+         ymean = yv.mean()
+         maxloop -= 1
           
     valid[valid] = y[valid] < ymean + sigma*yv.std()
     return valid 
@@ -1867,9 +1878,9 @@ def background_profile(img, smo1=30, badval=None):
         u_x1mask = sigclip1d_mask(u_x1, 2.5, badval=None, conv=1e-5, maxloop=30)
         u_xsum.append(u_x1[u_x1mask].mean())
         u_std.append(u_x1[u_x1mask].std())
-	#print u_x1[u_x1mask]
+        #print u_x1[u_x1mask]
         #if np.isfinite(u_x1mask.mean()) & len(u_x1[u_x1mask])>0:
-	#  print "%8.2f   %8.2f   %8.2f "%(u_x1[u_x1mask].mean(),u_x1[u_x1mask].std(),u_x1[u_x1mask].max())
+        #  print "%8.2f   %8.2f   %8.2f "%(u_x1[u_x1mask].mean(),u_x1[u_x1mask].std(),u_x1[u_x1mask].max())
     # the best background estimate of the typical row is now u_xsum
     # fit a smooth spline through the u_xsum values (or boxcar?)
     #print "u_x means "
@@ -1879,7 +1890,7 @@ def background_profile(img, smo1=30, badval=None):
     u_xsum_ok = np.isfinite(u_xsum)
     bg_tcp = interpolate.splrep(np.arange(nx)[u_xsum_ok],
              np.asarray(u_xsum)[u_xsum_ok], s=smo1)  
-    # representative background profile in column 	       
+    # representative background profile in column              
     u_x = interpolate.splev(np.arange(nx), bg_tcp, ) 
     return u_xsum, u_x, u_std 
    
@@ -1937,7 +1948,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
          by method 1 below.
      3. 'sigmaclip': do sigma clipping on rows and columns to get column 
          profile background, then clip image and mask, interpolate over masked 
-	 bits.  
+         bits.  
      
    extimg  is the image containing the spectrum in the 1-axis centered in 0-axis
    `ank` is the position of the anchor in the image 
@@ -1945,12 +1956,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    I create two background images:
     
          1. split the image strip into 40 portions in x, so that the background variation is small
-	    compute the mean 
-	    sigma clip (3 sigma) each area to to the local mean
-	    replace out-of-image pixels with mean of whole image (2-sigma clipped)
-	    smooth with a boxcar by the smoothing factor
-	 2. compute the background in two regions upper and lower 
-	    linearly interpolate in Y between the two regions to create a background image    
+            compute the mean 
+            sigma clip (3 sigma) each area to to the local mean
+            replace out-of-image pixels with mean of whole image (2-sigma clipped)
+            smooth with a boxcar by the smoothing factor
+         2. compute the background in two regions upper and lower 
+            linearly interpolate in Y between the two regions to create a background image    
       
       bg1 = lower background; bg2 = upper background
       
@@ -1958,14 +1969,14 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       
    History
    -------
-   -  8 Nov 2011 NPM Kuin complete overhaul	
+   -  8 Nov 2011 NPM Kuin complete overhaul     
           things to do: get quality flagging of bad background points, edges perhaps done here?    
    -  13 Aug 2012: possible problem was seen of very bright sources not getting masked out properly 
           and causing an error in the background that extends over a large distance due to the smoothing.
-	  The cause is that the sources are more extended than can be handled by this method. 
-	  A solution would be to derive a global background 	
+          The cause is that the sources are more extended than can be handled by this method. 
+          A solution would be to derive a global background     
    -  30 Sep 2014: background fails in visible grism e.g., 57977004+1 nearby bright spectrum 
-          new method added (4x slower processing) to screen the image using sigma clipping	
+          new method added (4x slower processing) to screen the image using sigma clipping      
       '''
    import sys   
    import numpy as np   
@@ -1993,7 +2004,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       for i in range(ny):
           u_mask[i,(bgimg[i,:].flatten() < u_x) & 
                 np.isfinite(bgimg[i,:].flatten())] = True
-   		
+                
       bkg_sc = np.zeros((ny,nx),dtype=float)
       # the following leaves larger disps in the dispersion but less noise; 
       # tested but not implemented, as it is not as fast and the mean results 
@@ -2056,14 +2067,14 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       imgstats = None
       if sub_bg_use[0].size > 0: 
          imgstats = imagestats.ImageStats(sub_bg[sub_bg_use],nclip=3)
-	 # patch values in image (not out of image) with mean if outliers
-	 aval = 2.0*imgstats.stddev
+         # patch values in image (not out of image) with mean if outliers
+         aval = 2.0*imgstats.stddev
          img_clip_ = (
             (np.abs(bgimg[:,xlist[i]:xlist[i+2]]-cval) < 1e-6) | 
             (np.abs(sub_bg - imgstats.mean) > aval) | 
             (sub_bg <= 0.) | np.isnan(sub_bg) )
-	 bgimg[:,xlist[i]:xlist[i+2]][img_clip_] = imgstats.mean  # patch image
-	 img_good[:,xlist[i]:xlist[i+2]][img_clip_] = False       # flag patches 
+         bgimg[:,xlist[i]:xlist[i+2]][img_clip_] = imgstats.mean  # patch image
+         img_good[:,xlist[i]:xlist[i+2]][img_clip_] = False       # flag patches 
 
    # the next section selects the user-selected or default background for further processing
    if chatter > 1: 
@@ -2076,7 +2087,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    if not ((background_method == 'splinefit') | (background_method == 'boxcar') ):
       sys.stderr.write('background method missing; currently reads : %s\n'%(background_method))
 
-   if background_method == 'boxcar':	    
+   if background_method == 'boxcar':        
       # boxcar smooth in x,y using the global parameter background_smoothing
       bgimg = boxcar(bgimg,background_smoothing,mode='reflect',cval=cval)
    
@@ -2133,7 +2144,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
         bg1_dis_good[i] = np.where(bool(int(bg1_good[:,i].mean(0))))
         bg2_dis_good[i] = np.where(bool(int(bg2_good[:,i].mean(0))))
       
-   if background_method == 'splinefit':	 
+   if background_method == 'splinefit':  
    
       #  mean bg1_dis, bg2_dis across dispersion 
       
@@ -2141,10 +2152,10 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       for i in range(nx):
          bg1_dis[i] = bg1[:,i][bg1_good[:,i]].mean()
          if not bool(int(bg1_good[:,i].mean())): 
-	    bg1_dis[i] = cval	   
+            bg1_dis[i] = cval      
          bg2_dis[i] = bg2[:,i][bg2_good[:,i]].mean()  
          if not bool(int(bg2_good[:,i].mean())): 
-	    bg2_dis[i] = cval
+            bg2_dis[i] = cval
       
       # some parts of the background may have been masked out completely, so 
       # find the good points and the bad points   
@@ -2152,7 +2163,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg2_dis_good = np.where( np.isfinite(bg2_dis) & (np.abs(bg2_dis - cval) > 1.e-7) )
       bg1_dis_bad = np.where( ~(np.isfinite(bg1_dis) & (np.abs(bg1_dis - cval) > 1.e-7)) )   
       bg2_dis_bad = np.where( ~(np.isfinite(bg2_dis) & (np.abs(bg2_dis - cval) > 1.e-7)) )
-      	         
+                 
       # fit a smoothing spline to each background 
          
       x = bg1_dis_good[0]
@@ -2178,14 +2189,14 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       negvals = bg1 < 0.0
       if negvals.any(): 
          bg1[negvals] = 0.0
-	 if chatter > 1:
-  	    print "background 1 set to zero in ",len(np.where(negvals)[0])," points"
+         if chatter > 1:
+            print("background 1 set to zero in ",len(np.where(negvals)[0])," points")
       
       negvals = bg2 < 0.0
       if negvals.any(): 
          bg2[negvals] = 0.0
-	 if chatter > 1:
-	    print "background 1 set to zero in ",len(np.where(negvals)[0])," points"
+         if chatter > 1:
+            print("background 1 set to zero in ",len(np.where(negvals)[0])," points")
    
    # image constructed from linear inter/extra-polation of bg1 and bg2
    
@@ -2200,27 +2211,27 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
         dbgdy = (bg2-bg1)/150.0 # assuming height spectrum 200 and width extraction regions 30 pix each
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,kx0:kx1] = bg1[kx0:kx1] + dbgdy[kx0:kx1]*(i9-25)
-	   bgimg[i9,0:kx0] = bg2[0:kx0]
-	   bgimg[i9,kx1:nx] = bg2[kx1:nx]
-	if chatter > 2: print "1..BACKGROUND DEFAULT from BG1 and BG2"   
+           bgimg[i9,0:kx0] = bg2[0:kx0]
+           bgimg[i9,kx1:nx] = bg2[kx1:nx]
+        if chatter > 2: print("1..BACKGROUND DEFAULT from BG1 and BG2")   
    elif ((background_lower[0] != None) & (background_upper[0] == None)):
      # set background to lower background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg1 
-	if chatter > 2: print "2..BACKGROUND from lower BG1 only"   
+        if chatter > 2: print("2..BACKGROUND from lower BG1 only")   
    elif ((background_upper[0] != None) & (background_lower[0] == None)):
      # set background to that of upper background region   
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,:] = bg2
-	if chatter > 2: print "3..BACKGROUND from upper BG2 only"   
+        if chatter > 2: print("3..BACKGROUND from upper BG2 only")   
    else:
      # linear interpolation of the two background regions  
         dbgdy = (bg2-bg1)/(background_upper[0]+0.5*background_upper[1]+background_lower[0]+0.5*background_lower[1]) 
         for i9 in range(bgimg.shape[0]):
            bgimg[i9,kx0:kx1] = bg1[kx0:kx1] + dbgdy[kx0:kx1]*(i9-int(100-(background_lower[0]+0.5*background_lower[1])))
-	   bgimg[i9,0:kx0] =  bg2[0:kx0]    # assuming that the spectrum in not in the lower left corner 
-	   bgimg[i9,kx1:nx] = bg2[kx1:nx]
-	if chatter > 2: print "4..BACKGROUND from BG1 and BG2"   
+           bgimg[i9,0:kx0] =  bg2[0:kx0]    # assuming that the spectrum in not in the lower left corner 
+           bgimg[i9,kx1:nx] = bg2[kx1:nx]
+        if chatter > 2: print("4..BACKGROUND from BG1 and BG2")   
       
    return bg, bg1, bg2, bgsig, bgimg, bg_limits_used, (bg1_good, bg1_dis, 
           bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good, bgimg_lin)
@@ -2240,10 +2251,10 @@ def interpol(xx,x,y):
    q0 = np.isfinite(x) & np.isfinite(y)  # filter out NaN values 
    q1 = np.where(q0) 
    if len(q1[0]) == 0:
-      print "error in arrays to be interpolated"
-      print "x:",x
-      print "y:",y
-      print "arg:",xx
+      print("error in arrays to be interpolated")
+      print("x:",x)
+      print("y:",y)
+      print("arg:",xx)
       
    x1 = x[q1[0]]
    y1 = y[q1[0]]
@@ -2272,7 +2283,7 @@ def hydrogen(n,l):
   Lymann spectrum: l=0, n>l+1
   Balmer spectrum: l=1, n>2  
   Pachen spectrum: l=2, n>3                 
-		   		   '''
+                                   '''
   # Rydberg constant in m-1 units
   R = 1.097e7 
   inv_lam = R*(1./(l+1)**2 - 1./n**2)
@@ -2309,7 +2320,7 @@ def boresight(filter='uvw1',order=1,wave=260,
        ----------
        filter : str 
           one of {'ug200','uc160','vg1000','vc955',
-	  'wh','v','b','u','uvw1','uvm2','uvw2'}
+          'wh','v','b','u','uvw1','uvm2','uvw2'}
        
        order : {0,1,2}
           order for which the anchor is needed
@@ -2347,7 +2358,7 @@ def boresight(filter='uvw1',order=1,wave=260,
        When *date* is non-zero, and *order*=0:
        The zeroth order boresight  
       
-       	  
+          
        NOTE: 
        -----
        THE TRANSLATION OF LENTICULAR IMAGE TO GRISM 
@@ -2364,7 +2375,7 @@ def boresight(filter='uvw1',order=1,wave=260,
 
        History: 
          2014-01-04 NPMK : rewrite to inter/extrapolate 
-	 the boresight positions
+         the boresight positions
        
    '''
    from scipy.interpolate import interp1d
@@ -2409,56 +2420,56 @@ def boresight(filter='uvw1',order=1,wave=260,
    fx = interp1d(swtime,boredx,)
    fy = interp1d(swtime,boredy,)
    
-   # reference anchor positions 	 
+   # reference anchor positions          
    reference0 = {'ug200': [1449.22, 707.7],
                  'uc160': [1494.9 , 605.8], #[1501.4 , 593.7], # ?[1494.9, 605.8],
-		 'vg1000':[1506.8 , 664.3],
-		 'vc955': [1542.5 , 556.4]} 
-		  
+                 'vg1000':[1506.8 , 664.3],
+                 'vc955': [1542.5 , 556.4]} 
+                  
    # DO NOT CHANGE THE FOLLOWING VALUES AS THE WAVECAL DEPENDS ON THEM !!!
    reference1 = {'ug200': [ 928.53,1002.69],
                  'uc160': [1025.1 , 945.3 ], 
-		 'vg1000':[ 969.3 ,1021.3 ],
-		 'vc955': [1063.7 , 952.6 ]}		
-		 	  
+                 'vg1000':[ 969.3 ,1021.3 ],
+                 'vc955': [1063.7 , 952.6 ]}            
+                          
    if (filter in grismfilters):
       if (date > 125000000) and (order == 0):
           anchor = reference0[filter]
           anchor[0] += r2d-fx(date)
-	  anchor[1] += r2d-fy(date)
-	  return anchor
-      elif (date > 125000000) and (order == 1):	  
+          anchor[1] += r2d-fy(date)
+          return anchor
+      elif (date > 125000000) and (order == 1):   
           anchor = reference1[filter]
           anchor[0] += r2d-fx(date)
-	  anchor[1] += r2d-fy(date)
-	  return anchor
-      elif order == 1:	  
+          anchor[1] += r2d-fy(date)
+          return anchor
+      elif order == 1:    
           anchor = reference1[filter]
           anchor[0] += r2d
-	  anchor[1] += r2d
-	  return anchor
-      elif order == 0:	
+          anchor[1] += r2d
+          return anchor
+      elif order == 0:  
           raise RuntimeError(
-	  "The zeroth order reference position needs a date")  
+          "The zeroth order reference position needs a date")  
       else:
-          return reference1[filter]	  
-	  	  
+          return reference1[filter]       
+                  
    elif (date > 125000000) and (filter in lenticular):
       ref_lent = {'v':[951.74,1049.89],
                   'b':[951.87,1049.67],
-		  'u':[956.98,1047.84],
-		  'uvw1':[951.20,1049.36],
-		  'uvm2':[949.75,1049.30],
-		  'uvw2':[951.11,1050.18]}
+                  'u':[956.98,1047.84],
+                  'uvw1':[951.20,1049.36],
+                  'uvm2':[949.75,1049.30],
+                  'uvw2':[951.11,1050.18]}
       anchor = ref_lent[filter]
       anchor[0] += r2d-fx(date)
       anchor[1] += r2d-fy(date)
       return anchor
       
    elif (date > 122000000) and (filter == 'wh'):
-      print "approximate static white filter boresight"
+      print("approximate static white filter boresight")
       if date > 209952000:
-         return 949.902+r2d, 1048.837+r2d	  
+         return 949.902+r2d, 1048.837+r2d         
       elif date > 179971200:
          return 953.315+r2d, 1048.014+r2d        
       elif date > 154483349:
@@ -2489,14 +2500,14 @@ def boresight(filter='uvw1',order=1,wave=260,
           if order == 1:
              if wave == 260: return 1025.1+27+r2d,945.3+r2d
       elif filter == 'vg1000': 
-	  #elif order == 1: return 948.4+r2d, 1025.9+r2d
-	  if order == 1: return 969.3+r2d, 1021.3+r2d
+          #elif order == 1: return 948.4+r2d, 1025.9+r2d
+          if order == 1: return 969.3+r2d, 1021.3+r2d
       elif filter == 'vc955':
-	  if order == 1: return 1063.7+r2d, 952.6+r2d
+          if order == 1: return 1063.7+r2d, 952.6+r2d
          
    raise IOError("valid filter values are 'wh','v',"\
         "'b','u','uvw1','uvm2','uvw2','ug200',"\
-	"'uc160','vg1000','vc955'\n")    
+        "'uc160','vg1000','vc955'\n")    
 
 
 def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
@@ -2537,8 +2548,8 @@ def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
    '''
    # calculate bin size response, data
    if type(lamda_response) == typeNone: 
-      print 'need to read in response matrix file'
-      print ' please code it up'
+      print('need to read in response matrix file')
+      print(' please code it up')
       return None
        
    new_countrate = np.zeros(len(lamda_response))
@@ -2551,47 +2562,47 @@ def makeXspecInput(lamdasp,countrate,error,lamda_response=None,chatter=1):
    dlam = lamdasp.copy()*0   
    for i in range(len(dlam) -1):
          dlam[i+1]=lamdasp[i+1] - lamdasp[i]
-   dlam[0] = dlam[1]	 
+   dlam[0] = dlam[1]     
    #
    for i in range(len(lamda_response)):
          # find the pixels to use that have contributions to the bin
-	 lam1 = lamda_response[i] - dlamresp[i]/2.0
-	 lam2 = lamda_response[i] + dlamresp[i]/2.0
-	 if ( (lam1 >= (np.max(lamdasp)+dlam[len(lamdasp)-1])) ^ (lam2 <= (np.min(lamdasp)-dlam[0]))): 
-	    # no count data 
-	    new_countrate[i] = 0
-	    if ((chatter > 2) & (i < 450) & (i > 400)) : 
-	       print ' i = ',i,'  lam1 = ',lam1,' lam2 = ', lam2,' <<< counts set to zero '
-	       print ' i = ',i,' term 1 ',(np.max(lamdasp)-dlam[len(lamdasp)-1])
-	       print ' i = ',i,' term 2 ',(np.min(lamdasp)+dlam[0]             )
-	 else:
-	    if chatter > 2: print 'new bin ',i,' lam = ',lam1,' - ',lam2
-	    # find the bits to add     
-	    k = np.where( (lamdasp+dlam/2 > lam1) & (lamdasp-dlam/2 <= lam2) ) 
+         lam1 = lamda_response[i] - dlamresp[i]/2.0
+         lam2 = lamda_response[i] + dlamresp[i]/2.0
+         if ( (lam1 >= (np.max(lamdasp)+dlam[len(lamdasp)-1])) ^ (lam2 <= (np.min(lamdasp)-dlam[0]))): 
+            # no count data 
+            new_countrate[i] = 0
+            if ((chatter > 2) & (i < 450) & (i > 400)) : 
+               print(' i = ',i,'  lam1 = ',lam1,' lam2 = ', lam2,' <<< counts set to zero ')
+               print(' i = ',i,' term 1 ',(np.max(lamdasp)-dlam[len(lamdasp)-1]))
+               print(' i = ',i,' term 2 ',(np.min(lamdasp)+dlam[0]             ))
+         else:
+            if chatter > 2: print('new bin ',i,' lam = ',lam1,' - ',lam2)
+            # find the bits to add     
+            k = np.where( (lamdasp+dlam/2 > lam1) & (lamdasp-dlam/2 <= lam2) ) 
             # the countrate in a bin is proportional to its width; make sure only
-	    # the part of the data array that fall within the new bin is added
-	    if chatter > 2: 
-	      print 'data in ',k[0],'  wavelengths ',lamdasp[k[0]]  
-	      print 'counts are ',countrate[k[0]]
-	    nk = len(k[0])
-	    factor = np.zeros( nk )
-	    for m in range(nk):  # now loop over all bins that might contribute
-	       wbin1 = lamdasp[k[0][m]] - dlam[k[0][m]]/2 
-	       wbin2 = lamdasp[k[0][m]] + dlam[k[0][m]]/2
-	       #  width bin_form override with limits bin_to 
-	       factor[m] = (np.min(np.array( (wbin2,lam2) )) - np.max(np.array((wbin1 ,lam1))))/ (wbin2-wbin1)
-	       if chatter > 2 : 
-	          print ' ... m = ',m,'  bin= ',wbin1,' - ',wbin2
-	          print ' ... trimmed ',np.min(np.array( (wbin2,lam2) )),' - ',np.max(np.array((wbin1 ,lam1)))
+            # the part of the data array that fall within the new bin is added
+            if chatter > 2: 
+              print('data in ',k[0],'  wavelengths ',lamdasp[k[0]])  
+              print('counts are ',countrate[k[0]])
+            nk = len(k[0])
+            factor = np.zeros( nk )
+            for m in range(nk):  # now loop over all bins that might contribute
+               wbin1 = lamdasp[k[0][m]] - dlam[k[0][m]]/2 
+               wbin2 = lamdasp[k[0][m]] + dlam[k[0][m]]/2
+               #  width bin_form override with limits bin_to 
+               factor[m] = (np.min(np.array( (wbin2,lam2) )) - np.max(np.array((wbin1 ,lam1))))/ (wbin2-wbin1)
+               if chatter > 2 : 
+                  print(' ... m = ',m,'  bin= ',wbin1,' - ',wbin2)
+                  print(' ... trimmed ',np.min(np.array( (wbin2,lam2) )),' - ',np.max(np.array((wbin1 ,lam1))))
             new_countrate[i] = (factor * countrate[k[0]]).sum()
             new_error[i]     = np.sqrt( (  (factor * error[k[0]])**2  ).sum() ) 
-	    if chatter > 2: 
-	       print ' scaled factor = ', factor
-	       print ' new_countrate = ', new_countrate[i]
-	       #	    	    
-   # check that the total number of counts is the same	    
-   print 'total counts in = ', countrate.sum()
-   print 'total counts out= ', new_countrate.sum()
+            if chatter > 2: 
+               print(' scaled factor = ', factor)
+               print(' new_countrate = ', new_countrate[i])
+               #                    
+   # check that the total number of counts is the same      
+   print('total counts in = ', countrate.sum())
+   print('total counts out= ', new_countrate.sum())
    #  
    return lamda_response, new_countrate, new_error
 
@@ -2618,7 +2629,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    from astropy import wcs
    
    if chatter > 0: 
-       print "find_zeroth_orders: determining positions zeroth orders from USNO-B1"
+       print("find_zeroth_orders: determining positions zeroth orders from USNO-B1")
    
    if ((wheelpos == 160) ^ (wheelpos == 200)):
        grtype = "ugu"
@@ -2645,14 +2656,14 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    " clobber="+clobber+" chatter=0 > /dev/null"
        
    if chatter > 1: 
-      print "find_zeroth_orders: trying to detect the zeroth orders in the grism image"
-      print command
+      print("find_zeroth_orders: trying to detect the zeroth orders in the grism image")
+      print(command)
       
    useuvotdetect = True
 
    tt = os.system(command)
    if tt != 0:
-      print 'find_zeroth_orders: uvotdetect had a problem with this image'
+      print('find_zeroth_orders: uvotdetect had a problem with this image')
       
    if not os.access(outfile,os.F_OK):  
       # so you can provide it another way
@@ -2690,7 +2701,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        distortpresent = False    
 
    if chatter > 1: 
-       print "find_zeroth_orders: pointing position ",ra,dec
+       print("find_zeroth_orders: pointing position ",ra,dec)
 
    #  unfortunately uvotdetect will pick up spurious stuff as well near the spectra 
    #  need real sources.
@@ -2698,12 +2709,12 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    
    CALDB = os.getenv('CALDB')
    if CALDB == '': 
-      print 'find_zeroth_orders: the CALDB environment variable has not been set'
+      print('find_zeroth_orders: the CALDB environment variable has not been set')
       return None
    HEADAS = os.getenv('HEADAS')
    if HEADAS == '': 
-      print 'find_zeroth_orders: The HEADAS environment variable has not been set'
-      print 'That is needed for the uvot Ftools '
+      print('find_zeroth_orders: The HEADAS environment variable has not been set')
+      print('That is needed for the uvot Ftools ')
       return None
    
    if set_maglimit == None:  
@@ -2726,18 +2737,18 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        else:
            use_previous_search = False
    else: 
-       use_previous_search = False       	   
+       use_previous_search = False                 
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
       command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
-      if chatter > 1: print command
+      if chatter > 1: print(command)
       tt = os.system(command)   # writes the results to seach.ub1
       tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
       if tt != 0:
-         print tt 
-         print "find_zeroth_orders: could not get source list from USNO-B1; scat not present?"
+         print(tt) 
+         print("find_zeroth_orders: could not get source list from USNO-B1; scat not present?")
    else:
       if chatter > 1: 
-           print "find_zeroth_orders: using the USNO-B1 source list from file search.ub1"
+           print("find_zeroth_orders: using the USNO-B1 source list from file search.ub1")
 
    # remove reliance on astropy tables as it fails on debian linux
    searchf = open('search.ub1')
@@ -2844,15 +2855,15 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
                        distx.append( Xim[kx1] - xim[i1] )
                        disty.append( Yim[kx1] - yim[i1] )
    if ((type(kx) == int) & (chatter > 3)):
-       print "Xim: ",Xim[kx]
-       print "xim:",xim
-       print "dx: ",dx
+       print("Xim: ",Xim[kx])
+       print("xim:",xim)
+       print("dx: ",dx)
            
    if len(distx) > 0 :        
        hisx = np.histogram(distx,bins=bins)    
-       xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
+       xoff = hisx[1][:-1][hisx[0] == hisx[0].max()].mean()    
        hisy = np.histogram(disty,bins=bins)    
-       yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
+       yoff = hisy[1][:-1][hisy[0] == hisy[0].max()].mean()   
        # subtract xoff, yoff from Xim, Yim or add to origin ( hh[CRPIX1S],hh[CRPIX2S] ) if offset 
        # is larger than 1 pix
        if (np.sqrt(xoff**2+yoff**2) > 1.0):
@@ -2861,8 +2872,8 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
                hh['crpix2s'] += yoff
                hh["forceshi"] = "%f,%f"%(xoff,yoff)
                hh["forcesh0"] = "%f,%f"%(xoff,yoff)
-               print "offset (%5.1f,%5.1f) found"%(xoff,yoff)
-               print "offset found has been applied to the fits header of file: %s\n"%(gfile)
+               print("offset (%5.1f,%5.1f) found"%(xoff,yoff))
+               print("offset found has been applied to the fits header of file: %s\n"%(gfile))
            else:    
                # do not apply shift to crpix*s for subsequent shifts, but record overall ahift
                # original shift is in "forcesh0" which actually WAS applied. Both items are needed
@@ -2874,9 +2885,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
            f = fits.open(gfile,mode='update')
            f[ext].header = hh
            f.close()
-       print "find_zeroth_orders result (binary matched offset): \n"
-       print "\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
-       print "\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff)
+       print("find_zeroth_orders result (binary matched offset): \n")
+       print("\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions ")
+       print("\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff))
        Xim -= xoff
        Yim -= yoff
    else:
@@ -2902,8 +2913,8 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
                hh['crpix2s'] += yoff
                hh["forceshi"] = "%f,%f"%(xoff,yoff)
                hh["forcesh0"] = "%f,%f"%(xoff,yoff)
-               print "offset (%5.1f,%5.1f) found"%(xoff,yoff)
-               print "offset found has been applied to the fits header of file: %s\n"%(gfile)
+               print("offset (%5.1f,%5.1f) found"%(xoff,yoff))
+               print("offset found has been applied to the fits header of file: %s\n"%(gfile))
            else:    
                # do not apply shift to crpix*s for subsequent shifts, but record overall ahift
                # original shift is in "forcesh0" which actually WAS applied. Both items are needed
@@ -2915,9 +2926,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
            f = fits.open(gfile,mode='update')
            f[ext].header = hh
            f.close()
-      print "find_zeroth_orders result (simple offset): \n"
-      print "\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions "
-      print "\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff)
+      print("find_zeroth_orders result (simple offset): \n")
+      print("\tAfter comparing uvotdetect zeroth order positions to USNO-B1 predicted source positions ")
+      print("\tthere was found an overall offset equal to (%5.1f.%5.1f) pix "%(xoff,yoff))
       Xim -= xoff
       Yim -= yoff
        
@@ -2930,20 +2941,20 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        kx = where ( abs(Xim[i] - x_img) < xacc )
        if len(kx[0]) != 0: 
           kxy = where( abs(Yim[i] - y_img[kx])  < yacc) 
-	  if len(kxy[0]) == 1:
-	     k = kx[0][kxy[0][0]]
+          if len(kxy[0]) == 1:
+             k = kx[0][kxy[0][0]]
              Xa[i]  = prof_major[k]*5.
-	     Yb[i]  = prof_minor[k]*5.
-	     Thet[i]= -theta[k] 
-	     matched[i] = True
+             Yb[i]  = prof_minor[k]*5.
+             Thet[i]= -theta[k] 
+             matched[i] = True
        else:
          # make up some ellipse axes in pix
-	 Xa[i] = 17.0
-	 Yb[i] = 5.0
+         Xa[i] = 17.0
+         Yb[i] = 5.0
    if chatter > 0:
-       print "find_zeroth_orders: there were %i matches found between the uvotdetect sources and the USNO B1 list"%(matched.sum()) 
-	
-   if region:	     
+       print("find_zeroth_orders: there were %i matches found between the uvotdetect sources and the USNO B1 list"%(matched.sum())) 
+        
+   if region:        
       a = datetime.date.today()
       datetime = a.isoformat()[0:4]+a.isoformat()[5:7]+a.isoformat()[8:10]
       # make region file for sources on detector
@@ -2954,8 +2965,8 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       f.write('global color=green dashlist=8 3 width=1 font="helvetica 10 normal" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1 \n')
       f.write('physical\n')
       for i in range(M):
-	 if (ondetector[i] and useuvotdetect):
-	     f.write('ellipse(%12.2f,%12.2f,%12.2f,%12.2f,%12.2f)\n' % (Xim[i],Yim[i],Xa[i],Yb[i],180.-Thet[i]) )
+         if (ondetector[i] and useuvotdetect):
+             f.write('ellipse(%12.2f,%12.2f,%12.2f,%12.2f,%12.2f)\n' % (Xim[i],Yim[i],Xa[i],Yb[i],180.-Thet[i]) )
       f.close()
       # make a second region file for sources with first order on detector [TBD]
       # the sources on the detector are Xim[ondetector] etc., 
@@ -2979,7 +2990,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
       anchor position in detector coordinates (pixels)
    order : int
       the desired spectral order  
-	 
+         
    Returns
    -------
       Provides the polynomial coefficients for y(x). 
@@ -3011,7 +3022,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
           0.23071908, -0.21803703,  0.11983982,  0.16678715, -0.2004285 ,\
           0.12813155, -0.13855324, -0.1356009 ,  0.11504641, -0.10732287,\
           0.03374111]),3,3]
-	  
+          
        tck_c2 = [array([0.,0.,0.,0.,  2048.,  2048.,  2048.,  2048.]),\
           array([0.,0.,0.,0.,  2048.,  2048.,  2048.,  2048.]),\
           array([ -3.17463632e-04,   2.53197376e-04,  -3.44611897e-04,\
@@ -3029,7 +3040,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
           3.00002959e-07,  -2.90718693e-07,   5.57782883e-08,\
           2.20540397e-07,  -1.62674045e-07,   8.70230076e-08,\
          -1.13489556e-07]),3,3]
-              	     
+                     
        coef = array([interpolate.bisplev(xin,yin,tck_c3),interpolate.bisplev(xin,yin,tck_c2),\
                      interpolate.bisplev(xin,yin,tck_c1), 0.])
        return coef
@@ -3070,7 +3081,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
        #          array([ 0.01418938, -0.06999955, -0.00446343, -0.06662488]),1,1]
        #tck_c2 = [array([    0.,     0.,  2048.,  2048.]),
        #          array([    0.,     0.,  2048.,  2048.]), 
-       #	 array([ -9.99564069e-05, 8.89513468e-05, 4.77910984e-05, 1.44368445e-05]),1,1]
+       #         array([ -9.99564069e-05, 8.89513468e-05, 4.77910984e-05, 1.44368445e-05]),1,1]
        
         coef = array([interpolate.bisplev(xin,yin,tck_c2),interpolate.bisplev(xin,yin,tck_c1),\
                      interpolate.bisplev(xin,yin,tck_c0)])
@@ -3079,15 +3090,15 @@ def spec_curvature(wheelpos,anchor,order=1,):
      elif order == 3: 
        # not a particularly good fit.
        tck_c0 =   [array([0.,     0.,  1101.24169141,  2048.,2048.]), 
-	           array([0.,     0.,   952.39879838,  2048.,2048.]), 
-		   array([ -74.75453915,    7.63095536, -131.36395787,   11.14709189,
+                   array([0.,     0.,   952.39879838,  2048.,2048.]), 
+                   array([ -74.75453915,    7.63095536, -131.36395787,   11.14709189,
                             -5.52089337,   73.59327202,  -57.25048374,   37.8898465 ,
-                            65.90098406]), 1, 1]	  
+                            65.90098406]), 1, 1]          
        tck_c1 = [array([    0.,     0.,  2048.,  2048.]), 
                  array([    0.,     0.,  2048.,  2048.]), 
-		 array([-0.04768498, -0.02044308,  0.02984554, -0.04408517]), 1, 1]
+                 array([-0.04768498, -0.02044308,  0.02984554, -0.04408517]), 1, 1]
  
-       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])		   
+       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])             
        return coef
        
      elif order == 0:
@@ -3099,8 +3110,8 @@ def spec_curvature(wheelpos,anchor,order=1,):
        tck_c1 =         [array([    0.,     0.,  2048.,  2048.]),
                   array([    0.,     0.,  2048.,  2048.]),
                   array([ 0.08258587, -0.06696916, -0.09968132, -0.31579981]),1,1]
-		  
-       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])		  
+                  
+       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])            
        return  coef
      else: 
        raise (ValueError)    
@@ -3114,7 +3125,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
         -0.05069771, -0.01397332,  0.03530437, -0.17563673,  0.12602437,\
         -0.10312421, -0.02404978,  0.06091811, -0.02879142, -0.06533121,\
          0.07355998]), 3, 3]
-	
+        
         tck_c2 = [array([    0.,     0.,     0.,     0.,  2048.,  2048.,  2048.,  2048.]),\
         array([    0.,     0.,     0.,     0.,  2048.,  2048.,  2048.,  2048.]),\
         array([  1.69259046e-04,  -1.67036380e-04,  -9.95915869e-05, \
@@ -3152,11 +3163,11 @@ def spec_curvature(wheelpos,anchor,order=1,):
            array([0.,0.,  1067.40622524,  2048.,2048.]),
            array([ 17.82135471,  -4.93884392,  20.55439437, -18.22869669,
         13.11429182,  41.2680039 ,   9.8050793 ,  32.72362507,  -6.56524782]), 1, 1]
-	
+        
        tck_c1 =  [array([    0.,     0.,  2048.,  2048.]),
            array([    0.,     0.,  2048.,  2048.]),
            array([ 0.02362119, -0.03992572,  0.0177935 , -0.10163929]),1, 1]
-	   
+           
        tck_c2 =  [array([    0.,     0.,  2048.,  2048.]),
            array([    0.,     0.,  2048.,  2048.]),
            array([ -6.32035759e-05,   5.28407967e-05,  -8.87338917e-06, 8.58873870e-05]),1,1]
@@ -3175,7 +3186,7 @@ def spec_curvature(wheelpos,anchor,order=1,):
        tck_c1 = [array([    0.,     0.,  2048.,  2048.]),
                  array([    0.,     0.,  2048.,  2048.]),
                  array([-0.02591263, -0.03092398,  0.00352404, -0.01171369]), 1, 1]
-       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])		   
+       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])             
        return coef
        
      elif order == 0:
@@ -3187,14 +3198,14 @@ def spec_curvature(wheelpos,anchor,order=1,):
                   array([    0.,     0.,  2048.,  2048.]),
                   array([ 0.54398146, -0.04547362, -0.63454342, -0.49417562]),1,1]
 
-       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])		  
+       coef = array([interpolate.bisplev(xin,yin,tck_c1),interpolate.bisplev(xin,yin,tck_c0)])            
        return  coef
 
      else: 
        raise (ValueError)    
        
    else:
-      print 'spec_curvature: illegal wheelpos value'
+      print('spec_curvature: illegal wheelpos value')
       raise (ValueError)   
       
 def get_coi_box(wheelpos):
@@ -3203,8 +3214,8 @@ def get_coi_box(wheelpos):
     #  29,27,31,28 3x8/cos([144.5,151.4,140.5,148.1]) for wheelpos = 160,200,955,1000
     coistuff = {'160':(7.5,29,1.11),
                 '200':(7.5,27,1.12),
-		'955':(6.5,31,1.09),
-	        '1000':(7.0,28,1.13),}
+                '955':(6.5,31,1.09),
+                '1000':(7.0,28,1.13),}
     return coistuff[str(wheelpos)]
 
 def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
@@ -3238,15 +3249,15 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 
    NPMK, 2010-07-09 initial version  
          2012-02-20 There was a problem with the offset/track y1 position/borderup,borderdown consistency
-	            when using a prescribed offset. Changing handling. Always make a fine yank adjustment < 3 pix. 
-		    disabled for now the set_offset (it does not do anything). 
+                    when using a prescribed offset. Changing handling. Always make a fine yank adjustment < 3 pix. 
+                    disabled for now the set_offset (it does not do anything). 
          2012-02-20 moved the call to updateFitorder() to curved_extraction. The result is that the 
-	            spectrum will be extracted using the updated track parameters.	
-	 2014-06-02 add support for fixed box extraction coincidence loss.	
-	 2014-08-04 add parameter curved_extraction to limit y-positioning extraction slit with list option  
-	 2014-08-06 changed code to correctly adjust y1 position  
-	 2014-08-25 fixed error in curve of location orders except first one 
-         2016-01-17 trackcentroiding parameter added to disable centroiding	    
+                    spectrum will be extracted using the updated track parameters.      
+         2014-06-02 add support for fixed box extraction coincidence loss.      
+         2014-08-04 add parameter curved_extraction to limit y-positioning extraction slit with list option  
+         2014-08-06 changed code to correctly adjust y1 position  
+         2014-08-25 fixed error in curve of location orders except first one 
+         2016-01-17 trackcentroiding parameter added to disable centroiding         
    '''
    import pylab as plt
    from numpy import array,arange,where, zeros,ones, asarray, abs
@@ -3266,7 +3277,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       elif wheelpos == 200:
          curves = nominaluv 
       else: 
-         print "use straight extraction for V grism modes"
+         print("use straight extraction for V grism modes")
          return 
       if wheelpos > 300:
          return      
@@ -3337,12 +3348,12 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    
 #===================================================================
    if chatter > 0:
-      print '================== curvature fits for y =============='
-      print 'zeroth order poly: ',coef0
-      print 'first  order poly: ',coef1
-      print 'second order poly: ',coef2
-      print 'third  order poly: ',coef3
-      print '======================================================'
+      print('================== curvature fits for y ==============')
+      print('zeroth order poly: ',coef0)
+      print('first  order poly: ',coef1)
+      print('second order poly: ',coef2)
+      print('third  order poly: ',coef3)
+      print('======================================================')
 
 #===================================================================
 
@@ -3380,17 +3391,17 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       m_lim = background_source_mag
       map_all =  plot_ellipsoid_regions(Xim.copy(),Yim.copy(),Xa.copy(),Yb.copy(),Thet.copy(),\
          b2mag.copy(),matched.copy(), ondetector,pivot,pivot_ori,dims,m_lim,img_angle=angle-180.0,\
-	 lmap=True,makeplot=False,chatter=chatter) 
+         lmap=True,makeplot=False,chatter=chatter) 
       if chatter > 2:
-         print "zeroth order map all: shape=",map_all.shape," min, max =",map_all.min(), map_all.max()	
-	  
+         print("zeroth order map all: shape=",map_all.shape," min, max =",map_all.min(), map_all.max()) 
+          
       # map down to 16th magnitude in B2 
       m_lim = 16.0
       map_strong =  plot_ellipsoid_regions(Xim.copy(),Yim.copy(),Xa.copy(),Yb.copy(),Thet.copy(),\
          b2mag.copy(),matched.copy(), ondetector,pivot,pivot_ori,dims,m_lim,img_angle=angle-180.0,\
-	 lmap=True,makeplot=False,chatter=chatter) 
+         lmap=True,makeplot=False,chatter=chatter) 
       if chatter > 2:
-         print "zeroth order map strong: shape=",map_strong.shape," min, max =",map_strong.min(), map_strong.max()
+         print("zeroth order map strong: shape=",map_strong.shape," min, max =",map_strong.min(), map_strong.max())
 
 
    # tracks - defined as yi (delta) = 0 at anchor position (ankx,anky)  
@@ -3429,8 +3440,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
            delpix = array([abs(offsetlimit[1]),1],dtype=int).max() # at least 1
            if offsetlimit[1] < 1.:
                offsetset = True
-           else:	   
-               print 'curved_extraction: offsetlimit=',offsetlimit,'  delpix=',delpix
+           else:           
+               print('curved_extraction: offsetlimit=',offsetlimit,'  delpix=',delpix)
        eo = int(anky-100)
        if set_offset: 
            eo = int(offset-100)
@@ -3441,22 +3452,22 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
               m0 = 0.5*ny-delpix + eo #int( (ny+1)/4) 
               m1 = 0.5*ny+delpix + eo #int( 3*(ny+1)/4)+1
               yoff = y1[q] - anky   # this is just the offset from the anchor since y1[x=0] was set to anky
-              cp2[int(m0-yoff):int(m1-yoff)] += spimg[m0:m1,q].flatten()
+              cp2[int(m0-yoff):int(m1-yoff)] += spimg[int(m0):int(m1),q].flatten()
             except:
-               print "skipping slice %5i in adjusting first order y-position"%(q)
+               print("skipping slice %5i in adjusting first order y-position"%(q))
                pass 
-      	  
+          
        if offsetset: 
            yof = offsetval - anky
            if chatter > 1:
-               print  "spectrum location set with input parameter to: y=%5.1f"%(offsetval)
+               print("spectrum location set with input parameter to: y=%5.1f"%(offsetval))
            msg += "spectrum location set with input parameter to: y=%5.1f\n"%(offsetval)
        else:    
            (p0,p1), ier = leastsq(Fun1b, (cp2.max(),anky), args=(cp2,arange(200),3.2) )
            yof = (p1-anky) 
            if chatter > 1:
-               print "\n *** cross-spectrum gaussian fit parameters: ",p0,p1
-               print "the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof)
+               print("\n *** cross-spectrum gaussian fit parameters: ",p0,p1)
+               print("the first anchor fit with gaussian peaks at %5.1f, and the Y correction\nis %5.1f (may not be used)" % (p1,yof))
        #### should also estimate the likely wavelength error from the offset distance p1 and print
            #msg += "cross-spectrum gaussian fit parameters: (%5.1f ,%5.1f)\n" % (p0,p1)
            #msg += "the first anchor fit with gaussian peaks at %5.1f, and the Y correction was %5.1f\n" % (p1,yof)
@@ -3471,7 +3482,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
          y1 += offset
          y2 += offset
          y3 += offset 
-	 print "shifting the y-curve with offset passed by parameter"
+         print("shifting the y-curve with offset passed by parameter")
    else: 
       # assuming the relative position of the orders is correct, just shift the whole bunch  
       y0 += yof
@@ -3482,7 +3493,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 
    if not set_qual:
       map = None
-      print "no zeroth order contamination quality information available "
+      print("no zeroth order contamination quality information available ")
       quality[:] = qflag['good']     
 
 # OUTPUT PARAMETER  spectra, background, slit init - full dimension retained 
@@ -3516,53 +3527,53 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    
    fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3),(
                y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	       y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+               y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
                y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	       y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
-	       x,xstart,xend,sp_all,quality,co_back)  
-	       
-	     
+               y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
+               x,xstart,xend,sp_all,quality,co_back)  
+               
+             
    if trackonly:   # output the coordinates on the extimg image which specify the lay of 
       # each order
       if outfull:
          return fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,
-	        bg_second,bg_third), (borderup,borderdown), apercorr  #, expospec, msg, curved
-      else: return fitorder	 
+                bg_second,bg_third), (borderup,borderdown), apercorr  #, expospec, msg, curved
+      else: return fitorder      
 
    if not trackfull:
 
       if (curved == "update") & (not trackcentroiding):
         # the hope is, that with more data the calibration can be improved to eliminate this step
-        #try:	 
+        #try:    
           fitorder2, fval, fvalerr = updateFitorder(extimg, fitorder, wheelpos, full=True,
             predict2nd=predict_second_order, fit_second=fit_second, fit_third=fit_second,
-	    C_1=C_1, C_2=C_2, d12=dist12, chatter=chatter)	      
+            C_1=C_1, C_2=C_2, d12=dist12, chatter=chatter)            
           msg += "updated the curvature and width fit parameters\n"
    
           (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	      y1,dlim1L,dlim1U,sig1coef,sp_first,co_first  ),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first,co_first  ),(
               y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	      y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
-	      x,xstart,xend,sp_all,quality,co_back)  = fitorder2
-	      
-          # update the anchor y-coordinate	      
-          ank_c[0] = y1[ank_c[1]]	      
+              y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
+              x,xstart,xend,sp_all,quality,co_back)  = fitorder2
+              
+          # update the anchor y-coordinate            
+          ank_c[0] = y1[ank_c[1]]             
         #except:
-	#  msg += "WARNING: fit order curvature update has failed\n"
-	#  curved = "curve"
+        #  msg += "WARNING: fit order curvature update has failed\n"
+        #  curved = "curve"
         
       if offsetset & (not trackcentroiding): 
          mess = "%s\nWARNING Using offsetlimit with parameter  *curved = 'update'* \n"\
-	 "WARNING Therefore we updated the curvature, and besides the curvature, the\n"\
-	 "Y-position of the extraction region was updated to y1[ankx]=%5.1f and \n"\
-	 "does not equal the offsetlimit value of  %5.1f \n%s"%(30*"=*=",
-	 y1[int(ankx)],offsetlimit[0],30*"=*=")
-	 print mess
+         "WARNING Therefore we updated the curvature, and besides the curvature, the\n"\
+         "Y-position of the extraction region was updated to y1[ankx]=%5.1f and \n"\
+         "does not equal the offsetlimit value of  %5.1f \n%s"%(30*"=*=",
+         y1[int(ankx)],offsetlimit[0],30*"=*=")
+         print(mess)
          mess = "Updated the curvature, and besides the curvature, the Y-position \n"\
-	 "  of the extraction region was updated to y1[ankx]=%5.1f and does\n"\
-	 "  not equal the offsetlimit value of  %5.1f \n"%(y1[int(ankx)],offsetlimit[0])
-	 msg += mess+"\n"
+         "  of the extraction region was updated to y1[ankx]=%5.1f and does\n"\
+         "  not equal the offsetlimit value of  %5.1f \n"%(y1[int(ankx)],offsetlimit[0])
+         msg += mess+"\n"
 
 
       # default single track extraction 
@@ -3586,19 +3597,19 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #splim1 = 100+offset-sphalfwid+1    changes 19-feb-2012
             #splim2 = splim1 + spwid
             #k1 = splim1+y0[i]-anky
-	    k1 = int(y0[i] - sphalfwid + 0.5)
+            k1 = int(y0[i] - sphalfwid + 0.5)
             k2 = k1 + int(spwid+0.5)
-	    k3 = int(y0[i] - coi_half_width + 0.5)
-            k4 = k1 + int(2*coi_half_width)	    
+            k3 = int(y0[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)         
             if i in q0[0]: 
                co_zeroth[i] = extimg[k3:k4,i].sum()
                sp_zeroth[i] = extimg[k1:k2,i].sum()
                bg_zeroth[i] = bgimg[k1:k2,i].sum()
                borderup[0,i]   = k2
                borderdown[0,i] = k1
-	       apercorr[0,i] = x_aperture_correction(k1,k2,sig0coef,x[i],norder=0)
+               apercorr[0,i] = x_aperture_correction(k1,k2,sig0coef,x[i],norder=0)
                if len(expmap) == 1: expospec[0,i] = expmap[0]
-	       else: expospec[0,i] = expmap[k1:k2,i].mean()
+               else: expospec[0,i] = expmap[k1:k2,i].mean()
       
       if present1:
          for i in range(nx): 
@@ -3608,34 +3619,34 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #splim1 = 100+offset-sphalfwid+1   changes 19-feb-2012
             #splim2 = splim1 + spwid           
             #k1 = int(splim1+y1[i]-anky+0.5)   
-	    k1 = int(y1[i] - sphalfwid + 0.5)   
-            k2 = k1 + int(spwid+0.5) 	    
-	    k3 = int(y1[i] - coi_half_width + 0.5)
-            k4 = k1 + int(2*coi_half_width)	    
+            k1 = int(y1[i] - sphalfwid + 0.5)   
+            k2 = k1 + int(spwid+0.5)        
+            k3 = int(y1[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)         
             if i in q1[0]: 
                co_first[i] = extimg[k3:k4,i].sum()
                sp_first[i] = extimg[k1:k2,i].sum()
                bg_first[i] = bgimg[k1:k2,i].sum()
                borderup[1,i]   = k2
                borderdown[1,i] = k1
-	       apercorr[1,i] = x_aperture_correction(k1,k2,sig1coef,x[i],norder=1)
+               apercorr[1,i] = x_aperture_correction(k1,k2,sig1coef,x[i],norder=1)
                if len(expmap) == 1: expospec[1,i] = expmap[0]
-	       else:  expospec[1,i] = expmap[k1:k2,i].mean()
+               else:  expospec[1,i] = expmap[k1:k2,i].mean()
                if dropout_mask != None:
-	           at3[i] = dropout_mask[k1:k2,i].any() 
-               if set_qual:	 	 
-	           k5 = int(y1[i] - 49 + 0.5)   
-                   k6 = k1 + int(98+0.5) 	    
+                   at3[i] = dropout_mask[k1:k2,i].any() 
+               if set_qual:              
+                   k5 = int(y1[i] - 49 + 0.5)   
+                   k6 = k1 + int(98+0.5)            
                    if ny > 20: 
                  # all zeroth orders of sources within coi-distance: 
-	               at1[i] = (map_all[i,k3:k4] == False).any()
+                       at1[i] = (map_all[i,k3:k4] == False).any()
                    if ny > 100:
                  # strong sources: circle 49 pix radius hits the centre of the track 
-	               at2[i] = (map_strong[i,k5:k6] == False).any()
+                       at2[i] = (map_strong[i,k5:k6] == False).any()
                    quality[at1] = qflag['weakzeroth']
-                   quality[at2] = qflag['zeroth']	 
-	           quality[at3] = qflag['bad']  
-	       
+                   quality[at2] = qflag['zeroth']        
+                   quality[at3] = qflag['bad']  
+               
       if present2:
          for i in range(nx): 
             sphalfwid = trackwidth * polyval(sig2coef,x[i])
@@ -3643,19 +3654,19 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #splim1 = 100+offset-sphalfwid+1   changes 19-feb-2012
             #splim2 = splim1 + spwid
             #k1 = int(splim1+y2[i]-anky+0.5)
-	    k1 = int(y2[i] - sphalfwid +0.5)
+            k1 = int(y2[i] - sphalfwid +0.5)
             k2 = k1 + int(spwid+0.5)
-	    k3 = int(y2[i] - coi_half_width + 0.5)
-            k4 = k1 + int(2*coi_half_width)	    
+            k3 = int(y2[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)         
             if i in q2[0]: 
-	       co_second[i] = extimg[k3:k4,i].sum()
-	       sp_second[i] = extimg[k1:k2,i].sum()
-	       bg_second[i] = bgimg[k1:k2,i].sum()
+               co_second[i] = extimg[k3:k4,i].sum()
+               sp_second[i] = extimg[k1:k2,i].sum()
+               bg_second[i] = bgimg[k1:k2,i].sum()
                borderup[2,i]   = k2
                borderdown[2,i] = k1
-	       apercorr[2,i] = x_aperture_correction(k1,k2,sig2coef,x[i],norder=2)
+               apercorr[2,i] = x_aperture_correction(k1,k2,sig2coef,x[i],norder=2)
                if len(expmap) == 1: expospec[2,i] = expmap[0]
-	       else:  expospec[2,i] = expmap[k1:k2,i].mean()
+               else:  expospec[2,i] = expmap[k1:k2,i].mean()
 
             y1_y2 = np.abs(0.5*(k2+k1) - 0.5*(borderup[1,i]-borderdown[1,i]))
             s1_s2 = 0.5*(np.polyval(sig1coef,x[i]) + np.polyval(sig2coef, x[i]) )
@@ -3668,33 +3679,33 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             #splim1 = 100+offset-sphalfwid+1
             #splim2 = splim1 + spwid
             #k1 = int(splim1+y3[i]-anky+0.5)
-	    k1 = int(y3[i] - sphalfwid +0.5)
+            k1 = int(y3[i] - sphalfwid +0.5)
             k2 = k1 + int(spwid+0.5)
-	    k3 = int(y3[i] - coi_half_width + 0.5)
-            k4 = k1 + int(2*coi_half_width)	    
+            k3 = int(y3[i] - coi_half_width + 0.5)
+            k4 = k1 + int(2*coi_half_width)         
             if i in q3[0]: 
-	       co_third[i] = extimg[k3:k4,i].sum(axis=0)
-	       sp_third[i] = extimg[k1:k2,i].sum(axis=0)
-	       bg_third[i] = bgimg[k1:k2,i].sum(axis=0)
+               co_third[i] = extimg[k3:k4,i].sum(axis=0)
+               sp_third[i] = extimg[k1:k2,i].sum(axis=0)
+               bg_third[i] = bgimg[k1:k2,i].sum(axis=0)
                borderup[3,i]   = k2
                borderdown[3,i] = k1
-	       apercorr[3,i] = x_aperture_correction(k1,k2,sig3coef,x[i],norder=3)
+               apercorr[3,i] = x_aperture_correction(k1,k2,sig3coef,x[i],norder=3)
                if len(expmap) == 1: expospec[3,i] = expmap[0]
-	       else: expospec[3,i] = expmap[k1:k2,i].mean()
+               else: expospec[3,i] = expmap[k1:k2,i].mean()
 
       # y0,y1,y2,y3 now reflect accurately the center of the slit used.
             
       fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	      y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
               y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	      y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
-	      x,xstart,xend,sp_all,quality,co_back)  
+              y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
+              x,xstart,xend,sp_all,quality,co_back)  
   
       if outfull:
          return fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,
-	        bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved	        
-      else: return fitorder	
+                bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved             
+      else: return fitorder     
        
    #===================
    # Now calculate the probability distributions across the orders using gaussian fits
@@ -3707,97 +3718,97 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       
       #check that y1,y2,y3 are full length arrays
       if not ( (len(y1) == nx) & (len(y2) == nx) & (len(y3) == nx) ): 
-         print "FATAL error in uvotgetspec.curved_extraction array sizes wrong"
+         print("FATAL error in uvotgetspec.curved_extraction array sizes wrong")
 
-      # this parameter allows you to restrict the range along the dispersion being considered	 
+      # this parameter allows you to restrict the range along the dispersion being considered    
       if (test == None) | (test == 'cal'): 
         ileft = 2
-	irite = nx -2
+        irite = nx -2
       else:
         ileft = test[0]
-	irite = test[1]	
+        irite = test[1] 
       
       for i in range(ileft,irite):
-         if chatter > 3: print "uvotgetspec.curved_extraction [trackfull] fitting i = %2i x=%6.2f"%(i,x[i])
+         if chatter > 3: print("uvotgetspec.curved_extraction [trackfull] fitting i = %2i x=%6.2f"%(i,x[i]))
          # do the zeroth order 
          if i in q0[0]: 
-	    Ypos = (array( [y0[i]])).flatten()
-	    Xpos = arange(i-2,i+3)
-	    sigmas = sig0coef
-	    (par, flag), junk = get_components(Xpos,spimg,Ypos,wheelpos,\
-	                 caldefault=caldefault,sigmas=sigmas)
-	    flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
-	    iflags = int(flags)
-	    gfit[0,:,i] = [i,0,par[0],par[1],par[2],iflags]
-	    if chatter > 3: print i, par, flag
+            Ypos = (array( [y0[i]])).flatten()
+            Xpos = arange(i-2,i+3)
+            sigmas = sig0coef
+            (par, flag), junk = get_components(Xpos,spimg,Ypos,wheelpos,\
+                         caldefault=caldefault,sigmas=sigmas)
+            flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
+            iflags = int(flags)
+            gfit[0,:,i] = [i,0,par[0],par[1],par[2],iflags]
+            if chatter > 3: print(i, par, flag)
 
-	 # do the first order  
-	 if ((i in q1[0]) & (i not in q2[0])) :
-	    Ypos = array( [y1[i]] ).flatten()
-	    Xpos = arange(i-2,i+3)
-	    sigmas = sig1coef
-	    (par, flag), junk = get_components(Xpos,spimg,Ypos,wheelpos,\
-	                        caldefault=caldefault,sigmas=sigmas)
-	    flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
-	    iflags = int(flags)
-	    gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
-	    if chatter > 3: print i, par, flag
-	    
-	 # do the second order  
-	 if ((i in q1[0]) & (i in q2[0]) & (i not in q3[0])):
-	    Ypos = array( [y1[i],y2[i]]).flatten()
-	    Xpos = arange(i-3,i+4)
-	    sigmas = array([ sig1coef[0], sig2coef[0] ])
-	    if chatter > 3: print '++++ second order Xpos:',Xpos,'  Ypos: ', Ypos,' wheelpos ',wheelpos
-	    Z = get_components(Xpos,spimg,Ypos,wheelpos,composite_fit=composite_fit,\
-	        caldefault=caldefault,sigmas=sigmas)
-	    par, flag = Z[0]
-	    flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
-	    iflags = int(flags)
-	    gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
-	    if len(par) == 6:
+         # do the first order  
+         if ((i in q1[0]) & (i not in q2[0])) :
+            Ypos = array( [y1[i]] ).flatten()
+            Xpos = arange(i-2,i+3)
+            sigmas = sig1coef
+            (par, flag), junk = get_components(Xpos,spimg,Ypos,wheelpos,\
+                                caldefault=caldefault,sigmas=sigmas)
+            flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
+            iflags = int(flags)
+            gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
+            if chatter > 3: print(i, par, flag)
+            
+         # do the second order  
+         if ((i in q1[0]) & (i in q2[0]) & (i not in q3[0])):
+            Ypos = array( [y1[i],y2[i]]).flatten()
+            Xpos = arange(i-3,i+4)
+            sigmas = array([ sig1coef[0], sig2coef[0] ])
+            if chatter > 3: print('++++ second order Xpos:',Xpos,'  Ypos: ', Ypos,' wheelpos ',wheelpos)
+            Z = get_components(Xpos,spimg,Ypos,wheelpos,composite_fit=composite_fit,\
+                caldefault=caldefault,sigmas=sigmas)
+            par, flag = Z[0]
+            flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
+            iflags = int(flags)
+            gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
+            if len(par) == 6:
                gfit[2,:,i] = [i,2,par[3],par[4],par[5],iflags]
-	    if chatter > 3: print i; print par[0:3]; print par[3:6]; print flag
-	    
-	 # do the third order  
-	 if ((i in q1[0]) & (i in q2[0]) & (i in q3[0])):
-	    Ypos = array([y1[i],y2[i],y3[i]]).flatten()
-	    Xpos = arange(i-4,i+5)
-	    sigmas = array([sig1coef[0], sig2coef[0], sig3coef[0]])
-	    if chatter > 3: print '+++++ third order Xpos:',Xpos,'  Ypos: ', Ypos,' * * * 3 3 3 3 3 * * *'
-	    width = abs( polyval(array([2.0e-05, 0.034, -70]),(anchor2[1]-1200.)))+5.0 # rough limits
-	    
+            if chatter > 3: print(i); print(par[0:3]); print(par[3:6]); print(flag)
+            
+         # do the third order  
+         if ((i in q1[0]) & (i in q2[0]) & (i in q3[0])):
+            Ypos = array([y1[i],y2[i],y3[i]]).flatten()
+            Xpos = arange(i-4,i+5)
+            sigmas = array([sig1coef[0], sig2coef[0], sig3coef[0]])
+            if chatter > 3: print('+++++ third order Xpos:',Xpos,'  Ypos: ', Ypos,' * * * 3 3 3 3 3 * * *')
+            width = abs( polyval(array([2.0e-05, 0.034, -70]),(anchor2[1]-1200.)))+5.0 # rough limits
+            
             try:
                Z = get_components(Xpos,spimg,Ypos,wheelpos,chatter=chatter,width=width,\
-	           composite_fit=composite_fit,caldefault=caldefault,sigmas=sigmas)
-	       par, flag = Z[0] 
-	       
-	    except:
-	       print "failed 3rd order fitting width = ",width
-               print "Ypos = ",Ypos
-	       print "Xpos range ",i-4,i+5, "   sigmas = ",sigmas, " wheelpos = ",wheelpos
-	       print "composite_fit:",composite_fit,"  caldefault:",caldefault
-	       print par
-	       print flag
-	       par = array([0.,y1[i],3.,0.,y2[i],4.,0.,y3[i],6.])   
-	       flag = array([9,9,9,9,9,9])
-	       
-	    flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
-	    iflags = int(flags)
-	    gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
-	    if len(par) > 4: 
-	       gfit[2,:,i] = [i,2,par[3],par[4],par[5],iflags]
-	    if len(par) == 9:   
-	       gfit[3,:,i] = [i,3,par[6],par[7],par[8],iflags]
-	    if chatter > 3: 
-	       print  i; print par[0:3] ; print par[3:6] ; print par[6:9] ; print iflags
-	       
-	 # thing not covered (properly): 
-	 #  -- the second order falls on the first and the third order not
-	 #  -- one of the orders is not on the detector
-	 #  -- order overlap  
-	 #  -- minus one order     
-	       	      
+                   composite_fit=composite_fit,caldefault=caldefault,sigmas=sigmas)
+               par, flag = Z[0] 
+               
+            except:
+               print("failed 3rd order fitting width = ",width)
+               print("Ypos = ",Ypos)
+               print("Xpos range ",i-4,i+5, "   sigmas = ",sigmas, " wheelpos = ",wheelpos)
+               print("composite_fit:",composite_fit,"  caldefault:",caldefault)
+               print(par)
+               print(flag)
+               par = array([0.,y1[i],3.,0.,y2[i],4.,0.,y3[i],6.])   
+               flag = array([9,9,9,9,9,9])
+               
+            flags = str(flag[0])+str(flag[1])+str(flag[2])+str(flag[3])+str(flag[4])+str(flag[5])
+            iflags = int(flags)
+            gfit[1,:,i] = [i,1,par[0],par[1],par[2],iflags]
+            if len(par) > 4: 
+               gfit[2,:,i] = [i,2,par[3],par[4],par[5],iflags]
+            if len(par) == 9:   
+               gfit[3,:,i] = [i,3,par[6],par[7],par[8],iflags]
+            if chatter > 3: 
+               print(i); print(par[0:3]) ; print(par[3:6]) ; print(par[6:9]) ; print(iflags)
+               
+         # thing not covered (properly): 
+         #  -- the second order falls on the first and the third order not
+         #  -- one of the orders is not on the detector
+         #  -- order overlap  
+         #  -- minus one order     
+                      
       return fitorder, gfit, (bgimg,)
 
 def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wheelpos=None):
@@ -3807,10 +3818,10 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
       ----------
       k1,k2 : int
          k1 edge of track, k2 opposite track edge 
-	 in pixel coordinates
+         in pixel coordinates
       sigcoef : list
          polynomial coefficient of the fit to the track width
-	 so that sigma = polyval(sigcoef,x)
+         so that sigma = polyval(sigcoef,x)
       x : float
          pixel/channel position
       norder: int
@@ -3821,7 +3832,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
          not implemented
       wheelpos : 160|200|955|1000
          filter wheel position
-	 
+         
       Notes
       -----
       The aperture correction is returned for given sigcoef and position x       
@@ -3833,7 +3844,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
    
       2012-10-06  Dependence on coi-factor identified as a likely parameter 
                changing the PSF (no further action)
-	       
+               
       2013-12-15  revised aperture functions, one for each grism (low coi)
    '''
    import uvotmisc
@@ -3856,8 +3867,8 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
         -7.89493710e-01,   1.43691688e+00,  -2.43239325e-02])   
       
       polycoef200 = np.array([  1.29297314e-03,  -2.66018405e-02,   2.10241179e-01,
-        -7.93941262e-01,   1.44678036e+00,  -2.51078365e-02])	
-      #y200 = polyval(polycoef200,x)	
+        -7.93941262e-01,   1.44678036e+00,  -2.51078365e-02])   
+      #y200 = polyval(polycoef200,x)    
        
       polycoef1000a = np.array([ 0.00260494, -0.04792046,  0.33581242, -1.11237223,  1.74086898,
        -0.04026319]) # for aperture  <= 2.2 sig, and for larger:
@@ -3883,7 +3894,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
       }
       aper_1000_low = {
        "sig": [0.0, 0.3, 0.5, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6,  2.0,2.2,2.5,3.0  ,4.0 ,6.0 ],
-       "ape": [0.0,0.37,0.55,0.68,0.74,0.80,0.85,0.91,0.96,0.98,0.995,1. ,1. ,1.004,1.01,1.01]	   
+       "ape": [0.0,0.37,0.55,0.68,0.74,0.80,0.85,0.91,0.96,0.98,0.995,1. ,1. ,1.004,1.01,1.01]     
       }
       aper_955_med = {
        "sig": [0.0,0.30,0.60,0.80,1.00,1.30,1.60,1.80,2.00,2.50,3.00, 4.00,6.00],
@@ -3904,21 +3915,21 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
       elif (wheelpos != None):
           # low coi for wheelpos = 160,200; medium coi for wheelpos = 955, 1000
           if wheelpos == 160:
-	      if (type(coi) == typeNone) | (coi < 0.1) :
-	         apercf1 = interp1d(aper_160_low['sig'],aper_160_low['ape'],)
-	         apercorr = renormal / apercf1(xx)         
+              if (type(coi) == typeNone) | (coi < 0.1) :
+                 apercf1 = interp1d(aper_160_low['sig'],aper_160_low['ape'],)
+                 apercorr = renormal / apercf1(xx)         
           if wheelpos == 200:
-	      if (type(coi) == typeNone) | (coi < 0.1) :
-	         apercf2 = interp1d(aper_200_low['sig'],aper_200_low['ape'],) 
-	         apercorr = renormal / apercf2(xx)         
+              if (type(coi) == typeNone) | (coi < 0.1) :
+                 apercf2 = interp1d(aper_200_low['sig'],aper_200_low['ape'],) 
+                 apercorr = renormal / apercf2(xx)         
           if wheelpos == 955:
-	      if (type(coi) == typeNone) | (coi < 0.1) :
-	         apercf3 = interp1d(aper_955_med['sig'],aper_955_med['ape'],)
-	         apercorr = renormal / apercf3(xx)          
+              if (type(coi) == typeNone) | (coi < 0.1) :
+                 apercf3 = interp1d(aper_955_med['sig'],aper_955_med['ape'],)
+                 apercorr = renormal / apercf3(xx)          
           if wheelpos == 1000:
-	      if (type(coi) == typeNone) | (coi < 0.1) :
-	         apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
-	         apercorr = renormal / apercf4(xx)                   	 
+              if (type(coi) == typeNone) | (coi < 0.1) :
+                 apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
+                 apercorr = renormal / apercf4(xx)                       
       else: 
        # when xx<4.5, mode !gaussian, wheelpos==None use the following
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
@@ -3947,7 +3958,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
          9.96388866e-01,   9.98435907e-01,   1.00000000e+00,
          0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
          0.00000000e+00]), 3)
-	 
+         
         apercorr = 1.0/splev( xx, tck,)
       
    if norder == 2:       
@@ -3969,11 +3980,11 @@ def clipmask(f,sigclip=2.5,fpos=False):
     - **sigclip** : float
    
       clip data at `sigma` standard deviations above the mean 
-	
+        
     - **fpos** : bool
    
       if True, clip negative values
-	
+        
    Returns
    -------
    mask : 2D array, boolean
@@ -3987,8 +3998,8 @@ def clipmask(f,sigclip=2.5,fpos=False):
    The mask is iterated until it converges. So the effect of outliers 
    on the standard deviation is nil. This also means that sigma needs 
    to be chosen large enough or the standard deviation will not be 
-   a good measure of the real noise in the mean. 		
-		
+   a good measure of the real noise in the mean.                
+                
    '''
    import numpy as np
    
@@ -4019,40 +4030,40 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
        
        Notes: implicit assumption is that the 'y' axis is the pixel number. 
          if for some reason the data pairs are (z_i,f_meas_i) then the definition of y 
-	 changes into z. 
-	 
-	 if the return value for the centre of the gaussian exceeds some number (sig?), 
-	 then the solution is probably suspect. In that case a second fit with sig? held
-	 fixed perhaps should be done.
-	 
-	 some tests show that the solution is very sensitive to the first guess of the 
-	 position of the peak. It will even find a dip in the noise (neg amplitude) 
-	 rather than the main peak or overshoot the peak if the starting guess is too far 
-	 off, and fudge sigma to be large. 
-	 
-	 Error Flag: 
-	 
-	 flag[0] 0 = ok, 1=solution main peak is offset from Ypositions by more than 'sig' pixels 
-	 flag[1] 0 = ok, 1=solution secondary peak is offset from Ypositions by more than 'sig' pixels
-	 flag[2] 0 = ok, 1=solution third peak is offset from Ypositions by more than 'sig' pixels
-	 flag[3] not used
-	 flag[4] number of orders in answer
-	 flag[5] error flag returned by fitting program
-	 
+         changes into z. 
+         
+         if the return value for the centre of the gaussian exceeds some number (sig?), 
+         then the solution is probably suspect. In that case a second fit with sig? held
+         fixed perhaps should be done.
+         
+         some tests show that the solution is very sensitive to the first guess of the 
+         position of the peak. It will even find a dip in the noise (neg amplitude) 
+         rather than the main peak or overshoot the peak if the starting guess is too far 
+         off, and fudge sigma to be large. 
+         
+         Error Flag: 
+         
+         flag[0] 0 = ok, 1=solution main peak is offset from Ypositions by more than 'sig' pixels 
+         flag[1] 0 = ok, 1=solution secondary peak is offset from Ypositions by more than 'sig' pixels
+         flag[2] 0 = ok, 1=solution third peak is offset from Ypositions by more than 'sig' pixels
+         flag[3] not used
+         flag[4] number of orders in answer
+         flag[5] error flag returned by fitting program
+         
          noiselevel:
          if the fit to the peak has a maximum < noiselevel then the peak will be removed.
-	 
-	 fiterrors True implies caldefault=True		   
+         
+         fiterrors True implies caldefault=True            
 
          smoothpix: the number of pixels along dispersion to smooth over for 
-	            fitting gaussians across dispersion
+                    fitting gaussians across dispersion
 
          amp2lim: second order prediction of a (minimum, maximum) valid for all xpos 
 
    NPMK, 2010-07-15 Fecit
    NPMK, 2011-08-16 adding smoothing for improved fitting   
    NPMK  2011-08-26 replace leastsq with mpfit based routines; clip image outside spectrum width
-	 
+         
    '''
    import numpy
    from numpy import array, arange,transpose, where, abs, min, zeros, atleast_1d, atleast_2d, sqrt
@@ -4077,16 +4088,16 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       sigmas = array([3.1,4.3,4.6])
    
    if chatter > 4:
-      print "get_components: input prameter    wheelpos ", wheelpos
-      print "get_components: input parameter       xpos ", xpos
-      print "get_components: input parameter Ypositions ", Ypositions
-      print "get_components: number of orders : ",nypos
-      print "get_components: dimension input image      ", spimg.shape
+      print("get_components: input prameter    wheelpos ", wheelpos)
+      print("get_components: input parameter       xpos ", xpos)
+      print("get_components: input parameter Ypositions ", Ypositions)
+      print("get_components: number of orders : ",nypos)
+      print("get_components: dimension input image      ", spimg.shape)
       
    xpos = xpos[ where(xpos < spimg.shape[1])[0] ]  # eliminate elements outside range
    
    if len(xpos) <1:
-      print "get_components: xpos must be at least one number"
+      print("get_components: xpos must be at least one number")
       raise ValueError 
       return
    elif len(xpos) == 1: 
@@ -4106,7 +4117,7 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
 
    if type(noiselevel) == typeNone: 
       noiselevel = f_meas[bg_mask].mean()
-      if chatter > 3: print "get_components: adopted noiselevel = ", noiselevel
+      if chatter > 3: print("get_components: adopted noiselevel = ", noiselevel)
    
    y = arange(spimg.shape[0],dtype=float)  # pixel number 
    flag = zeros(6, dtype=int )   
@@ -4114,66 +4125,66 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
    if caldefault:
       
       if type(sigmas) == typeNone:
-         print "missing parameter fitorder in uvotgetspec.get_components\n"
+         print("missing parameter fitorder in uvotgetspec.get_components\n")
       else:
          # the positions of the centre of the fits are given in Ypositions
-         sigmaas = atleast_1d(sigmas) 	 
-	 if nypos == 1: 
-	    if chatter > 3: print 'len Ypositions == 1'
-	    sig0 = sigmaas[0]
-	    p0  = Ypositions[0]
-	    a0  = max(f_meas)
-	    f_mask[p0-4*sig0:p0+4*sig0] = True 
-	       
-	    Z = runfit1(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,\
-	               fixsig=fixsig,fixpos=fixpos)
+         sigmaas = atleast_1d(sigmas)    
+         if nypos == 1: 
+            if chatter > 3: print('len Ypositions == 1')
+            sig0 = sigmaas[0]
+            p0  = Ypositions[0]
+            a0  = max(f_meas)
+            f_mask[p0-4*sig0:p0+4*sig0] = True 
+               
+            Z = runfit1(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,\
+                       fixsig=fixsig,fixpos=fixpos)
             flag[5] = Z.status    
-	    if Z.status > 0:
+            if Z.status > 0:
                [bg0,bg1,a0,p0,sig0] = Z.params
-	    else:
-	       if chatter > 4:
-	          print "runfit1 status:",Z.status
-		  print "runfit1 params:",Z.params   	       
-	    if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
-	    else:         return ((a0,p0,sig0),flag), (y,f_meas)
-	 if nypos == 2: 
-	    if chatter > 3: print 'len Ypositions == 2'
-	    sig0, sig1 = sigmaas[0], sigmaas[1]
-	    p0, p1  = Ypositions
-	    a0  = 0.9 * max(f_meas)
-	    a1 = 0.5*a0 
-	    f_mask[p0-4*sig0:p0+4*sig0] = True 
-	    f_mask[p1-4*sig1:p1+4*sig1] = True 
-	    Z = runfit2(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,\
-	               fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
-	    flag[5] = Z.status
-	    if Z.status > 0:
-	       [bg0,bg1,a0,p0,sig0,a1,p1,sig1] = Z.params
-	    if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
-	    else: 	  return ((a0,p0,sig0,a1,p1,sig1),flag), (y,f_meas)	    
-	 if nypos == 3: 
-	    if chatter > 3: print 'len Ypositions == 3'
-	    sig0,sig1,sig2 = sigmaas[:]
-	    p0, p1, p2  = Ypositions
-	    a0  = 0.9* max(f_meas)
-	    a1 = a0 
-	    a2 = a1 
-	    f_mask[p0-4*sig0:p0+4*sig0] = True 
-	    f_mask[p2-4*sig2:p2+4*sig2] = True 
-	    Z = runfit3(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,a2,p2,sig2,\
-	           fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
-	    flag[5] = Z.status
-	    if Z.status > 0:
-	       [bg0,bg1,a0,p0,sig0,a1,p1,sig1,a2,p2,sig2] = Z.params
-	    if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
-	    else: 	  return ((a0,p0,sig0,a1,p1,sig1,a2,p2,sig2),flag), (y,f_meas)
+            else:
+               if chatter > 4:
+                  print("runfit1 status:",Z.status)
+                  print("runfit1 params:",Z.params)            
+            if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
+            else:         return ((a0,p0,sig0),flag), (y,f_meas)
+         if nypos == 2: 
+            if chatter > 3: print('len Ypositions == 2')
+            sig0, sig1 = sigmaas[0], sigmaas[1]
+            p0, p1  = Ypositions
+            a0  = 0.9 * max(f_meas)
+            a1 = 0.5*a0 
+            f_mask[p0-4*sig0:p0+4*sig0] = True 
+            f_mask[p1-4*sig1:p1+4*sig1] = True 
+            Z = runfit2(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,\
+                       fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
+            flag[5] = Z.status
+            if Z.status > 0:
+               [bg0,bg1,a0,p0,sig0,a1,p1,sig1] = Z.params
+            if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
+            else:         return ((a0,p0,sig0,a1,p1,sig1),flag), (y,f_meas)         
+         if nypos == 3: 
+            if chatter > 3: print('len Ypositions == 3')
+            sig0,sig1,sig2 = sigmaas[:]
+            p0, p1, p2  = Ypositions
+            a0  = 0.9* max(f_meas)
+            a1 = a0 
+            a2 = a1 
+            f_mask[p0-4*sig0:p0+4*sig0] = True 
+            f_mask[p2-4*sig2:p2+4*sig2] = True 
+            Z = runfit3(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,a2,p2,sig2,\
+                   fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
+            flag[5] = Z.status
+            if Z.status > 0:
+               [bg0,bg1,a0,p0,sig0,a1,p1,sig1,a2,p2,sig2] = Z.params
+            if fiterrors: return  (Z.params,Z.perror,flag), (y,f_meas)  # errors in fit = Z.perror
+            else:         return ((a0,p0,sig0,a1,p1,sig1,a2,p2,sig2),flag), (y,f_meas)
 
-	 
+         
    if wheelpos < 500 :
       sig = 6
    else:
       sig = 4
-   sig0 = sig   	 
+   sig0 = sig            
    
    Sig = sig
    # width = 40  Maximum order distance - parameter in call ?
@@ -4190,20 +4201,20 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       # if the "solution" is wrong use the input as best guess:
       if abs(Ypositions[0] - p1) > 15:   
          p1 = y0
-	 flag[0] = 3
+         flag[0] = 3
       else:  # shift the input positions
          delpos = p1-Ypositions[0]
-	 Ypositions += delpos 
+         Ypositions += delpos 
       # refine the sigma with fixed centre for the peak
       (p0,sig_), ier = leastsq(Fun1a, (p0_,sig), args=(f_meas,y,p1) ) 
       if ((sig_ > 0.1*sig) &  (sig_ < 6.* sig)): 
          sig1 = sig_ 
-      else: sig1 = sig	    
+      else: sig1 = sig      
       Yout = ((p0,p1,sig1), flag), (y,f_meas)
       if chatter > 3:
-         print "highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f, ier flag=%2i "%(p0,p1,sig1,ier)
+         print("highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f, ier flag=%2i "%(p0,p1,sig1,ier))
    else:
-      print 'Error in number of orders given in Ypositions'
+      print('Error in number of orders given in Ypositions')
       return
    
    # limit acceptable range for seaching for maxima   
@@ -4219,22 +4230,22 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       y0 = where(f_meas_reduced == a0)[0][0]
       Y2 = (p2,p3) , ier = leastsq(Fun1b, (a0,y0) , args=(f_meas_reduced,yq,sig)) 
       if chatter > 3:
-         print 'position order 2: %8.1f  shifted to %8.1f'%(p3,p3+y[q][0])
+         print('position order 2: %8.1f  shifted to %8.1f'%(p3,p3+y[q][0]))
       p3 += y[q][0]
       # check that the refined value is not too far off:
       if abs(p3 - Ypositions[1]) > 15:
-         if chatter > 3: print "problem p3 way off p3=",p3
+         if chatter > 3: print("problem p3 way off p3=",p3)
          p3 = Ypositions[1]
-	 flag[1] = 3
+         flag[1] = 3
       Y2 = (p2,sig2), ier = leastsq(Fun1a, (p2,sig1), args=(f_meas_reduced,yq,p3 ))
       if not ((sig2 > 0.25*sig1) &  (sig2 < 4.* sig1)):  
-         sig2 = sig1	
-	 newsig2 = False    
+         sig2 = sig1    
+         newsig2 = False    
       else:
          # keep sig2
-         newsig2 = True	 
+         newsig2 = True  
       if chatter > 3:
-         print "second highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f ; ier flag=%2i "%(p2,p3,sig2, ier)
+         print("second highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f ; ier flag=%2i "%(p2,p3,sig2, ier))
       Yout = ((p0,p1,sig1,p2,p3,sig2),flag), (y,q,f_meas,f_meas_reduced)
 
    if ((len(Ypositions) > 2) & qok ):
@@ -4242,33 +4253,33 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       (p0,p1,sig1,p2,p3,sig2), ier = \
           leastsq(Fun2, (p0,p1,sig1,p2,p3,sig2) , args=(f_meas[q],y[q]))
       if chatter > 3: 
-         print "fit double gaussian (%8.2f,%8.2f,%8.2f, %8.2f,%8.2f,%8.2f)"%\
-         (p0,p1,sig1,p2,p3,sig2) 
+         print("fit double gaussian (%8.2f,%8.2f,%8.2f, %8.2f,%8.2f,%8.2f)"%\
+         (p0,p1,sig1,p2,p3,sig2)) 
       f_meas_reduced = f_meas[q] - doublegaussian(yq,p0,p1,sig1,p2,p3,sig2)
       if not newsig2:
          y0 = Ypositions[2]
-	 a0 = 10*noiselevel
+         a0 = 10*noiselevel
       else:
          a0 = f_meas_reduced.max()
          y0 = y[q][where(f_meas_reduced == a0)[0][0]]
-	 if chatter > 3: print "third order input fit: amplitude = %8.2f, position = %8.2f"%(a0,y0)
+         if chatter > 3: print("third order input fit: amplitude = %8.2f, position = %8.2f"%(a0,y0))
       sig3 = 2*sig2    
       Y3 = (p4,p5), ier = leastsq(Fun1b, (a0,y0) , args=(f_meas_reduced,y[q],sig3))
       p5 += y[q][0]
       if abs(p5-Ypositions[2]) > 15: 
          p5 = Ypositions[2]
-	 flag[2] = 3
+         flag[2] = 3
       Y3 = (p4a,sig3), ier = leastsq(Fun1a, (p4,sig3), args=(f_meas_reduced,y[q],p5 ))
       if sig3 > 6*sig: sig3 = 2*sig2
       if chatter > 3:
-         print "third highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f, ier flag =%i "\
-	   %(p4,p5,sig3,ier)
+         print("third highest peak amplitude=%8.1f, position=%8.1f, sigma=%8.2f, ier flag =%i "\
+           %(p4,p5,sig3,ier))
       Yout = ((p0,p1,sig1,p2,p3,sig2,p4,p5,sig),flag),(y,q,f_meas,f_meas_reduced)
       
    # now remove odd solutions  - TBD: just flagging now  
    # check that the solutions for the centre are within 'Sig' of the input 'Ypositions'
    if chatter > 2:
-      print "input Ypositions: ", Ypositions 
+      print("input Ypositions: ", Ypositions) 
       nposi = len(Ypositions)
     
    if len(Ypositions) < 4 :
@@ -4281,66 +4292,66 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       dy = abs(p3 - p1)
       if dy < sig: 
          flag[1] += 10
-	 ip = where(abs(p3-Ypositions) < 0.9*dy)[0]
-	 indx = range(len(Ypositions))
-	 if len(ip) == 0: 
-	    print "problem with fitting peak # 2 "
-	 else:   
-	    indx.pop(ip[-1])
-	    Ypositions = Ypositions[indx] 	 
+         ip = where(abs(p3-Ypositions) < 0.9*dy)[0]
+         indx = list(range(len(Ypositions)))
+         if len(ip) == 0: 
+            print("problem with fitting peak # 2 ")
+         else:   
+            indx.pop(ip[-1])
+            Ypositions = Ypositions[indx]        
       if p2 < noiselevel: 
          flag[1] += 20
-	 ip = where(abs(p3-Ypositions) < 0.9*dy)[0]
-	 if len(ip) == 0: 
-	    print "problem with fitting peak # 2 "
-	 else:   
-	    indx = range(len(Ypositions))
-	    #return (p0,p1,p2,p3), Ypositions, ip, noiselevel,dy
-	    indx.pop(ip)
-	    Ypositions = Ypositions[indx]
-         	 
+         ip = where(abs(p3-Ypositions) < 0.9*dy)[0]
+         if len(ip) == 0: 
+            print("problem with fitting peak # 2 ")
+         else:   
+            indx = list(range(len(Ypositions)))
+            #return (p0,p1,p2,p3), Ypositions, ip, noiselevel,dy
+            indx.pop(ip)
+            Ypositions = Ypositions[indx]
+                 
    if ((len(Ypositions) > 2) & qok):
       dy = min(abs(p5 - Ypositions))
       if dy > Sig: flag[2] += 1
       dy = abs(p5 - p1)
       if dy < sig: 
          flag[2] += 10
-	 ip = where(abs(p5-Ypositions) < 0.2*dy)[0]
-	 indx = range(len(Ypositions))
-	 if len(ip) == 0: 
-	    print "problem with fitting peak # 2 "
-	 else:   
-	    indx.pop(ip)
-	    Ypositions = Ypositions[indx]
+         ip = where(abs(p5-Ypositions) < 0.2*dy)[0]
+         indx = list(range(len(Ypositions)))
+         if len(ip) == 0: 
+            print("problem with fitting peak # 2 ")
+         else:   
+            indx.pop(ip)
+            Ypositions = Ypositions[indx]
       if p4 < noiselevel:
          flag[2] += 20
-	 ip = where(abs(p5-Ypositions) < 0.9*dy)[0]
-	 if chatter > 2: print 'ip = ',ip
-	 indx = range(len(Ypositions))
-	 if len(ip) == 0: 
-	    print "problem with fitting peak # 2 "
-	 else:   
-	    indx.pop(ip[-1])
-	    Ypositions = Ypositions[indx]
+         ip = where(abs(p5-Ypositions) < 0.9*dy)[0]
+         if chatter > 2: print('ip = ',ip)
+         indx = list(range(len(Ypositions)))
+         if len(ip) == 0: 
+            print("problem with fitting peak # 2 ")
+         else:   
+            indx.pop(ip[-1])
+            Ypositions = Ypositions[indx]
        
       if flag[1] != 10:
          dy = abs(p5 - p3)
          if dy < sig: 
-	    flag[2] += 100
-	    ip = where(abs(p5-Ypositions) < 0.9*dy)[0]
-	    if len(ip) == 0: 
-	       print "problem with fitting peak # 2 "
-	    else:   
-	       indx = range(len(Ypositions))
-	       indx.pop(ip[-1])
-	       Ypositions = Ypositions[indx]
+            flag[2] += 100
+            ip = where(abs(p5-Ypositions) < 0.9*dy)[0]
+            if len(ip) == 0: 
+               print("problem with fitting peak # 2 ")
+            else:   
+               indx = list(range(len(Ypositions)))
+               indx.pop(ip[-1])
+               Ypositions = Ypositions[indx]
 
    if chatter > 2:
-      print "flag: ",flag
-      print " initial fit parameters: \n first peak:", p0, p1, sig1
-      if nposi > 1: print " second peak:", p2,p3, sig2
-      if nposi > 2: print " third peak:", p4,p5, sig3
-      print " intermediate Ypositions: ", Ypositions
+      print("flag: ",flag)
+      print(" initial fit parameters: \n first peak:", p0, p1, sig1)
+      if nposi > 1: print(" second peak:", p2,p3, sig2)
+      if nposi > 2: print(" third peak:", p4,p5, sig3)
+      print(" intermediate Ypositions: ", Ypositions)
          
    if not composite_fit:      # bail out at this point 
       if len(Ypositions) == 1: 
@@ -4350,7 +4361,7 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       elif len(Ypositions) == 3:
          Y1 = ((p0,p1,sig,p2,p3,sig2,p4,p5,sig), flag), 0
       else:
-         Y1 = Yout	 	 	 
+         Y1 = Yout                       
       return Y1
 
    # free sig and refit
@@ -4360,9 +4371,9 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       a0 = p0
       y0 = p1      
       if chatter > 3: 
-         print "f_meas :", transpose(f_meas)
-         print "a0: %8.2f  \ny0: %8.2f \nsig0 : %8.2f "%(a0,y0,sig) 
-	 print q
+         print("f_meas :", transpose(f_meas))
+         print("a0: %8.2f  \ny0: %8.2f \nsig0 : %8.2f "%(a0,y0,sig)) 
+         print(q)
       params_fit, ier = leastsq(Fun1, (a0,y0,sig), args=(f_meas[q],y[q]) )
       flag[5] = 1
       flag[4] = ier
@@ -4401,7 +4412,7 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
       
    else:
       # error in call
-      print "Error in get_components Ypositions not 1,2,or 3"
+      print("Error in get_components Ypositions not 1,2,or 3")
       return Yout
       
 
@@ -4606,7 +4617,7 @@ def plotSecondOrder(dis,C_2,anker,anker2, spnet, scale=False):
    p = np.where( np.abs(dis2) == np.abs(dis2).min() )
    p1 = p[0] - 700
    p2 = len(dis2)
-   aa = range(p1,p2)
+   aa = list(range(p1,p2))
    plot( polyval(C_2,dis2[aa]),spnet[aa])
 
 def secondOrderPSF_FWHM(wavelength, C_2inv, units = 'angstroem'):
@@ -4663,7 +4674,7 @@ def response21_firstcal(wave,wheelpos=160):
    import numpy as np 
    from scipy import interpolate   
    
-   print "2nd order response based on offset position uv clocked at (1600,1600)_DET \n"
+   print("2nd order response based on offset position uv clocked at (1600,1600)_DET \n")
    #if wheelpos != 160:
    #   do whatever
    #
@@ -4718,7 +4729,7 @@ def response21_firstcal(wave,wheelpos=160):
         0.63488101,  0.64091211,  0.64694134,  0.65296866,  0.65899403,
         0.66501741,  0.67103875,  0.67705802,  0.68307519,  0.6890902 ])
       func = interpolate.interp1d(wav, ratio, kind='linear', bounds_error=False )
-      R21[q] = 1./func(wave[q])	    
+      R21[q] = 1./func(wave[q])     
    return R21      
 
 def response21(wave, version='firstcal',wheelpos=160 ):
@@ -4734,20 +4745,20 @@ def response21(wave, version='firstcal',wheelpos=160 ):
    elif version == 'firstcal':
       return response21_firstcal(wave)
    else:
-      print '\Fatal Error in call response21 function\n'
+      print('\Fatal Error in call response21 function\n')
       raise IOError
       return      
    
 def polyinverse( coef, dis):
     ''' determine the inverse of the polynomial coefficients 
         of the same order as in input
-	so  w = polyval(coef, d)
-	and d = polyval(coefinv, w) 
+        so  w = polyval(coef, d)
+        and d = polyval(coefinv, w) 
         
-	Warning
-	-------
-	Accuracy is not always good.	
-	'''
+        Warning
+        -------
+        Accuracy is not always good.    
+        '''
     import numpy as np
     wav = np.polyval(coef, dis)
     norder = np.array([len(coef)-1,len(dis)-1])
@@ -4802,10 +4813,10 @@ def pix_from_wave( disp, wave,spectralorder=1 ):
      d = np.polyval(dinv, wave )
      if len(wave) < 20:
         dp = np.polyval(dinv, wave+10 )  # CRAP polyval!
-	y = (dp-d)/10.0
+        y = (dp-d)/10.0
         y[y <= 0] = y[y > 0].mean()
-	dpdw = y
-     else:	
+        dpdw = y
+     else:      
         fd = interpolate.interp1d(wave,d,bounds_error=False,fill_value=0.3,kind='quadratic') 
         dp = fd(wave+20)
         y = (dp-d)/20.0
@@ -4817,9 +4828,9 @@ def pix_from_wave( disp, wave,spectralorder=1 ):
      while (np.abs(np.polyval(disp,d) - wave) > 0.5 * wone).all() | count > 0:
      
         dw = np.polyval(disp,d) - wave
-	d -= dpdw*dw*0.5 
-	
-	count -= 1
+        d -= dpdw*dw*0.5 
+        
+        count -= 1
         
      return d
      
@@ -4834,9 +4845,9 @@ def pix_from_wave( disp, wave,spectralorder=1 ):
      while (np.abs(np.polyval(disp,d) - wave) > 0.5 * wone).all() | count > 0:
      
         dw = np.polyval(disp,d) - wave
-	d -= dpdw*dw*0.5 
-	
-	count -= 1
+        d -= dpdw*dw*0.5 
+        
+        count -= 1
         
      return d
 
@@ -4997,17 +5008,17 @@ def runfit3(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp3,pos3,sig3,amp2lim=None
            pos2b = pos3a = 0.5*(pos2+pos3)
         else:
            pos3 = pos2
-	   pos3a = pos2 
-	   pos3b = pos2b+3 
+           pos3a = pos2 
+           pos3b = pos2b+3 
      else:  
         pos1a = pos2b = 0.5*(pos1+pos2)
         if (pos2 > pos3):
            pos2a = pos3b = 0.5*(pos2+pos3)
         else:
            pos3 = pos2
-	   pos3b = pos2
-	   pos3a = pos2a-3
-    	 	 
+           pos3b = pos2
+           pos3a = pos2a-3
+                 
    #x  = np.arange(len(f))
    
    if fixsig:
@@ -5058,8 +5069,8 @@ def runfit3(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp3,pos3,sig3,amp2lim=None
    'limited': [1,1],   'limits' : [sig3_lo,sig3_hi],   'value'  :  sig3,   'parname': 'sig3'   }]  
 
    if chatter > 4: 
-      print "parinfo has been set to: " 
-      for par in parinfo: print par
+      print("parinfo has been set to: ") 
+      for par in parinfo: print(par)
 
    Z = mpfit.mpfit(fit3,p0,functkw=fa,parinfo=parinfo,quiet=True)
    
@@ -5100,17 +5111,17 @@ def runfit3(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp3,pos3,sig3,amp2lim=None
          
       8  gtol is too small. fvec is orthogonal to the columns of the jacobian
          to machine precision.
-	 '''
+         '''
    
    if (Z.status <= 0): 
-      print 'uvotgetspec.runfit3.mpfit error message = ', Z.errmsg
-      print "parinfo has been set to: " 
-      for par in parinfo: print par
+      print('uvotgetspec.runfit3.mpfit error message = ', Z.errmsg)
+      print("parinfo has been set to: ") 
+      for par in parinfo: print(par)
    elif (chatter > 3):   
-      print "\nparameters and errors : "
-      for i in range(8): print "%10.3e +/- %10.3e\n"%(Z.params[i],Z.perror[i])
+      print("\nparameters and errors : ")
+      for i in range(8): print("%10.3e +/- %10.3e\n"%(Z.params[i],Z.perror[i]))
    
-   return Z	
+   return Z     
        
        
 def fit3(p, fjac=None, x=None, y=None, err=None):
@@ -5121,12 +5132,12 @@ def fit3(p, fjac=None, x=None, y=None, err=None):
             # flag.
             # model = F(x, p)
    (bg0,bg1,amp1,pos1,sig1,amp2,pos2,sig2,amp3,pos3,sig3) = p 
-	     
+             
    model = bg0 + bg1*x + \
            amp1 * np.exp( - ((x-pos1)/sig1)**2 ) + \
            amp2 * np.exp( - ((x-pos2)/sig2)**2 ) + \
            amp3 * np.exp( - ((x-pos3)/sig3)**2 ) 
-	    
+            
             # Non-negative status value means MPFIT should continue, negative means
             # stop the calculation.
    status = 0
@@ -5211,31 +5222,31 @@ def runfit2(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,amp2lim=None,fixsig=False,
    'limited': [1,1],   'limits' : [sig2_lo,sig2_hi],   'value'  :  sig2,   'parname': 'sig2'   }]  
 
    if chatter > 4: 
-      print "parinfo has been set to: " 
-      for par in parinfo: print par
+      print("parinfo has been set to: ") 
+      for par in parinfo: print(par)
 
    Z = mpfit.mpfit(fit2,p0,functkw=fa,parinfo=parinfo,quiet=True)
    
    if (Z.status <= 0): 
-      print 'uvotgetspec.runfit2.mpfit error message = ', Z.errmsg
-      print "parinfo has been set to: " 
-      for par in parinfo: print par
+      print('uvotgetspec.runfit2.mpfit error message = ', Z.errmsg)
+      print("parinfo has been set to: ") 
+      for par in parinfo: print(par)
    elif (chatter > 3):   
-      print "\nparameters and errors : "
-      for i in range(8): print "%10.3e +/- %10.3e\n"%(Z.params[i],Z.perror[i])
+      print("\nparameters and errors : ")
+      for i in range(8): print("%10.3e +/- %10.3e\n"%(Z.params[i],Z.perror[i]))
    
-   return Z	
+   return Z     
        
        
 def fit2(p, fjac=None, x=None, y=None, err=None):
    import numpy as np
 
    (bg0,bg1,amp1,pos1,sig1,amp2,pos2,sig2) = p 
-	     
+             
    model = bg0 + bg1*x + \
            amp1 * np.exp( - ((x-pos1)/sig1)**2 ) + \
            amp2 * np.exp( - ((x-pos2)/sig2)**2 ) 
-	    
+            
    status = 0
    return [status, (y-model)/err]
     
@@ -5287,21 +5298,21 @@ def runfit1(x,f,err,bg,amp1,pos1,sig1,fixsig=False,fixpos=False,fixsiglim=0.2,ch
    'limited': [1,1],   'limits' : [sig1_lo,sig1_hi],     'value' :  sig1,   'parname': 'sig1'   }]  
 
    if chatter > 4: 
-      print "parinfo has been set to: " 
-      for par in parinfo: print par
+      print("parinfo has been set to: ") 
+      for par in parinfo: print(par)
 
    Z = mpfit.mpfit(fit1,p0,functkw=fa,parinfo=parinfo,quiet=True)
    
-   if (Z.status <= 0): print 'uvotgetspec.runfit1.mpfit error message = ', Z.errmsg
+   if (Z.status <= 0): print('uvotgetspec.runfit1.mpfit error message = ', Z.errmsg)
       
-   return Z	
+   return Z     
        
        
 def fit1(p, fjac=None, x=None, y=None, err=None):
    import numpy as np
 
    (bg0,bg1,amp1,pos1,sig1) = p 
-	     
+             
    model = bg0 + bg1*x + amp1 * np.exp( - ((x-pos1)/sig1)**2 ) 
    
    status = 0
@@ -5396,13 +5407,13 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
       #
       try:
          uvotpy = os.getenv('UVOTPY')
-	 caldb  = os.getenv('CALDB')
+         caldb  = os.getenv('CALDB')
          if uvotpy != None: 
             caldir = uvotpy+'/calfiles/'
-	 elif caldb != None:
-	    caldir = caldb+'/data/swift/uvota/bcf/grism/'
+         elif caldb != None:
+            caldir = caldb+'/data/swift/uvota/bcf/grism/'
       except:
-         print "CALDB nor UVOTPY environment variable set."     
+         print("CALDB nor UVOTPY environment variable set.")     
       
       #if caldir == None: 
       #   # hardcoded development system 
@@ -5412,28 +5423,28 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
          calfile = 'swugu0200wcal20041120v001.fits'
          oldcalfile='swwavcal20090406_v1_mssl_ug200.fits'
          calfile = caldir+'/'+calfile
-         if chatter > 1: print 'reading UV Nominal calfile '+calfile
+         if chatter > 1: print('reading UV Nominal calfile '+calfile)
       elif wheelpos == 160: 
          calfile='swugu0160wcal20041120v002.fits'
          oldcalfile= 'swwavcal20090626_v2_mssl_uc160_wlshift6.1.fits'
          calfile = caldir+'/'+calfile
-         if chatter > 1: print 'reading UV clocked calfile '+calfile 
+         if chatter > 1: print('reading UV clocked calfile '+calfile) 
       elif wheelpos == 955: 
          calfile='swugv0955wcal20041120v001.fits'
          oldcalfile= 'swwavcal20100421_v0_mssl_vc955_wlshift-8.0.fits'
          calfile = caldir+'/'+calfile
-         if chatter > 1: print 'reading V Clockedcalfile '+calfile 
+         if chatter > 1: print('reading V Clockedcalfile '+calfile) 
       elif wheelpos == 1000: 
          calfile='swugv1000wcal20041120v001.fits'
          oldcalfile= 'swwavcal20100121_v0_mssl_vg1000.fits'
          calfile = caldir+'/'+calfile
-         if chatter > 1: print 'reading V Nominal calfile  '+calfile 
+         if chatter > 1: print('reading V Nominal calfile  '+calfile) 
       else:
           if chatter > 1: 
-             print "Could not find a valid wave calibration file for wheelpos = ",wheelpos
-	     print "Aborting"
-             print "******************************************************************"
-	     raise IOError("missing calibration file")
+             print("Could not find a valid wave calibration file for wheelpos = ",wheelpos)
+             print("Aborting")
+             print("******************************************************************")
+             raise IOError("missing calibration file")
                
 
    msg += "wavecal file : %s\n"%(calfile.split('/')[-1])
@@ -5441,8 +5452,8 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
    #  calibration file (which already has rotated input arrays) 
    #    
    cal = pyfits.open(calfile)
-   if chatter > 0: print "opening the wavelength calibration file: %s"%(calfile)
-   if chatter > 1: print cal.info()
+   if chatter > 0: print("opening the wavelength calibration file: %s"%(calfile))
+   if chatter > 1: print(cal.info())
    hdr0 = cal[0].header
    hdr1 = cal[1].header
    data = cal[1].data
@@ -5451,7 +5462,7 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
    N1 = int(np.sqrt( len(xf) ))
    if N1**2 != len(xf): 
       raise RuntimeError("GetCalData: calfile array not square" )
-   if chatter > 2: print "GetCalData: input array size on detector is %i in x, %i in y"%(N1,N1)   
+   if chatter > 2: print("GetCalData: input array size on detector is %i in x, %i in y"%(N1,N1))   
    xf = xrf = data.field('PHI_X').reshape(N1,N1)
    yf = yrf = data.field('PHI_Y').reshape(N1,N1)
    #  first order anchor and angle array
@@ -5514,35 +5525,35 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
    else:
       if rx < min(xfp): 
          ix = ix_ = 0
-	 print "WARNING: point has xfield lower than calfile provides"
+         print("WARNING: point has xfield lower than calfile provides")
       if rx > max(xfp): 
          ix = ix_ = N1-1   
-	 print "WARNING: point has xfield higher than calfile provides"
+         print("WARNING: point has xfield higher than calfile provides")
    if inYfp :   
       iy  = max( np.where( ry >= yf[:,0] )[0] ) 
       iy_ = min( np.where( ry <= yf[:,0] )[0] ) 
    else:
       if ry < min(yfp): 
          iy = iy_ = 0
-	 print "WARNING: point has yfield lower than calfile provides"
+         print("WARNING: point has yfield lower than calfile provides")
       if ry > max(yfp): 
          iy = iy_ = 27   
-	 print "WARNING: point has yfield higher than calfile provides"
+         print("WARNING: point has yfield higher than calfile provides")
    if inYfp & inXfp & (chatter > 2): 
-      print 'getCalData.                             rx,         ry,     Xank,        Yank '
-      print ix, ix_, iy, iy_
-      print 'getCalData. gridpoint 1 position: ', xf[iy_,ix_], yf[iy_,ix_], xp1[iy_,ix_], yp1[iy_,ix_]
-      print 'getCalData. gridpoint 2 position: ', xf[iy ,ix_], yf[iy ,ix_], xp1[iy ,ix_], yp1[iy ,ix_]
-      print 'getCalData. gridpoint 3 position: ', xf[iy ,ix ], yf[iy ,ix ], xp1[iy ,ix ], yp1[iy ,ix ]
-      print 'getCalData. gridpoint 4 position: ', xf[iy_,ix ], yf[iy_,ix ], xp1[iy_,ix ], yp1[iy_,ix ]   
+      print('getCalData.                             rx,         ry,     Xank,        Yank ')
+      print(ix, ix_, iy, iy_)
+      print('getCalData. gridpoint 1 position: ', xf[iy_,ix_], yf[iy_,ix_], xp1[iy_,ix_], yp1[iy_,ix_])
+      print('getCalData. gridpoint 2 position: ', xf[iy ,ix_], yf[iy ,ix_], xp1[iy ,ix_], yp1[iy ,ix_])
+      print('getCalData. gridpoint 3 position: ', xf[iy ,ix ], yf[iy ,ix ], xp1[iy ,ix ], yp1[iy ,ix ])
+      print('getCalData. gridpoint 4 position: ', xf[iy_,ix ], yf[iy_,ix ], xp1[iy_,ix ], yp1[iy_,ix ])   
    #
    #  exception at outer grid edges: 
    #
    if ((ix == N1-1) ^ (iy == N1-1) ^ (ix_ == 0) ^ (iy_ == 0)):
            
      # select only coefficient with order 4 (or 3 for wheelpos=955)
-     print "IMPORTANT:"
-     print "\nanchor point is outside the calibration array: extrapolating all data" 
+     print("IMPORTANT:")
+     print("\nanchor point is outside the calibration array: extrapolating all data") 
 
      try: 
       if wheelpos == 955 :
@@ -5559,9 +5570,9 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
         c13 = c13.flatten()[q4]
         c14 = np.zeros(len(q4[0]))
         c1n = c1n.flatten()[q4]
-	mode = 'bisplines'
-	# second order solution only when at lower or right boundary
-	if (ix == N1-1) ^ (iy == 0):
+        mode = 'bisplines'
+        # second order solution only when at lower or right boundary
+        if (ix == N1-1) ^ (iy == 0):
           q2 = np.where( c2n.flatten() == 2 )[0]
           xp2 = xp2.flatten()[q2]
           yp2 = yp2.flatten()[q2] 
@@ -5569,15 +5580,15 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
           c21 = c21.flatten()[q2]
           c22 = c22.flatten()[q2]
           c2n = c2n.flatten()[q2]
-	else:
-	  N2 = N1/2
+        else:
+          N2 = N1/2
           xp2 = np.zeros(N2) 
           yp2 = np.zeros(N2) 
           c20 = np.zeros(N2)
           c21 = np.zeros(N2)
           c22 = np.zeros(N2)
           c2n = np.zeros(N2)
-	  
+          
       else: 
         q4 = np.where( c1n.flatten() == 4 )
         xf = xf.flatten()[q4]
@@ -5607,11 +5618,11 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
       tck2y = interpolate.bisplrep(xf, yf, yp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
      
       anker[0]  = xp1i = interpolate.bisplev(rx,ry, tck1x) 
-      anker[1]  = yp1i = interpolate.bisplev(rx,ry, tck1y) 	
+      anker[1]  = yp1i = interpolate.bisplev(rx,ry, tck1y)      
       anker2[0] = xp2i = interpolate.bisplev(rx,ry, tck2x) 
       anker2[1] = yp2i = interpolate.bisplev(rx,ry, tck2y) 
       
-      # find the angle 	
+      # find the angle  
       
       tck = interpolate.bisplrep(xf, yf, th,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
       thi = interpolate.bisplev(rx,ry, tck)
@@ -5639,17 +5650,17 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
       else:
          c20i = c21i = c22i = np.NaN 
       if chatter > 2: 
-            print 'getCalData. bicubic extrapolation  ' 
-            print 'getCalData. first order anchor position = (%8.1f,%8.1f), angle theta = %7.1f ' % (xp1i,yp1i,thi )
-            print 'getCalData. dispersion first  order = ',c10i,c11i,c12i,c13i,c14i
-	    if c20i == NaN:
-	       print " no second order extracted "
-	    else:   
-	       print 'getCalData. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i)
-               print 'getCalData. dispersion second order = ', c20i,c21i, c22i
-     except:	
-        print "failed - ABORTING"
-	raise    
+            print('getCalData. bicubic extrapolation  ') 
+            print('getCalData. first order anchor position = (%8.1f,%8.1f), angle theta = %7.1f ' % (xp1i,yp1i,thi ))
+            print('getCalData. dispersion first  order = ',c10i,c11i,c12i,c13i,c14i)
+            if c20i == NaN:
+               print(" no second order extracted ")
+            else:   
+               print('getCalData. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))
+               print('getCalData. dispersion second order = ', c20i,c21i, c22i)
+     except:    
+        print("failed - ABORTING")
+        raise    
         return
    else: 
    #
@@ -5663,7 +5674,7 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
       #  s = 0 # 0=spline goes through the given points
       # eps = 1.0e-6  (0 < eps < 1)
          m = N1*N1
-         if chatter > 2: print '\n getCalData. splines ' 
+         if chatter > 2: print('\n getCalData. splines ') 
          qx = qy = np.where( (np.isfinite(xrf.reshape(m))) & (np.isfinite(yrf.reshape(m)) ) )
          tck1 = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], xp1.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
          tck2 = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], yp1.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
@@ -5674,7 +5685,7 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
          xp2i = 0
          yp2i = 0
              
-         if chatter > 2: print 'getCalData. x,y,theta = ',xp1i,yp1i,thi, ' second order ', xp2i, yp2i
+         if chatter > 2: print('getCalData. x,y,theta = ',xp1i,yp1i,thi, ' second order ', xp2i, yp2i)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c10.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
          c10i = interpolate.bisplev(rx,ry, tck)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c11.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
@@ -5685,14 +5696,14 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
          c13i = interpolate.bisplev(rx,ry, tck)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c14.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
          c14i = interpolate.bisplev(rx,ry, tck)
-         if chatter > 2: print 'getCalData. dispersion first order = ',c10i,c11i,c12i,c13i,c14i
+         if chatter > 2: print('getCalData. dispersion first order = ',c10i,c11i,c12i,c13i,c14i)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c20.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
          c20i = interpolate.bisplev(rx,ry, tck)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c21.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
          c21i = interpolate.bisplev(rx,ry, tck)
          tck  = interpolate.bisplrep(xrf.reshape(m)[qx], yrf.reshape(m)[qy], c22.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
          c22i = interpolate.bisplev(rx,ry, tck)
-         if chatter > 2: print 'getCalData. dispersion second order = ', c20i,c21i, c22i
+         if chatter > 2: print('getCalData. dispersion second order = ', c20i,c21i, c22i)
       #
       if mode == 'bilinear':
          xp1i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp1 ,chatter=chatter)
@@ -5709,18 +5720,18 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
          c21i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c21 )#,chatter=chatter)
          c22i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c22 )#,chatter=chatter)
          if chatter > 1: 
-            print 'getCalData. bilinear interpolation' 
-            print 'getCalData. first order anchor position = (%8.1f,%8.1f), angle theta = %7.1f ' % (xp1i,yp1i,thi )
-            print 'getCalData. dispersion first  order = ',c10i,c11i,c12i,c13i,c14i
-	    print 'getCalData. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i)
-            print 'getCalData. dispersion second order = ', c20i,c21i, c22i
+            print('getCalData. bilinear interpolation') 
+            print('getCalData. first order anchor position = (%8.1f,%8.1f), angle theta = %7.1f ' % (xp1i,yp1i,thi ))
+            print('getCalData. dispersion first  order = ',c10i,c11i,c12i,c13i,c14i)
+            print('getCalData. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))
+            print('getCalData. dispersion second order = ', c20i,c21i, c22i)
       if mode == 'interp2d':
          x1 = xf[0,:].squeeze()
-	 x2 = yf[:,0].squeeze()
-	 xp1i = interpolate.interp2d(x1,x2,xp1,kind='linear')
-	 #same as bisplines with s=0 and k=1
-	 return
-	 	    
+         x2 = yf[:,0].squeeze()
+         xp1i = interpolate.interp2d(x1,x2,xp1,kind='linear')
+         #same as bisplines with s=0 and k=1
+         return
+                    
    C_1 = np.array([c14i,c13i,c12i,c11i,c10i])
    C_2 = np.array([c22i,c21i,c20i])
    # 
@@ -5729,9 +5740,9 @@ def getCalData(Xphi, Yphi, wheelpos,date, chatter=3,mode='bilinear',
    anker  = np.array([xp1i,yp1i]) 
    anker2 = np.array([xp2i,yp2i]) 
    if chatter > 0: 
-      print 'getCalData. anker [DET-pix]   = ', anker
-      print 'getCalData. anker [DET-img]   = ', anker - [77+27,77+1]
-      print 'getCalData. second order anker at = ', anker2, '  [DET-pix] ' 
+      print('getCalData. anker [DET-pix]   = ', anker)
+      print('getCalData. anker [DET-img]   = ', anker - [77+27,77+1])
+      print('getCalData. second order anker at = ', anker2, '  [DET-pix] ') 
    return anker, anker2, C_1, C_2, thi, data, msg
 
 
@@ -5743,7 +5754,7 @@ def bilinear(x1,x2,x1a,x2a,f,chatter=0):
    
    requirement: x1a[i] is increasing with i 
                 x2a[j] is increasing with j
-   20080303 NPMK		
+   20080303 NPMK                
    '''
    import numpy as np
    
@@ -5771,17 +5782,17 @@ def bilinear(x1,x2,x1a,x2a,f,chatter=0):
    kj = x2a_ind[k2s]
    kjp1 = x2a_ind[k2s+1]
    if chatter > 2:
-       print 'FIND solution in (x,y) = (',x1,x2,')'
-       print 'array x1a[k-5 .. k+5] ',x1a[ki-5:ki+5]
-       print 'array x2a[k-5 .. k+5] ',x2a[kj-5:kj+5]
-       print 'length x1a=',n1,'   x2a=',n2
-       print 'indices in sorted arrays = (',k1s,',',k2s,')'
-       print 'indices in array x1a: ',ki, kip1
-       print 'indices in array x2a: ',kj, kjp1
+       print('FIND solution in (x,y) = (',x1,x2,')')
+       print('array x1a[k-5 .. k+5] ',x1a[ki-5:ki+5])
+       print('array x2a[k-5 .. k+5] ',x2a[kj-5:kj+5])
+       print('length x1a=',n1,'   x2a=',n2)
+       print('indices in sorted arrays = (',k1s,',',k2s,')')
+       print('indices in array x1a: ',ki, kip1)
+       print('indices in array x2a: ',kj, kjp1)
       
    #  exception at border:
    if ((k1s+1 >= n1) ^ (k2s+1 >= n2) ^ (k1s < 0) ^ (k2s < 0) ):
-      print 'bilinear. point outside grid x - use nearest neighbor '
+      print('bilinear. point outside grid x - use nearest neighbor ')
       if ki + 1 > len(x1a) : ki = len(x1a) - 1
       if ki < 0 : ki = 0
       if kj + 1 > len(x2a) : kj = len(x2a) - 1
@@ -5799,13 +5810,13 @@ def bilinear(x1,x2,x1a,x2a,f,chatter=0):
    
    y = (1.-t)*(1.-u)*y1 + t*(1.-u)*y2 + t*u*y3 + (1.-t)*u*y4
    if chatter > 2: 
-      print 'bilinear.                   x         y          f[x,y]    '
-      print 'bilinear.   first  point ',x1a[ki  ],x2a[kj],  f[ki,kj]
-      print 'bilinear.   second point ',x1a[kip1],x2a[kj],  f[kip1,kj]
-      print 'bilinear.   third  point ',x1a[kip1],x2a[kjp1],  f[kip1,kjp1]
-      print 'bilinear.   fourth point ',x1a[ki  ],x2a[kjp1],  f[ki,kjp1]
-      print 'bilinear. fractions t, u ', t, u
-      print 'bilinear. interpolate at ', x1, x2, y
+      print('bilinear.                   x         y          f[x,y]    ')
+      print('bilinear.   first  point ',x1a[ki  ],x2a[kj],  f[ki,kj])
+      print('bilinear.   second point ',x1a[kip1],x2a[kj],  f[kip1,kj])
+      print('bilinear.   third  point ',x1a[kip1],x2a[kjp1],  f[kip1,kjp1])
+      print('bilinear.   fourth point ',x1a[ki  ],x2a[kjp1],  f[ki,kjp1])
+      print('bilinear. fractions t, u ', t, u)
+      print('bilinear. interpolate at ', x1, x2, y)
    return y    
  
 
@@ -5831,26 +5842,26 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    
       - **wheelpos** : int, {160,200,955,1000}      
         grism filter selected in filter wheel
-	 
+         
       - **lfilter**, **lfilt2** : str, {'uvw2','uvm2','uvw1','u','b','v'}      
         lenticular filter name before and after grism exposure
-	
+        
       - **lfilter_ext**, **lfilt2_ext** : int   
         lenticular filter extension before and after grism exposure 
-	
+        
       - **method** : str, {'grism_only'}
         if set to `grism_only`, create a temporary header to compute the 
-	target input angles, otherwise use the lenticular file image.
+        target input angles, otherwise use the lenticular file image.
       
       - **attfile** : str, path 
         full path+filename of attitude file
-	
+        
       - **catspec** : path
         optional full path to catalog spec file to use with uvotgraspcorr
-	
+        
       - **indir** : str, path
         data directory path
-	
+        
       - **chatter** : int
         verbosity
 
@@ -5860,10 +5871,10 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       offset (DX,DY) in arcsec in DET coordinate system of the source 
       from the boresight
       needs to be converted to input rays by applying transform.
-	  
+          
    anker_field : array
       offset(theta,phi) in degrees from the axis for 
-      the input field coordinates for the zemax model lookup 		 
+      the input field coordinates for the zemax model lookup             
       
    tstart : float
       start time exposure (swift time in seconds)
@@ -5906,8 +5917,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    lenticular_anchors = {}
    
    if (chatter > 1):
-      print "uvotgetspec.getSpec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
-       lfilt2,    lfilt2_ext, method, attfile, catspec, chatter,')'
+      print("uvotgetspec.getSpec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
+       lfilt2,    lfilt2_ext, method, attfile, catspec, chatter,')')
    
    if ( (wheelpos == 160) ^ (wheelpos == 200) ): 
       gfile = indir+'/'+filestub+'ugu_dt.img'
@@ -5926,17 +5937,17 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    uw1rawrenamed = False
    uw1skyrenamed = False
    if method == 'grism_only':
-       if chatter > 1: print "grism only method. Creating fake lenticular uvw1 file for grism position"
+       if chatter > 1: print("grism only method. Creating fake lenticular uvw1 file for grism position")
        # test if there is already a uvw1 raw or sky file before proceeding
      
        if chatter > 2: 
-           print 'wheelpos ',wheelpos
-	   print 'attfile  ',attfile
+           print('wheelpos ',wheelpos)
+           print('attfile  ',attfile)
        wheelp1 = wheelpos
        rawfile = makewcshdr(filestub,ext,
-			    attfile,
-			    wheelpos=wheelp1,
-			    indir=indir,
+                            attfile,
+                            wheelpos=wheelp1,
+                            indir=indir,
                 chatter=chatter) 
        # note that the path rawfile  = indir+'/'+filestub+'ufk_sk.img'
        tempnames.append(filestub)
@@ -5962,19 +5973,19 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    # check for losses in grism image
    if (' BLOCLOSS' in hg):
        if float(hg['BLOCLOSS']) != 0: 
-           print '#### BLOCLOSS = '+repr(hg['BLOCLOSS'])
-	   msg += "BLOCLOSS=%4.1f\n"%(hg['BLOCLOSS'])
+           print('#### BLOCLOSS = '+repr(hg['BLOCLOSS']))
+           msg += "BLOCLOSS=%4.1f\n"%(hg['BLOCLOSS'])
    if ('STALLOSS' in hg):
        if (float(hg['STALLOSS']) != 0): 
-           print '#### STALLOSS = '+repr(hg['STALLOSS'])
-	   msg += "STALLOSS=%4.1f\n"%(hg['STALLOSS'])
+           print('#### STALLOSS = '+repr(hg['STALLOSS']))
+           msg += "STALLOSS=%4.1f\n"%(hg['STALLOSS'])
    if ('TOSSLOSS' in hg):
        if float(hg['TOSSLOSS']) != 0: 
-           print '#### TOSSLOSS = '+repr(hg['TOSSLOSS'])
-	   msg += "TOSSLOSS=%4.1f\n"%(hg['TOSSLOSS'])
+           print('#### TOSSLOSS = '+repr(hg['TOSSLOSS']))
+           msg += "TOSSLOSS=%4.1f\n"%(hg['TOSSLOSS'])
    tstart = hg['TSTART']
 
-   if chatter > 1: print 'grism exposure time = ',hg['EXPOSURE'],'  seconds'
+   if chatter > 1: print('grism exposure time = ',hg['EXPOSURE'],'  seconds')
    
    RA_PNT  = hg['RA_PNT']
    DEC_PNT = hg['DEC_PNT']
@@ -6003,12 +6014,12 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
 
    CALDB = getenv('CALDB')
    if CALDB == '': 
-       print 'the CALDB environment variable has not been set'
+       print('the CALDB environment variable has not been set')
        return None
    HEADAS = getenv('HEADAS')
    if HEADAS == '': 
-       print 'The HEADAS environment variable has not been set'
-       print 'That is needed for the uvot Ftools '
+       print('The HEADAS environment variable has not been set')
+       print('That is needed for the uvot Ftools ')
        return None 
        
    #command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
@@ -6035,7 +6046,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    #x1 = float(x1)
    #y1 = float(y1)
    if chatter > 1:
-       print "\t The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1)
+       print("\t The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x1, y1))
    # convert anchor in DET coordinate mm to pixels and arcsec from boresight
    anker_uvw1det = np.array([x1,y1])/0.009075+np.array((1100.5,1100.5))
    msg += "LFILT1_ANCHOR= [%6.1f,%6.1f]\n"%(anker_uvw1det[0],anker_uvw1det[1])
@@ -6043,7 +6054,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    
    if (x1 < -14) | (x1 > 14) | (y1 < -14) | (y1 > 14) :
       # outside detector 
-      print "\nERROR: source position is not on the detector! Aborting...",(x1,y1)
+      print("\nERROR: source position is not on the detector! Aborting...",(x1,y1))
       raise IOError("\nERROR: source position is not on the detector! ")
    
    if lfilter == "fk" : 
@@ -6100,7 +6111,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       #x2 = float(x1)
       #y2 = float(y1)
       if chatter > 2: 
-          print " The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x2, y2)
+          print(" The [det]coordinates in mm are (%8.4f,%8.4f) " % ( x2, y2))
       # convert anchor in DET coordinate mm to pixels and arcsec from boresight
       anker_lf2det = np.array([x2,y2])/0.009075+np.array((1100.5,1100.5))
       msg += "LFILT2_ANCHOR= [%6.1f,%6.1f]\n"%(anker_lf2det[0],anker_lf2det[1])
@@ -6108,7 +6119,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    
       if (x2 < -14) | (x2 > 14) | (y2 < -14) | (y2 > 14) :
          # outside detector 
-         print "/nERROR: source position is not on the detector! Aborting..."
+         print("/nERROR: source position is not on the detector! Aborting...")
          raise IOError("/nERROR: source position in second lenticular filter is not on the detector! ")
 
    # combine lenticular filter anchors, compute (mean) offset, convert in units of degrees
@@ -6139,13 +6150,13 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        if lfilt2 != None:
            sys.stderr.write('findInputAngle. derived undistorted detector coord source in lenticular filter 2 = (%8.5f,%8.5f)  mm '%(x2,y2))
    if chatter > 2:  
-       print 'findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det
-       print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img
+       print('findInputAngle. derived undistorted detector coord lenticular filter 1         =  ',anker_uvw1det)
+       print('findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_uvw1det-cent_ref_2img)
        if lfilt2 != None:
-          print 'findInputAngle. derived undistorted detector coord lenticular filter 2         =  ',anker_lf2det
-          print 'findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_lf2det -cent_ref_2img
-       print 'findInputAngle. derived boresight offset lenticular filter ',lfilter,' (DET pix): ',anker_uvw1det_offset
-       print 'findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees'
+          print('findInputAngle. derived undistorted detector coord lenticular filter 2         =  ',anker_lf2det)
+          print('findInputAngle. derived undistorted physical image coord lenticular filter 1   =  ',anker_lf2det -cent_ref_2img)
+       print('findInputAngle. derived boresight offset lenticular filter ',lfilter,' (DET pix): ',anker_uvw1det_offset)
+       print('findInputAngle. derived boresight offset: (', Xphi, Yphi,') in \"  = (',Xphi*as2deg, Yphi*as2deg,') degrees')
    # cleanup temp files:   
    #system('rm radec.txt skyfits.out  skyfits.in detmm.txt')
    return Xphi*as2deg, Yphi*as2deg, tstart, msg, lenticular_anchors
@@ -6165,8 +6176,8 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
      if not supplied a file name is required
         
    tool : str
-     name tool to use; either 'astropy' or 'cdsclient'	
-	
+     name tool to use; either 'astropy' or 'cdsclient'  
+        
    chatter : int
      verbosity
    
@@ -6190,10 +6201,10 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
         ra  = float( ra)
         dec = float(dec)
         if chatter > 0: 
-           print "reading from ",file," : ", ra,dec 
+           print("reading from ",file," : ", ra,dec) 
         return ra,dec
      except:
-        raise IOError("Error reading ra,dec from file. Please supply an objectid or filename with the coordinates")	
+        raise IOError("Error reading ra,dec from file. Please supply an objectid or filename with the coordinates")     
    elif tool == 'cdsclient' :
       import os
       # see http://cdsarc.u-strasbg.fr/doc/sesame.htx 
@@ -6201,35 +6212,35 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
       # -- tbd: need to probe internet connection present or bail out ?
       command = "sesame -o2 "+objectid+" > radec.sesame"
       if chatter > 1: 
-         print command
-      try:	 
+         print(command)
+      try:       
          if not os.system(command):
-	    os.system('cat radec.sesame')
+            os.system('cat radec.sesame')
             f = open('radec.sesame')
             lines = f.readlines() 
             things = lines[1].split()
             f.close()
             command = "scat -c ub1 -ad "+things[0]+" "+things[1]+" > radec.usnofull"
-            if chatter > 0: print command
+            if chatter > 0: print(command)
             if not os.system(command):
-	       f = open('radec.usnofull')
-	       line = f.readline()
-	       f.close()
-	       if len( line.split() ) == 0:
-	          if chatter > 3: print "ra,dec not found in usno-b1: returning sesame result" 
-	          return float(things[0]),float(things[1])
-	       ra,dec, = line.split()[1:3]
-	       f = open('radec.usno','w')
-	       f.write("%s,%s" % (ra,dec) )
-	       f.close()
-	       ra  = float( ra)
-	       dec = float(dec)
+               f = open('radec.usnofull')
+               line = f.readline()
+               f.close()
+               if len( line.split() ) == 0:
+                  if chatter > 3: print("ra,dec not found in usno-b1: returning sesame result") 
+                  return float(things[0]),float(things[1])
+               ra,dec, = line.split()[1:3]
+               f = open('radec.usno','w')
+               f.write("%s,%s" % (ra,dec) )
+               f.close()
+               ra  = float( ra)
+               dec = float(dec)
                return ra,dec
-	    else:
-	       if chatter > 0: print 'get_radec() error call sesame '
+            else:
+               if chatter > 0: print('get_radec() error call sesame ')
          else:
-            if chatter > 0: print "get_radec() error main call "
-            return None,None	    
+            if chatter > 0: print("get_radec() error main call ")
+            return None,None        
       except:
          raise RuntimeError("no RA and DEC were found")
    elif tool == 'astropy' :
@@ -6239,8 +6250,8 @@ def get_radec(file='radec.usno', objectid=None, tool='astropy', chatter=0):
       pos = coordinates.ICRS.from_name(objectid)
       return pos.ra.degree, pos.dec.degree
    else:
-      raise IOError("improper tool or file in calling parameters ")	 
-	 
+      raise IOError("improper tool or file in calling parameters ")      
+         
 
 def get_initspectrum(net,var,fitorder, wheelpos, anchor, C_1=None,C_2=None,dist12=None, 
         xrange=None, nave = 3, predict2nd=True, chatter=0):
@@ -6277,7 +6288,7 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
    2011-09-05 mods to handle order merging
    2011-09-11 normal extraction added as well as optimal extraction for region [-sig,+sig] wide.
               larger widths violate assumption of gaussian profile. Lorentzian profile might work 
-	      for more extended widths.  
+              for more extended widths.  
                  
    '''
    from numpy import zeros,sqrt,pi,arange, array, where, isfinite, polyval, log10
@@ -6318,7 +6329,7 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
       x,xstart,xend,sp_all,quality,co_back)  = fitorder
       x0 = x1 = x2 = x3 = x 
    except RuntimeError:
-     print "get_cuspectrum: input parameter fitorder is not right\n ABORTING . . . "
+     print("get_cuspectrum: input parameter fitorder is not right\n ABORTING . . . ")
      raise RuntimeError
      return
      
@@ -6330,7 +6341,7 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
      
    # check that the dimension size is right
    if nx != net.shape[1]:
-     print "get_cuspectrum: size of input image %4i and fitorder %4i not compatible "%(nx,net.shape[1])
+     print("get_cuspectrum: size of input image %4i and fitorder %4i not compatible "%(nx,net.shape[1]))
      raise RuntimeError
      return 
      
@@ -6375,485 +6386,485 @@ def splitspectrum(net,var,fitorder,wheelpos,anchor,C_1=None,C_2=None,dist12=None
       irite = nx -2
    else:
       ileft = xrang[0]
-      irite = xrang[1]	            
+      irite = xrang[1]              
         
    for i in range(ileft,irite):
       #if i in q3[0]: 
       #   ans = raw_input('continue?')
-      #	  chatter = 5
-	 
-      if chatter > 3: print "get_initspectrum.curved_extraction [trackfull] fitting i = %2i x=%6.2f"%(i,x[i])
+      #   chatter = 5
+         
+      if chatter > 3: print("get_initspectrum.curved_extraction [trackfull] fitting i = %2i x=%6.2f"%(i,x[i]))
 
          # do/try the zeroth order 
-	 
+         
       if i in q0[0]: 
-         if chatter > 4: print " zeroth order"
-	 # normalization factor for singlegaussian is sqrt(pi).sigma.amplitude 
-	 # but use the measured counts within 3 sigma.
-	 sig0 = polyval(sig0coef, i)
-	 j1 = int(y0[i] - nxsig*sig0)
-	 j2 = int(y0[i] + nxsig*sig0 + 1)
-	 # get weighted sum now. Renormalize to get total counts in norm.
-	 yr = arange(j1,j2)
-	 prob = singlegaussian(yr,1.0,y0[i],sig0)
-	 P = (prob/prob.sum()).flatten()
-	 V = var[j1:j2,i].flatten()*varFudgeFactor
-	 net0 = net[j1:j2,i].flatten()
-	 net0[net0 < 0.] = 0.
-	 qfin = isfinite(net0)
+         if chatter > 4: print(" zeroth order")
+         # normalization factor for singlegaussian is sqrt(pi).sigma.amplitude 
+         # but use the measured counts within 3 sigma.
+         sig0 = polyval(sig0coef, i)
+         j1 = int(y0[i] - nxsig*sig0)
+         j2 = int(y0[i] + nxsig*sig0 + 1)
+         # get weighted sum now. Renormalize to get total counts in norm.
+         yr = arange(j1,j2)
+         prob = singlegaussian(yr,1.0,y0[i],sig0)
+         P = (prob/prob.sum()).flatten()
+         V = var[j1:j2,i].flatten()*varFudgeFactor
+         net0 = net[j1:j2,i].flatten()
+         net0[net0 < 0.] = 0.
+         qfin = isfinite(net0)
 
-	 variance[0,i] = (V[qfin]).sum()
-	 counts[0,i] = net0[qfin].sum() 
-	 
-	 # optimal extraction
-	 j1 = int(y0[i] - sig0)
-	 j2 = int(y0[i] + sig0)
-	 yr = arange(j1,j2)
-	 prob = singlegaussian(yr,1.0,y0[i],sig0)
-	 P = (prob/prob.sum()).flatten()
-	 V = var[j1:j2,i].flatten()*varFudgeFactor
-	 net0 = net[j1:j2,i].flatten()
-	 net0[net0 < 0.] = 0.
-	 qfin = isfinite(net0)
-	 var_opt[0,i]   = 1.0/ (( P[qfin]*P[qfin]/V[qfin]).sum())
-	 count_opt[0,i] = var_opt[0,i] * ( P[qfin] * net0[qfin] / V[qfin] ).sum()
-	 newsigmas[0,i] = sig0
-	 borderup  [0,i] = y0[i] - bs*sig0
-	 borderdown[0,i] = y0[i] + bs*sig0
+         variance[0,i] = (V[qfin]).sum()
+         counts[0,i] = net0[qfin].sum() 
+         
+         # optimal extraction
+         j1 = int(y0[i] - sig0)
+         j2 = int(y0[i] + sig0)
+         yr = arange(j1,j2)
+         prob = singlegaussian(yr,1.0,y0[i],sig0)
+         P = (prob/prob.sum()).flatten()
+         V = var[j1:j2,i].flatten()*varFudgeFactor
+         net0 = net[j1:j2,i].flatten()
+         net0[net0 < 0.] = 0.
+         qfin = isfinite(net0)
+         var_opt[0,i]   = 1.0/ (( P[qfin]*P[qfin]/V[qfin]).sum())
+         count_opt[0,i] = var_opt[0,i] * ( P[qfin] * net0[qfin] / V[qfin] ).sum()
+         newsigmas[0,i] = sig0
+         borderup  [0,i] = y0[i] - bs*sig0
+         borderdown[0,i] = y0[i] + bs*sig0
 
          
 
          # do the first order  
-	 
+         
       if ((i in q1[0]) & (i not in q2[0])) :
-         if chatter > 4: print " first order"
-	 sig1 = polyval(sig1coef,i) 
-	 j1 = int(y1[i] - nxsig*sig1)
-	 j2 = int(y1[i] + nxsig*sig1 + 1)
+         if chatter > 4: print(" first order")
+         sig1 = polyval(sig1coef,i) 
+         j1 = int(y1[i] - nxsig*sig1)
+         j2 = int(y1[i] + nxsig*sig1 + 1)
 
-	 Xpos = array([i])
-	 Ypos = array(y1[i])
-	 sigmas = array([sig1])
-	 Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=sigmas,
-		fiterrors=False,fixsig=True,fixpos=True,amp2lim=None)
-	 a1   = Z[0][0][0]	
+         Xpos = array([i])
+         Ypos = array(y1[i])
+         sigmas = array([sig1])
+         Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
+                composite_fit=True,caldefault=True,sigmas=sigmas,
+                fiterrors=False,fixsig=True,fixpos=True,amp2lim=None)
+         a1   = Z[0][0][0]      
          sig1 = Z[0][0][2]
 
-	 # get weighted sum now. Renormalize to get total counts in norm.
-	 yr = arange(j1,j2)
-	 prob = singlegaussian(yr,1.0,y1[i],sig1)
-	 P = (prob/prob.sum()).flatten()
-	 V = var[j1:j2,i].flatten()*varFudgeFactor
-	 net1 = net[j1:j2,i].flatten()
-	 net1[net1 < 0.] = 0.
-	 qfin = isfinite(net1)
-	 counts[1,i] = net1[qfin].sum()
-	 variance[1,i] = (V[qfin]).sum()
-	 
-	 # optimal extraction 
-	 j1 = int(y1[i] - sig1)
-	 j2 = int(y1[i] + sig1 + 1)
-	 # get weighted sum now. Renormalize to get total counts in norm.
-	 yr = arange(j1,j2)
-	 prob = singlegaussian(yr,1.0,y1[i],sig1)
-	 P = (prob/prob.sum()).flatten()
-	 V = var[j1:j2,i].flatten()*varFudgeFactor
-	 net1 = net[j1:j2,i].flatten()
-	 net1[net1 < 0.] = 0.
-	 qfin = isfinite(net1)
-	 var_opt[1,i]   = 1.0/ (( P[qfin]*P[qfin]/V[qfin]).sum())
-	 count_opt[1,i] = var_opt[1,i] * ( P[qfin] * net1[qfin] / V[qfin] ).sum()
+         # get weighted sum now. Renormalize to get total counts in norm.
+         yr = arange(j1,j2)
+         prob = singlegaussian(yr,1.0,y1[i],sig1)
+         P = (prob/prob.sum()).flatten()
+         V = var[j1:j2,i].flatten()*varFudgeFactor
+         net1 = net[j1:j2,i].flatten()
+         net1[net1 < 0.] = 0.
+         qfin = isfinite(net1)
+         counts[1,i] = net1[qfin].sum()
+         variance[1,i] = (V[qfin]).sum()
+         
+         # optimal extraction 
+         j1 = int(y1[i] - sig1)
+         j2 = int(y1[i] + sig1 + 1)
+         # get weighted sum now. Renormalize to get total counts in norm.
+         yr = arange(j1,j2)
+         prob = singlegaussian(yr,1.0,y1[i],sig1)
+         P = (prob/prob.sum()).flatten()
+         V = var[j1:j2,i].flatten()*varFudgeFactor
+         net1 = net[j1:j2,i].flatten()
+         net1[net1 < 0.] = 0.
+         qfin = isfinite(net1)
+         var_opt[1,i]   = 1.0/ (( P[qfin]*P[qfin]/V[qfin]).sum())
+         count_opt[1,i] = var_opt[1,i] * ( P[qfin] * net1[qfin] / V[qfin] ).sum()
          newsigmas    [1,i] = sig1
-	 borderup  [1,i] = y1[i] - bs*sig1
-	 borderdown[1,i] = y1[i] + bs*sig1
+         borderup  [1,i] = y1[i] - bs*sig1
+         borderdown[1,i] = y1[i] + bs*sig1
          fractions [1,i] = 1.
-	    
+            
 
       # do the first and second order  
-	 
+         
       if ((i in q1[0]) & (i in q2[0]) & (i not in q3[0])):
-         if chatter > 4: print " first and second orders"
-	 sig1 = polyval(sig1coef,i)
-	 sig2 = polyval(sig2coef,i)
-	 
-	 if abs(y2[i]-y1[i]) < req_dist_12:
-	    # do not fit profiles; use predicted second order 
-	    
-	    # first order fit
-	    Xpos = array([i])
-	    if top:
+         if chatter > 4: print(" first and second orders")
+         sig1 = polyval(sig1coef,i)
+         sig2 = polyval(sig2coef,i)
+         
+         if abs(y2[i]-y1[i]) < req_dist_12:
+            # do not fit profiles; use predicted second order 
+            
+            # first order fit
+            Xpos = array([i])
+            if top:
                j1 = int(y1[i] - nxsig*sig1)
-	       j2 = int(y2[i] + nxsig*sig2 + 1)
-	       Ypos = array([y1[i]])
-	       sigmas = array([sig1])
-            else:
-	       j1 = int(y2[i] - nxsig * sig2)
-	       j2 = int(y1[i] + nxsig * sig1)
-	       Ypos = array([y1[i]])
+               j2 = int(y2[i] + nxsig*sig2 + 1)
+               Ypos = array([y1[i]])
                sigmas = array([sig1])
-	 
-	    Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=sigmas,
-		fixsig=True,fixpos=True,fiterrors=False)
-	    
-	    
- 	    a1 = Z[0][0][2] 
-	    sig1 = Z[0][0][4]
-	    
-	    quality[i] += qflag['overlap']
-	    
+            else:
+               j1 = int(y2[i] - nxsig * sig2)
+               j2 = int(y1[i] + nxsig * sig1)
+               Ypos = array([y1[i]])
+               sigmas = array([sig1])
+         
+            Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
+                composite_fit=True,caldefault=True,sigmas=sigmas,
+                fixsig=True,fixpos=True,fiterrors=False)
+            
+            
+            a1 = Z[0][0][2] 
+            sig1 = Z[0][0][4]
+            
+            quality[i] += qflag['overlap']
+            
             # find second order prediction min, max -> amp2lim
             
             ilo = dis2.searchsorted(i)
-	    a2 = SO[1][3][ilo-1:ilo+1].mean()
-	    
-	    if a1 > a2: 
-	       a1 -= a2
-	    else: a1 = 0.   
-	 	 
-	 else:
-	    # orders 1,2 separated enough to fit profiles
-	    if top:
+            a2 = SO[1][3][ilo-1:ilo+1].mean()
+            
+            if a1 > a2: 
+               a1 -= a2
+            else: a1 = 0.   
+                 
+         else:
+            # orders 1,2 separated enough to fit profiles
+            if top:
                j1 = int(y1[i] - nxsig*sig1)
-	       j2 = int(y2[i] + nxsig*sig2 + 1)
-	       Ypos = array([y1[i],y2[i]])
-	       sigmas = array([sig1,sig2])
+               j2 = int(y2[i] + nxsig*sig2 + 1)
+               Ypos = array([y1[i],y2[i]])
+               sigmas = array([sig1,sig2])
             else:
-	       j1 = int(y2[i] - nxsig * sig2)
-	       j2 = int(y1[i] + nxsig * sig1)
-	       Ypos = array([y2[i],y1[i]])
+               j1 = int(y2[i] - nxsig * sig2)
+               j2 = int(y1[i] + nxsig * sig1)
+               Ypos = array([y2[i],y1[i]])
                sigmas = array([sig2,sig1])
-	      
-	    # fit for the amplitudes of first and second order
-	    Xpos = array([i])
-	 
-	    Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=sigmas,
-		fiterrors=False,fixsig=True,fixpos=True,amp2lim=amp2lim)
-		
-	    # amplitudes of first and second order determine the flux ratio	 	
-	    if top:
- 	       a1 = Z[0][0][0] 
- 	       a2 = Z[0][0][3]
-	       sig1 = Z[0][0][2]
-	       sig2 = Z[0][0][5] 
+              
+            # fit for the amplitudes of first and second order
+            Xpos = array([i])
+         
+            Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
+                composite_fit=True,caldefault=True,sigmas=sigmas,
+                fiterrors=False,fixsig=True,fixpos=True,amp2lim=amp2lim)
+                
+            # amplitudes of first and second order determine the flux ratio             
+            if top:
+               a1 = Z[0][0][0] 
+               a2 = Z[0][0][3]
+               sig1 = Z[0][0][2]
+               sig2 = Z[0][0][5] 
             else:
- 	       a2 = Z[0][0][0] 
- 	       a1 = Z[0][0][3] 
-	       sig2 = Z[0][0][2]
-	       sig1 = Z[0][0][5] 
-	    if a1 <= 0. : a1 = 1.e-6  
-	    if a2 <= 0. : a2 = 1.e-7  
-	 
-	    if chatter > 4: 
-	       print 'get_initspectrum: i=%5i a1=%6.1f   a2=%6.1f  y1=%6.1f  y2=%6.1f ' % (i,a1,a2,y1[i],y2[i])
-	 
-	 yr   = arange( max([int(y1[i]-3.*sig1),0]) , min([int(y2[i]+3.*sig1),200]) ) # base 1 pixels
-	 ff1 = singlegaussian(yr,a1,y1[i],sig1)
-	 ff2 = singlegaussian(yr,a2,y2[i],sig2)  
-	 fft = ff1+ff2    # total
-	 frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
-	 frac2 = ff2/fft  # fractional contribution of other order to counts 
-	                     #   normalised by total for each pixel  (= divide by ff1t)
-	 Var = var[yr,i] * varFudgeFactor
-	 P1 = (ff1/fft.sum()).flatten()  # probability normalised fraction per pixel
-	 net1 = net[yr ,i].flatten() * frac1  # counts that belong to first order
-	 net1[net1 < 0.] = 0.
-	 qfin = isfinite(net1)
-	 net1_tot = net1[qfin].sum()
-	 V1 = Var * (1.+ frac2)   # variance of pixel - add other order as noise source
-	 	 
-	 counts[1,i] = net1_tot
-	 # compute a simple weighted pixel-by-pixel variance, and add it. Weight by normalized net counts/pixel.
-	 variance[1,i] = (V1[qfin]).sum()
+               a2 = Z[0][0][0] 
+               a1 = Z[0][0][3] 
+               sig2 = Z[0][0][2]
+               sig1 = Z[0][0][5] 
+            if a1 <= 0. : a1 = 1.e-6  
+            if a2 <= 0. : a2 = 1.e-7  
+         
+            if chatter > 4: 
+               print('get_initspectrum: i=%5i a1=%6.1f   a2=%6.1f  y1=%6.1f  y2=%6.1f ' % (i,a1,a2,y1[i],y2[i]))
+         
+         yr   = arange( max([int(y1[i]-3.*sig1),0]) , min([int(y2[i]+3.*sig1),200]) ) # base 1 pixels
+         ff1 = singlegaussian(yr,a1,y1[i],sig1)
+         ff2 = singlegaussian(yr,a2,y2[i],sig2)  
+         fft = ff1+ff2    # total
+         frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
+         frac2 = ff2/fft  # fractional contribution of other order to counts 
+                             #   normalised by total for each pixel  (= divide by ff1t)
+         Var = var[yr,i] * varFudgeFactor
+         P1 = (ff1/fft.sum()).flatten()  # probability normalised fraction per pixel
+         net1 = net[yr ,i].flatten() * frac1  # counts that belong to first order
+         net1[net1 < 0.] = 0.
+         qfin = isfinite(net1)
+         net1_tot = net1[qfin].sum()
+         V1 = Var * (1.+ frac2)   # variance of pixel - add other order as noise source
+                 
+         counts[1,i] = net1_tot
+         # compute a simple weighted pixel-by-pixel variance, and add it. Weight by normalized net counts/pixel.
+         variance[1,i] = (V1[qfin]).sum()
 
-	 P2 = (ff2/fft.sum()).flatten()
-	 V2 = Var * (1.+ frac1) 
-	 net2 = net[yr ,i].flatten() * frac2
-	 net2[net2 < 0.] = 0.
-	 qfin = isfinite(net2)
-	 net2_tot = net2[qfin].sum()
+         P2 = (ff2/fft.sum()).flatten()
+         V2 = Var * (1.+ frac1) 
+         net2 = net[yr ,i].flatten() * frac2
+         net2[net2 < 0.] = 0.
+         qfin = isfinite(net2)
+         net2_tot = net2[qfin].sum()
 
-	 counts[2,i] = net2_tot	
-	 variance[2,i] = (V2[qfin]).sum()
+         counts[2,i] = net2_tot 
+         variance[2,i] = (V2[qfin]).sum()
 
          fractions [1,i] = frac1.sum()
          fractions [2,i] = frac2.sum()
-	 
-	 # optimal extraction order 1
-	 yr1   = arange( max([0,int(y1[i]-sig1)]) , min([int(y1[i]+sig1),200]) ) # base 1 pixels
-	 Var = var[yr1,i] * varFudgeFactor
-	 ff1 = singlegaussian(yr1,a1,y1[i],sig1)
-	 ff2 = singlegaussian(yr1,a2,y2[i],sig2)  
-	 fft = ff1+ff2    # total
-	 frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
-	 frac2 = ff2/fft  # fractional contribution of other order to counts 
-	                     #   normalised by total for each pixel  (= divide by ff1t)
-	 P1 = (ff1/fft.sum()).flatten()  # probability normalised fraction per pixel
-	 net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
-	 net1[net1 < 0.] = 0.
-	 qfin = isfinite(net1)
-	 net1_tot = net1[qfin].sum()
-	 V1 = Var * (1.+ frac2)   # variance of pixel - add other order as noise source
-	 var_opt[1,i]   = 1.0/ (( P1[qfin]*P1[qfin]/V1[qfin]).sum())
-	 count_opt[1,i] = var_opt[1,i] * ( P1[qfin] * net1[qfin] / V1[qfin] ).sum()
-	 newsigmas[1,i] = sig1
-	     
-	 yr2   = arange( max([0,int(y2[i]-sig2)]) , min([int(y2[i]+sig2),200]) ) # base 1 pixels
-	 Var = var[yr2,i] * varFudgeFactor
-	 ff1 = singlegaussian(yr2,a1,y1[i],sig1)
-	 ff2 = singlegaussian(yr2,a2,y2[i],sig2)  
-	 fft = ff1+ff2    # total
-	 frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
-	 frac2 = ff2/fft  # fractional contribution of other order to counts 
-	                     #   normalised by total for each pixel  (= divide by ff1t)
-	 P2 = (ff2/fft.sum()).flatten()
-	 V2 = Var * (1.+ frac1) 
-	 net2 = net[yr2 ,i].flatten() * frac2
-	 net2[net2 < 0.] = 0.
-	 qfin = isfinite(net2)
-	 net2_tot = net2[qfin].sum()
-	 var_opt[2,i]   = 1.0/ (( P2[qfin]*P2[qfin]/V2[qfin]).sum())
-	 count_opt[2,i] = var_opt[2,i] * ( P2[qfin] * net2[qfin] / V2[qfin] ).sum()
+         
+         # optimal extraction order 1
+         yr1   = arange( max([0,int(y1[i]-sig1)]) , min([int(y1[i]+sig1),200]) ) # base 1 pixels
+         Var = var[yr1,i] * varFudgeFactor
+         ff1 = singlegaussian(yr1,a1,y1[i],sig1)
+         ff2 = singlegaussian(yr1,a2,y2[i],sig2)  
+         fft = ff1+ff2    # total
+         frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
+         frac2 = ff2/fft  # fractional contribution of other order to counts 
+                             #   normalised by total for each pixel  (= divide by ff1t)
+         P1 = (ff1/fft.sum()).flatten()  # probability normalised fraction per pixel
+         net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
+         net1[net1 < 0.] = 0.
+         qfin = isfinite(net1)
+         net1_tot = net1[qfin].sum()
+         V1 = Var * (1.+ frac2)   # variance of pixel - add other order as noise source
+         var_opt[1,i]   = 1.0/ (( P1[qfin]*P1[qfin]/V1[qfin]).sum())
+         count_opt[1,i] = var_opt[1,i] * ( P1[qfin] * net1[qfin] / V1[qfin] ).sum()
+         newsigmas[1,i] = sig1
+             
+         yr2   = arange( max([0,int(y2[i]-sig2)]) , min([int(y2[i]+sig2),200]) ) # base 1 pixels
+         Var = var[yr2,i] * varFudgeFactor
+         ff1 = singlegaussian(yr2,a1,y1[i],sig1)
+         ff2 = singlegaussian(yr2,a2,y2[i],sig2)  
+         fft = ff1+ff2    # total
+         frac1 = ff1/fft  # fraction of counts belonging to first order for each pixel
+         frac2 = ff2/fft  # fractional contribution of other order to counts 
+                             #   normalised by total for each pixel  (= divide by ff1t)
+         P2 = (ff2/fft.sum()).flatten()
+         V2 = Var * (1.+ frac1) 
+         net2 = net[yr2 ,i].flatten() * frac2
+         net2[net2 < 0.] = 0.
+         qfin = isfinite(net2)
+         net2_tot = net2[qfin].sum()
+         var_opt[2,i]   = 1.0/ (( P2[qfin]*P2[qfin]/V2[qfin]).sum())
+         count_opt[2,i] = var_opt[2,i] * ( P2[qfin] * net2[qfin] / V2[qfin] ).sum()
          newsigmas[2,i] = sig2
-	 
-	 borderup  [1,i] = y1[i] - bs*sig1
-	 borderdown[1,i] = y1[i] + bs*sig1
-	 borderup  [2,i] = y2[i] - bs*sig2
-	 borderdown[2,i] = y2[i] + bs*sig2
+         
+         borderup  [1,i] = y1[i] - bs*sig1
+         borderdown[1,i] = y1[i] + bs*sig1
+         borderup  [2,i] = y2[i] - bs*sig2
+         borderdown[2,i] = y2[i] + bs*sig2
 
 
-	 if ((plotit > 0) & (i >= plotit)):
+         if ((plotit > 0) & (i >= plotit)):
             from pylab import plot, legend, figure, clf,title,text
-	    print Z[0]
-	    print '*********************'
-	    print qfin
-	    print net1
-	    print counts[1,i],count_opt[1,i],variance[2,i],var_opt[2,i]
-	    figure(11) ; clf()
-	    plot(yr,net[yr,i],'y',lw=2)
-	    plot(yr,ff1,'k')
-	    plot(yr,ff2,'r')
-	    plot(yr,net1/P1,'bv')
-	    plot(yr,net2/P2,'c^',alpha=0.7)
-	    legend(['net','ff1','ff2','net1/P1','net2/P2'])
-	    title("%7.1e %6.1f %4.1f %7.1e %6.1f %4.1f"%(a1,y1[i],sig1,a2,y2[i],sig2))
-	    figure(12) ; clf()
-	    plot(yr,P1,'k')
-	    plot(yr,P2,'r')
-	    plot(yr,frac1,'b')
-	    plot(yr,frac2,'m') 		     
-	    legend(['P1','P2','frac1','frac2'])	    
-	    
-	    gogo = raw_input('continue?')
-	              	    
+            print(Z[0])
+            print('*********************')
+            print(qfin)
+            print(net1)
+            print(counts[1,i],count_opt[1,i],variance[2,i],var_opt[2,i])
+            figure(11) ; clf()
+            plot(yr,net[yr,i],'y',lw=2)
+            plot(yr,ff1,'k')
+            plot(yr,ff2,'r')
+            plot(yr,net1/P1,'bv')
+            plot(yr,net2/P2,'c^',alpha=0.7)
+            legend(['net','ff1','ff2','net1/P1','net2/P2'])
+            title("%7.1e %6.1f %4.1f %7.1e %6.1f %4.1f"%(a1,y1[i],sig1,a2,y2[i],sig2))
+            figure(12) ; clf()
+            plot(yr,P1,'k')
+            plot(yr,P2,'r')
+            plot(yr,frac1,'b')
+            plot(yr,frac2,'m')               
+            legend(['P1','P2','frac1','frac2'])     
+            
+            gogo = input('continue?')
+                            
       # do the first, second and third order case  
       
       if ((i in q1[0]) & (i in q2[0]) & (i in q3[0])):
-            if chatter > 4: print "first, second and third order"
-	    sig1 = polyval(sig1coef,i)
-	    sig2 = polyval(sig2coef,i)
-	    sig3 = polyval(sig3coef,i)
-	    
-	    if ((abs(y2[i]-y1[i]) < req_dist_12) & (abs(y3[i]-y1[i]) < req_dist_13)):
-	       # do not fit profiles; use only predicted second order 
-	    
-	       # first order fit
-	       Xpos = array([i])
-	       if top:
+            if chatter > 4: print("first, second and third order")
+            sig1 = polyval(sig1coef,i)
+            sig2 = polyval(sig2coef,i)
+            sig3 = polyval(sig3coef,i)
+            
+            if ((abs(y2[i]-y1[i]) < req_dist_12) & (abs(y3[i]-y1[i]) < req_dist_13)):
+               # do not fit profiles; use only predicted second order 
+            
+               # first order fit
+               Xpos = array([i])
+               if top:
                   j1 = int(y1[i] - nxsig*sig1)
-	          j2 = int(y2[i] + nxsig*sig2 + 1)
-	          Ypos = array([y1[i]])
-	          sigmas = array([sig1])
-               else:
-	          j1 = int(y2[i] - nxsig * sig2)
-	          j2 = int(y1[i] + nxsig * sig1)
-	          Ypos = array([y1[i]])
+                  j2 = int(y2[i] + nxsig*sig2 + 1)
+                  Ypos = array([y1[i]])
                   sigmas = array([sig1])
-	 
-	       Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=sigmas,
-		fiterrors=False,fixsig=True,fixpos=True)
-	    
- 	       #a1 = Z[0][0][2]
-	       #sig1 = Z[0][0][4] 
-	       a1 = Z[0][0][0]
-	       sig1 = Z[0][0][2]
-	    
+               else:
+                  j1 = int(y2[i] - nxsig * sig2)
+                  j2 = int(y1[i] + nxsig * sig1)
+                  Ypos = array([y1[i]])
+                  sigmas = array([sig1])
+         
+               Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
+                composite_fit=True,caldefault=True,sigmas=sigmas,
+                fiterrors=False,fixsig=True,fixpos=True)
+            
+               #a1 = Z[0][0][2]
+               #sig1 = Z[0][0][4] 
+               a1 = Z[0][0][0]
+               sig1 = Z[0][0][2]
+            
                # find second order prediction min, max -> amp2lim
             
                ilo = dis2.searchsorted(i)
-	       a2 = SO[1][2][ilo-1:ilo+1].mean()
-	    
-	       if a1 > a2: 
-	          a1 -= a2
-	       else: a1 = 0.   
+               a2 = SO[1][2][ilo-1:ilo+1].mean()
+            
+               if a1 > a2: 
+                  a1 -= a2
+               else: a1 = 0.   
 
                a3 = 0.
-	       
-	       quality[i] += qflag['overlap']
+               
+               quality[i] += qflag['overlap']
 
-	    else:
-	       if top:
+            else:
+               if top:
                   j1 = int(y1[i] - nxsig*sig1)
-	          j2 = int(y3[i] + nxsig*sig3 + 1)
-	          Ypos = array([y1[i],y2[i],y3[i]])
-	          sigmas = array([sig1,sig2,sig3])
+                  j2 = int(y3[i] + nxsig*sig3 + 1)
+                  Ypos = array([y1[i],y2[i],y3[i]])
+                  sigmas = array([sig1,sig2,sig3])
                else:
-	          j1 = int(y3[i] - nxsig*sig3)
-	          j2 = int(y1[i] + nxsig*sig1)
-	          Ypos = array([y3[i],y2[i],y1[i]])
+                  j1 = int(y3[i] - nxsig*sig3)
+                  j2 = int(y1[i] + nxsig*sig1)
+                  Ypos = array([y3[i],y2[i],y1[i]])
                   sigmas = array([sig3,sig2,sig1])
-		  
-	       # fit for the amplitudes of first and second order
-	       Xpos = array([i])
-	    
-	       Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
-	           composite_fit=True,caldefault=True,sigmas=sigmas,
-		   fiterrors=False,amp2lim=amp2lim,fixsig=True,fixpos=True)
-		
-	       if top:
- 	          a1 = Z[0][0][0] 
- 	          a2 = Z[0][0][3] 
- 	          a3 = Z[0][0][6] 
- 	          sig1 = Z[0][0][2] 
- 	          sig2 = Z[0][0][5] 
- 	          sig3 = Z[0][0][8] 
+                  
+               # fit for the amplitudes of first and second order
+               Xpos = array([i])
+            
+               Z = get_components(Xpos,net,Ypos,wheelpos,chatter=chatter,\
+                   composite_fit=True,caldefault=True,sigmas=sigmas,
+                   fiterrors=False,amp2lim=amp2lim,fixsig=True,fixpos=True)
+                
+               if top:
+                  a1 = Z[0][0][0] 
+                  a2 = Z[0][0][3] 
+                  a3 = Z[0][0][6] 
+                  sig1 = Z[0][0][2] 
+                  sig2 = Z[0][0][5] 
+                  sig3 = Z[0][0][8] 
                else:
- 	          a1 = Z[0][0][6] 
- 	          a2 = Z[0][0][3] 
- 	          a3 = Z[0][0][0] 
- 	          sig1 = Z[0][0][8] 
- 	          sig2 = Z[0][0][5] 
- 	          sig3 = Z[0][0][2] 
+                  a1 = Z[0][0][6] 
+                  a2 = Z[0][0][3] 
+                  a3 = Z[0][0][0] 
+                  sig1 = Z[0][0][8] 
+                  sig2 = Z[0][0][5] 
+                  sig3 = Z[0][0][2] 
 
             yr1 = arange(int( y1[i]-nxsig*sig1) , int(y1[i]+nxsig*sig1) )
-	    ff1 =     singlegaussian(yr1,a1,y1[i],sig1)
-	    ff1t = ff1+singlegaussian(yr1,a2,y2[i],sig2)+singlegaussian(yr1,a3,y3[i],sig3)
-	    frac1 = ff1/ff1t 
-	       
-	    yr2 = arange( int(y2[i]-nxsig*sig2) , int(y2[i]+nxsig*sig2) )
-	    ff2 = singlegaussian(yr2,a2,y2[i],sig2) 
-	    ff2t = ff2 + singlegaussian(yr2,a1,y1[i],sig1) + singlegaussian(yr2,a3,y3[i],sig3)
-	    frac2 = ff2/ff2t
-	       
-	    yr3 = arange( int(y3[i]-nxsig*sig3 ),int( y3[i]+nxsig*sig3 ))
-	    ff3 = singlegaussian(yr3,a3,y3[i],sig3)
-	    ff3t = ff3+singlegaussian(yr3,a1,y1[i],sig1)+singlegaussian(yr3,a2,y2[i],sig2)
-	    frac3 = ff3/ff3t
-	       
-	    fra21 = singlegaussian(yr2,a1,y1[i],sig1)
-	    fra21 /= (fra21+singlegaussian(yr2,a2,y2[i],sig2)+singlegaussian(yr2,a3,y3[i],sig3))
-	    fra31 = singlegaussian(yr3,a1,y1[i],sig1)
-	    fra31 /= (fra31+singlegaussian(yr3,a2,y2[i],sig2)+singlegaussian(yr3,a3,y3[i],sig3))
-	       
-	    fra12 = singlegaussian(yr1,a2,y2[i],sig2) 
-	    fra12 /= (fra12+singlegaussian(yr1,a1,y1[i],sig1) + singlegaussian(yr1,a3,y3[i],sig3))
-	    fra32 = singlegaussian(yr3,a2,y2[i],sig2) 
-	    fra32 /= (fra32+singlegaussian(yr3,a1,y1[i],sig1) + singlegaussian(yr3,a3,y3[i],sig3))
-	       
-	    fra13 = singlegaussian(yr1,a3,y3[i],sig3)
-	    fra13 /= (fra13+singlegaussian(yr1,a1,y1[i],sig1)+singlegaussian(yr1,a2,y2[i],sig2))
-	    fra23 = singlegaussian(yr2,a3,y3[i],sig3)
-	    fra23 /= (fra23+singlegaussian(yr2,a1,y1[i],sig1)+singlegaussian(yr2,a2,y2[i],sig2))
-	       
-	    Var1 = var[yr1,i].flatten()* varFudgeFactor
-	    Var2 = var[yr2,i].flatten()* varFudgeFactor
-	    Var3 = var[yr3,i].flatten()* varFudgeFactor
+            ff1 =     singlegaussian(yr1,a1,y1[i],sig1)
+            ff1t = ff1+singlegaussian(yr1,a2,y2[i],sig2)+singlegaussian(yr1,a3,y3[i],sig3)
+            frac1 = ff1/ff1t 
+               
+            yr2 = arange( int(y2[i]-nxsig*sig2) , int(y2[i]+nxsig*sig2) )
+            ff2 = singlegaussian(yr2,a2,y2[i],sig2) 
+            ff2t = ff2 + singlegaussian(yr2,a1,y1[i],sig1) + singlegaussian(yr2,a3,y3[i],sig3)
+            frac2 = ff2/ff2t
+               
+            yr3 = arange( int(y3[i]-nxsig*sig3 ),int( y3[i]+nxsig*sig3 ))
+            ff3 = singlegaussian(yr3,a3,y3[i],sig3)
+            ff3t = ff3+singlegaussian(yr3,a1,y1[i],sig1)+singlegaussian(yr3,a2,y2[i],sig2)
+            frac3 = ff3/ff3t
+               
+            fra21 = singlegaussian(yr2,a1,y1[i],sig1)
+            fra21 /= (fra21+singlegaussian(yr2,a2,y2[i],sig2)+singlegaussian(yr2,a3,y3[i],sig3))
+            fra31 = singlegaussian(yr3,a1,y1[i],sig1)
+            fra31 /= (fra31+singlegaussian(yr3,a2,y2[i],sig2)+singlegaussian(yr3,a3,y3[i],sig3))
+               
+            fra12 = singlegaussian(yr1,a2,y2[i],sig2) 
+            fra12 /= (fra12+singlegaussian(yr1,a1,y1[i],sig1) + singlegaussian(yr1,a3,y3[i],sig3))
+            fra32 = singlegaussian(yr3,a2,y2[i],sig2) 
+            fra32 /= (fra32+singlegaussian(yr3,a1,y1[i],sig1) + singlegaussian(yr3,a3,y3[i],sig3))
+               
+            fra13 = singlegaussian(yr1,a3,y3[i],sig3)
+            fra13 /= (fra13+singlegaussian(yr1,a1,y1[i],sig1)+singlegaussian(yr1,a2,y2[i],sig2))
+            fra23 = singlegaussian(yr2,a3,y3[i],sig3)
+            fra23 /= (fra23+singlegaussian(yr2,a1,y1[i],sig1)+singlegaussian(yr2,a2,y2[i],sig2))
+               
+            Var1 = var[yr1,i].flatten()* varFudgeFactor
+            Var2 = var[yr2,i].flatten()* varFudgeFactor
+            Var3 = var[yr3,i].flatten()* varFudgeFactor
 
-	    P1 = (ff1/ff1.sum()).flatten()  # probability of first order photon 
-	    P2 = (ff2/ff2.sum()).flatten()
-	    P3 = (ff3/ff3.sum()).flatten()
-	    V1 = Var1 * (1.+ fra12+fra13) # variance of pixel 
-	    V2 = Var2 * (1.+ fra21+fra23) 
-	    V3 = Var3 * (1.+ fra31+fra32) 
-	    net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
-	    net2 = net[yr2 ,i].flatten() * frac2
-	    net3 = net[yr3 ,i].flatten() * frac3	       
-	    net1[ net1 < 0.] = 0.
-	    net2[ net2 < 0.] = 0.
-	    net3[ net3 < 0.] = 0.
+            P1 = (ff1/ff1.sum()).flatten()  # probability of first order photon 
+            P2 = (ff2/ff2.sum()).flatten()
+            P3 = (ff3/ff3.sum()).flatten()
+            V1 = Var1 * (1.+ fra12+fra13) # variance of pixel 
+            V2 = Var2 * (1.+ fra21+fra23) 
+            V3 = Var3 * (1.+ fra31+fra32) 
+            net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
+            net2 = net[yr2 ,i].flatten() * frac2
+            net3 = net[yr3 ,i].flatten() * frac3               
+            net1[ net1 < 0.] = 0.
+            net2[ net2 < 0.] = 0.
+            net3[ net3 < 0.] = 0.
             qfin1 = isfinite(net1)
-	    qfin2 = isfinite(net2)
-	    qfin3 = isfinite(net3)
-	    counts[1,i] = net1[qfin1].sum()
-	    counts[2,i] = net2[qfin2].sum()	
-	    counts[3,i] = net3[qfin3].sum()	
-	    variance[1,i] = (V1[qfin1]).sum()
-	    variance[2,i] = (V2[qfin2]).sum()
-	    variance[3,i] = (V3[qfin3]).sum()
-	    
-	    borderup  [1,i] = y1[i] - bs*sig1
-	    borderdown[1,i] = y1[i] + bs*sig1
-	    borderup  [2,i] = y2[i] - bs*sig2
-	    borderdown[2,i] = y2[i] + bs*sig2
-	    borderup  [3,i] = y3[i] - bs*sig3
-	    borderdown[3,i] = y3[i] + bs*sig3
+            qfin2 = isfinite(net2)
+            qfin3 = isfinite(net3)
+            counts[1,i] = net1[qfin1].sum()
+            counts[2,i] = net2[qfin2].sum()     
+            counts[3,i] = net3[qfin3].sum()     
+            variance[1,i] = (V1[qfin1]).sum()
+            variance[2,i] = (V2[qfin2]).sum()
+            variance[3,i] = (V3[qfin3]).sum()
+            
+            borderup  [1,i] = y1[i] - bs*sig1
+            borderdown[1,i] = y1[i] + bs*sig1
+            borderup  [2,i] = y2[i] - bs*sig2
+            borderdown[2,i] = y2[i] + bs*sig2
+            borderup  [3,i] = y3[i] - bs*sig3
+            borderdown[3,i] = y3[i] + bs*sig3
             fractions [1,i] = frac1.sum()
             fractions [2,i] = frac2.sum()
             fractions [3,i] = frac3.sum()
 
             # optimal extraction
-	    
+            
             yr1 = arange(int( y1[i]-sig1) , int(y1[i]+sig1) )
-	    ff1 =     singlegaussian(yr1,a1,y1[i],sig1)
-	    ff1t = ff1+singlegaussian(yr1,a2,y2[i],sig2)+singlegaussian(yr1,a3,y3[i],sig3)
-	    frac1 = ff1/ff1t 
-	       
-	    yr2 = arange( int(y2[i]-sig2) , int(y2[i]+sig2) )
-	    ff2 = singlegaussian(yr2,a2,y2[i],sig2) 
-	    ff2t = ff2 + singlegaussian(yr2,a1,y1[i],sig1) + singlegaussian(yr2,a3,y3[i],sig3)
-	    frac2 = ff2/ff2t
-	       
-	    yr3 = arange( int(y3[i]-sig3 ),int( y3[i]+sig3 ))
-	    ff3 = singlegaussian(yr3,a3,y3[i],sig3)
-	    ff3t = ff3+singlegaussian(yr3,a1,y1[i],sig1)+singlegaussian(yr3,a2,y2[i],sig2)
-	    frac3 = ff3/ff3t
-	       
-	    fra21 = singlegaussian(yr2,a1,y1[i],sig1)
-	    fra21 /= (fra21+singlegaussian(yr2,a2,y2[i],sig2)+singlegaussian(yr2,a3,y3[i],sig3))
-	    fra31 = singlegaussian(yr3,a1,y1[i],sig1)
-	    fra31 /= (fra31+singlegaussian(yr3,a2,y2[i],sig2)+singlegaussian(yr3,a3,y3[i],sig3))
-	       
-	    fra12 = singlegaussian(yr1,a2,y2[i],sig2) 
-	    fra12 /= (fra12+singlegaussian(yr1,a1,y1[i],sig1) + singlegaussian(yr1,a3,y3[i],sig3))
-	    fra32 = singlegaussian(yr3,a2,y2[i],sig2) 
-	    fra32 /= (fra32+singlegaussian(yr3,a1,y1[i],sig1) + singlegaussian(yr3,a3,y3[i],sig3))
-	       
-	    fra13 = singlegaussian(yr1,a3,y3[i],sig3)
-	    fra13 /= (fra13+singlegaussian(yr1,a1,y1[i],sig1)+singlegaussian(yr1,a2,y2[i],sig2))
-	    fra23 = singlegaussian(yr2,a3,y3[i],sig3)
-	    fra23 /= (fra23+singlegaussian(yr2,a1,y1[i],sig1)+singlegaussian(yr2,a2,y2[i],sig2))
-	       
-	    Var1 = var[yr1,i].flatten()* varFudgeFactor
-	    Var2 = var[yr2,i].flatten()* varFudgeFactor
-	    Var3 = var[yr3,i].flatten()* varFudgeFactor
+            ff1 =     singlegaussian(yr1,a1,y1[i],sig1)
+            ff1t = ff1+singlegaussian(yr1,a2,y2[i],sig2)+singlegaussian(yr1,a3,y3[i],sig3)
+            frac1 = ff1/ff1t 
+               
+            yr2 = arange( int(y2[i]-sig2) , int(y2[i]+sig2) )
+            ff2 = singlegaussian(yr2,a2,y2[i],sig2) 
+            ff2t = ff2 + singlegaussian(yr2,a1,y1[i],sig1) + singlegaussian(yr2,a3,y3[i],sig3)
+            frac2 = ff2/ff2t
+               
+            yr3 = arange( int(y3[i]-sig3 ),int( y3[i]+sig3 ))
+            ff3 = singlegaussian(yr3,a3,y3[i],sig3)
+            ff3t = ff3+singlegaussian(yr3,a1,y1[i],sig1)+singlegaussian(yr3,a2,y2[i],sig2)
+            frac3 = ff3/ff3t
+               
+            fra21 = singlegaussian(yr2,a1,y1[i],sig1)
+            fra21 /= (fra21+singlegaussian(yr2,a2,y2[i],sig2)+singlegaussian(yr2,a3,y3[i],sig3))
+            fra31 = singlegaussian(yr3,a1,y1[i],sig1)
+            fra31 /= (fra31+singlegaussian(yr3,a2,y2[i],sig2)+singlegaussian(yr3,a3,y3[i],sig3))
+               
+            fra12 = singlegaussian(yr1,a2,y2[i],sig2) 
+            fra12 /= (fra12+singlegaussian(yr1,a1,y1[i],sig1) + singlegaussian(yr1,a3,y3[i],sig3))
+            fra32 = singlegaussian(yr3,a2,y2[i],sig2) 
+            fra32 /= (fra32+singlegaussian(yr3,a1,y1[i],sig1) + singlegaussian(yr3,a3,y3[i],sig3))
+               
+            fra13 = singlegaussian(yr1,a3,y3[i],sig3)
+            fra13 /= (fra13+singlegaussian(yr1,a1,y1[i],sig1)+singlegaussian(yr1,a2,y2[i],sig2))
+            fra23 = singlegaussian(yr2,a3,y3[i],sig3)
+            fra23 /= (fra23+singlegaussian(yr2,a1,y1[i],sig1)+singlegaussian(yr2,a2,y2[i],sig2))
+               
+            Var1 = var[yr1,i].flatten()* varFudgeFactor
+            Var2 = var[yr2,i].flatten()* varFudgeFactor
+            Var3 = var[yr3,i].flatten()* varFudgeFactor
 
-	    P1 = (ff1/ff1.sum()).flatten()  # probability of first order photon 
-	    P2 = (ff2/ff2.sum()).flatten()
-	    P3 = (ff3/ff3.sum()).flatten()
-	    V1 = Var1 * (1.+ fra12+fra13) # variance of pixel 
-	    V2 = Var2 * (1.+ fra21+fra23) 
-	    V3 = Var3 * (1.+ fra31+fra32) 
-	    net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
-	    net2 = net[yr2 ,i].flatten() * frac2
-	    net3 = net[yr3 ,i].flatten() * frac3	       
-	    net1[ net1 < 0.] = 0.
-	    net2[ net2 < 0.] = 0.
-	    net3[ net3 < 0.] = 0.
+            P1 = (ff1/ff1.sum()).flatten()  # probability of first order photon 
+            P2 = (ff2/ff2.sum()).flatten()
+            P3 = (ff3/ff3.sum()).flatten()
+            V1 = Var1 * (1.+ fra12+fra13) # variance of pixel 
+            V2 = Var2 * (1.+ fra21+fra23) 
+            V3 = Var3 * (1.+ fra31+fra32) 
+            net1 = net[yr1 ,i].flatten() * frac1  # counts that belong to first order
+            net2 = net[yr2 ,i].flatten() * frac2
+            net3 = net[yr3 ,i].flatten() * frac3               
+            net1[ net1 < 0.] = 0.
+            net2[ net2 < 0.] = 0.
+            net3[ net3 < 0.] = 0.
             qfin1 = isfinite(net1)
-	    qfin2 = isfinite(net2)
-	    qfin3 = isfinite(net3)
-	    var_opt[1,i]   = 1.0/ (( P1[qfin1]*P1[qfin1]/V1[qfin1]).sum())
-	    count_opt[1,i] = var_opt[1,i] * ( P1[qfin1] * net1[qfin1] / V1[qfin1] ).sum()
-	    newsigmas[1,i] = sig1
-	    var_opt[2,i]   = 1.0/ (( P2[qfin2]*P2[qfin2]/V2[qfin2]).sum())
-	    count_opt[2,i] = var_opt[2,i] * ( P2[qfin2] * net2[qfin2] / V2[qfin2] ).sum()
-	    newsigmas[2,i] = sig2
-	    var_opt[3,i]   = 1.0/ (( P3[qfin3]*P3[qfin3]/V3[qfin3]).sum())
-	    count_opt[3,i] = var_opt[3,i] * ( P3[qfin3] * net3[qfin3] / V3[qfin3] ).sum() 
-	    newsigmas[3,i] = sig3
+            qfin2 = isfinite(net2)
+            qfin3 = isfinite(net3)
+            var_opt[1,i]   = 1.0/ (( P1[qfin1]*P1[qfin1]/V1[qfin1]).sum())
+            count_opt[1,i] = var_opt[1,i] * ( P1[qfin1] * net1[qfin1] / V1[qfin1] ).sum()
+            newsigmas[1,i] = sig1
+            var_opt[2,i]   = 1.0/ (( P2[qfin2]*P2[qfin2]/V2[qfin2]).sum())
+            count_opt[2,i] = var_opt[2,i] * ( P2[qfin2] * net2[qfin2] / V2[qfin2] ).sum()
+            newsigmas[2,i] = sig2
+            var_opt[3,i]   = 1.0/ (( P3[qfin3]*P3[qfin3]/V3[qfin3]).sum())
+            count_opt[3,i] = var_opt[3,i] * ( P3[qfin3] * net3[qfin3] / V3[qfin3] ).sum() 
+            newsigmas[3,i] = sig3
 
    return count_opt, var_opt, borderup, borderdown, (fractions,counts, variance, newsigmas) 
 
@@ -6885,13 +6896,13 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
       
    try:  (present0,present1,present2,present3),(q0,q1,q2,q3),(
          y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	 y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
-	 y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	 y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
-	 x,xstart,xend,sp_all,quality,co_back)  = fitorder1
+         y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
+         y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+         y3,dlim3L,dlim3U,sig3coef,sp_third, co_third ),(
+         x,xstart,xend,sp_all,quality,co_back)  = fitorder1
 
    except RuntimeError:
-     print "updateFitorder: input parameter fitorder is not right\n ABORTING . . . "
+     print("updateFitorder: input parameter fitorder is not right\n ABORTING . . . ")
      raise RuntimeError
      return
      
@@ -6901,7 +6912,7 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
       
    # check that the dimension size is right
    if nx != extimg.shape[1]:
-     print "spectrumProfile: size of input image %4i and fitorder %4i not compatible "%(nx,extimg.shape[1])
+     print("spectrumProfile: size of input image %4i and fitorder %4i not compatible "%(nx,extimg.shape[1]))
      raise RuntimeError
      return 
 
@@ -6911,12 +6922,12 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
    if present3 & ((abs(dlim3U-dlim3L) < 100) | (not fit_second) | (not fit_third)):
       present3 = False  
       if chatter > 2:
-         print "third order update curvature disabled: not enough points"
+         print("third order update curvature disabled: not enough points")
       
    # do not update second order when it is too short
    if present2 & ((abs(dlim2U-dlim2L) < 100) | (not fit_second)) :
       if chatter > 2:
-         print "second order update curvature disabled: not enough points"
+         print("second order update curvature disabled: not enough points")
       present2 = False   
           
    # define some list to tuck the newly fitted parameters into
@@ -6937,18 +6948,18 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
    
    if present0:
       for i in range(q0[0][0]+15,q0[0][-1],30):
-         if chatter > 4: print " refit zeroth order position and sigma"
+         if chatter > 4: print(" refit zeroth order position and sigma")
       
          # only fit high quality 
          q = where(quality[i-15:i+15] == 0)[0] + (i-15) 
          Z = get_components(xpos,extimg[:,i-15:i+15],y0[i],wheelpos,chatter=chatter,\
-	           composite_fit=True,caldefault=True,sigmas=None)   
-		   
-         (params,e_params,flag),input = Z	   	    
-         status = flag[5]  	    
+                   composite_fit=True,caldefault=True,sigmas=None)   
+                   
+         (params,e_params,flag),input = Z                   
+         status = flag[5]           
          # here [bg0,bg1,a0,p0,sig0] = params
          # here [e_bg0,e_bg1,e_a0,e_p0,e_sig0] = e_params
-	 if status > 0:
+         if status > 0:
             fx0.append( x[i] )
             fy0.append( params[3] )
             fsig0.append( params[4] )
@@ -6960,10 +6971,10 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
             e_bg0.append(e_params[0])
             e_bg1.append(e_params[1])
          elif chatter > 1:
-            print 'updateFitorder zeroth order failure fit: ' 
-	    print 'INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',y0[i]
-	    print 'params   : ',params
-	    print 'e_params : ',e_params	 
+            print('updateFitorder zeroth order failure fit: ') 
+            print('INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',y0[i])
+            print('params   : ',params)
+            print('e_params : ',e_params)        
 
       fx0q = np.isfinite(np.array(fx0)) & np.isfinite(np.array(fy0))
 
@@ -6972,9 +6983,9 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
          fcoef0 = np.polyfit(np.array(fx0)[fx0q],np.array(fy0)[fx0q]-100.,2)
          fsig0coef = np.polyfit(np.array(fx0)[fx0q],np.array(fsig0)[fx0q],2)
       else:
-         if chatter > 1: print "updateFitorder: no success refitting zeroth order"
+         if chatter > 1: print("updateFitorder: no success refitting zeroth order")
          fcoef0 = array([-0.07,-49.])
-         fsigcoef0 = sig0coef      	 
+         fsigcoef0 = sig0coef            
    else:
       fcoef0 = array([-0.07,-49.])
       fsig0coef = sig0coef
@@ -6984,36 +6995,36 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
    # implied present1
          
    if chatter > 4: 
-      print "updateFitorder: refit first order position and sigma"
-      print "updateFitorder: centre bins ",range(q1[0][0]+15,q2[0][0],30)
+      print("updateFitorder: refit first order position and sigma")
+      print("updateFitorder: centre bins ",list(range(q1[0][0]+15,q2[0][0],30)))
    
-	
+        
    if present2: 
       uprange1 = q2[0][0]
    else: 
       uprange1 = q1[0][-1]
    
    for i in range(q1[0][0]+15,uprange1,30):
-      if chatter > 4:  print  "bin: ",i,"  x[i] = ",x[i]
-	 
+      if chatter > 4:  print("bin: ",i,"  x[i] = ",x[i])
+         
       # only fit high quality 
       q = where(quality[i-15:i+15] == 0)[0] + (i-15) 
       
       Z = get_components(xpos,extimg[:,i-15:i+15],y1[i],wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=None)   
-		
-      (params,e_params,flag),input = Z	   
-      status = flag[5]  	    
+                composite_fit=True,caldefault=True,sigmas=None)   
+                
+      (params,e_params,flag),input = Z     
+      status = flag[5]              
       if chatter > 4:
-         print "updateFitorder: 1st, status = ",flag
-	 print "params = ",params
-	 print "errors = ",e_params	    
+         print("updateFitorder: 1st, status = ",flag)
+         print("params = ",params)
+         print("errors = ",e_params)        
       # here [bg0,bg1,a1,p1,sig1] = params
       # here [e_bg0,e_bg1,e_a1,e_p1,e_sig1] = e_params
       if status > 0:
          fx1.append( x[i] )
          fy1.append( params[3] )
-	 fsig1.append( params[4] )
+         fsig1.append( params[4] )
          e_fx1.append( 15 )
          e_fy1.append( e_params[3] )
          e_fsig1.append( e_params[4] )
@@ -7022,21 +7033,21 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
          e_bg0.append(e_params[0])
          e_bg1.append(e_params[1])
       elif chatter > 1:
-         print 'updateFitorder 1st order failure fit: ' 
-	 print 'INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',y1[i]
-	 print 'params   : ',params
-	 print 'e_params : ',e_params	 
+         print('updateFitorder 1st order failure fit: ') 
+         print('INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',y1[i])
+         print('params   : ',params)
+         print('e_params : ',e_params)   
 
     
    # predict the second order amplitude
    
    if (predict2nd & present2 & (type(C_1) != typeNone) & (type(C_2) != typeNone) & (type(d12) != typeNone)):
-      print "updateFitorder: calling predict_second_order()"
-      # here the arguments are:	dis = q1[0]
-      # 			spnet = sp_first[q1[0]]
-      # 			qual = quality[q1[0]]      ? or ... x[q1[0]] argument? 
-      # 			dismin = dlim1L
-      # 			dismax = dlim1U
+      print("updateFitorder: calling predict_second_order()")
+      # here the arguments are: dis = q1[0]
+      #                         spnet = sp_first[q1[0]]
+      #                         qual = quality[q1[0]]      ? or ... x[q1[0]] argument? 
+      #                         dismin = dlim1L
+      #                         dismax = dlim1U
       #  (wav2, dis2, flux2, qual2, d12), (wave, dis, spnet) = predict_second_order(dis,spnet,C_1,C_2,d12,qual,dismin,dismax,wheelpos)
       SO = predict_second_order(x[q1[0]], sp_first[q1[0]], C_1, C_2, d12, quality[q1[0]], dlim1L,dlim1U,wheelpos)
       dis2 = (SO[0][1]+d12)
@@ -7045,7 +7056,7 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
       #dis2 = dis2[sq]
       flx2 = flx2[sq]
    else:
-      print "updateFitorder: skipped call to predict_second_order()"   
+      print("updateFitorder: skipped call to predict_second_order()")   
 
        
    #     positions in first and second orders before third order appears
@@ -7055,67 +7066,67 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
       else: uprange2 = q2[0][-1]
       
       if chatter > 4: 
-         print "updateFitorder: refit first + second order position and sigma"
-         print "updateFitorder: centre bins ",range(q2[0][0]+15,uprange2,30)
-	 
+         print("updateFitorder: refit first + second order position and sigma")
+         print("updateFitorder: centre bins ",list(range(q2[0][0]+15,uprange2,30)))
+         
       for i in range(q2[0][0]+15,uprange2,30):
    
-         if chatter > 4:  print  "bin: ",i,"  x[i] = ",x[i]
-	 
+         if chatter > 4:  print("bin: ",i,"  x[i] = ",x[i])
+         
          # only fit high quality 
          q = where(quality[i-15:i+15] == 0)[0] + (i-15) 
       
          # use the predicted second order to define limits to the amplitude for fitting
-	 
+         
          if isfinite(y2[i]) & isfinite(y1[i]):
             if ( (abs(y2[i]-y1[i]) < 5) & (abs(y2[i]-y1[i]) >= 1.5) ): 
                # find second order prediction for this range, min, max -> amp2lim
-	       if predict2nd: 
+               if predict2nd: 
                   if dis2[0] <= i-15:
                      ilo = dis2.searchsorted(i-15)
                   else: ilo=0
-	       
-                  if dis2[-1] > i+15: 	 
+               
+                  if dis2[-1] > i+15:    
                     iup = dis2.searchsorted(i+15)+1
                   else: iup = dis2[-1]
-	    
-	          if chatter > 4: 
-		     print "ilo:iup = ",ilo,iup
-		     print " min: ",np.min(flx2)
-		     print " max: ",np.max(flx2)
+            
+                  if chatter > 4: 
+                     print("ilo:iup = ",ilo,iup)
+                     print(" min: ",np.min(flx2))
+                     print(" max: ",np.max(flx2))
                   amp2lim = array([np.min(flx2),np.max(flx2)])
-	       
-	       else:
-	          print "Error: need to predict 2nd order"
-	  	  amp2lim=None    
+               
+               else:
+                  print("Error: need to predict 2nd order")
+                  amp2lim=None    
             elif ( abs(y2[i]-y1[i]) < 1.5 ): 
                if predict2nd:
                   # find second order prediction for this range,but restrict range min, max -> amp2lim
                   if dis2[0] <= i-15:
                      ilo = dis2.searchsorted(i-15)
                   else: ilo=0
-	      
-                  if dis2[-1] > i+15: 	 
+              
+                  if dis2[-1] > i+15:    
                      iup = dis2.searchsorted(i+15)+1
                   else: iup = dis2[-1]
-	      
-	          
-		  amp2range = abs(np.min(flx2) - np.max(flx2))
+              
+                  
+                  amp2range = abs(np.min(flx2) - np.max(flx2))
                   amp2lim = amp2range*array([-0.5,0.25]) + (flx2).mean()
-	      
-	       else:
-	          print "Error: need to predict 2nd order"
-	  	  amp2lim=None    
+              
+               else:
+                  print("Error: need to predict 2nd order")
+                  amp2lim=None    
             else:
                amp2lim = None
          else:
             amp2lim = None
       
          Z = get_components(xpos,extimg[:,i-15:i+15],array([y1[i],y2[i]]),wheelpos,chatter=chatter,\
-	           composite_fit=True,caldefault=True,sigmas=None,amp2lim=amp2lim)   
-		
-         (params,e_params,flag),input = Z	 
-         status = flag[5]  	    
+                   composite_fit=True,caldefault=True,sigmas=None,amp2lim=amp2lim)   
+                
+         (params,e_params,flag),input = Z        
+         status = flag[5]           
          # here [bg0,bg1,a1,p1,sig1,a2,p2,sig2] = params
          # here [e_bg0,e_bg1,e_a1,e_p1,e_sig1,e_a2,e_p2,e_sig2] = e_params
          if status > 0:
@@ -7136,10 +7147,10 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
             e_bg0.append(e_params[0])
             e_bg1.append(e_params[1])
          elif chatter > 1:
-            print 'updateFitorder: 1+2nd order updateFitorder failure fit: ' 
-	    print 'updateFitorder: INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',array([y1[i],y2[i]])
-	    print 'updateFitorder: params   : ',params
-	    print 'updateFitorder: e_params : ',e_params	 
+            print('updateFitorder: 1+2nd order updateFitorder failure fit: ') 
+            print('updateFitorder: INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',array([y1[i],y2[i]]))
+            print('updateFitorder: params   : ',params)
+            print('updateFitorder: e_params : ',e_params)        
 
         
    #     positions in first, second and third orders 
@@ -7147,9 +7158,9 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
      for i in range(q3[0][0]+15,q3[0][-1],30):
    
        if chatter > 4: 
-         print " refit first + second + third orders position and sigma"
-         print " centre bins ",range(q3[0][0]+15,q3[0][-1],30)
-	 
+         print(" refit first + second + third orders position and sigma")
+         print(" centre bins ",list(range(q3[0][0]+15,q3[0][-1],30)))
+         
        # only fit high quality 
        q = where(quality[i-15:i+15] == 0)[0] + (i-15) 
       
@@ -7157,48 +7168,48 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
          if ( (abs(y2[i]-y1[i]) < 5) & (abs(y2[i]-y1[i]) >= 1.5) ):
             if predict2nd & (len(SO[0][2]) > 0):
                # find second order prediction for this range, min, max -> amp2lim
-	       try:
+               try:
                  if dis2[0] <= i-15:
                     ilo = dis2.searchsorted(i-15)
                  else: ilo=0
-                 if dis2[-1] > i+15: 	 
+                 if dis2[-1] > i+15:     
                     iup = dis2.searchsorted(i+15)+1
                  else: iup = dis2[-1]
                  if iup != ilo: 
-		    amp2lim = array([min(SO[0][2][ilo:iup]),max(SO[0][2][ilo:iup])])
-		 else:
-		    amp2lim = None   
+                    amp2lim = array([min(SO[0][2][ilo:iup]),max(SO[0][2][ilo:iup])])
+                 else:
+                    amp2lim = None   
                except:
-	         amp2lim = None		 
-	    else:
-	       print "Error: need to predict 2nd order"  
-	       amp2lim = None
+                 amp2lim = None          
+            else:
+               print("Error: need to predict 2nd order")  
+               amp2lim = None
          elif ( abs(y2[i]-y1[i]) < 1.5 ): 
             if predict2nd:
                # find second order prediction for this range,but restrict range min, max -> amp2lim
-	       try:
+               try:
                  if dis2[0] <= i-15:
                     ilo = dis2.searchsorted(i-15)
                  else: ilo=0
-                 if dis2[-1] > i+15: 	 
+                 if dis2[-1] > i+15:     
                     iup = dis2.searchsorted(i+15)
                  else: iup = dis2[-1]
-	         amp2range = abs(min(SO[0][2][ilo:iup])-max(SO[0][2][ilo:iup]))
+                 amp2range = abs(min(SO[0][2][ilo:iup])-max(SO[0][2][ilo:iup]))
                  amp2lim = amp2range*array([-0.25,0.25]) + (SO[0][2][ilo:iup]).mean()
-	       except:
-	          amp2lim = None	 
-	    else:
-	       print "Error: need to predict 2nd order" 
-	       amp2lim = None	      
+               except:
+                  amp2lim = None         
+            else:
+               print("Error: need to predict 2nd order") 
+               amp2lim = None         
          else: 
             amp2lim = None
-	    
+            
          if isfinite(y3[i]):
             Z = get_components(xpos,extimg[:,i-15:i+15],array([y1[i],y2[i],y3[i]]),wheelpos,chatter=chatter,\
-	        composite_fit=True,caldefault=True,sigmas=None,amp2lim=amp2lim)    
-	 	
-            (params,e_params,flag),input = Z	   	    
-            status = flag[5]  	    
+                composite_fit=True,caldefault=True,sigmas=None,amp2lim=amp2lim)    
+                
+            (params,e_params,flag),input = Z                
+            status = flag[5]        
             # here [bg0,bg1,a1,p1,sig1,a2,p2,sig2,a3,p3,sig3] = params
             # here [e_bg0,e_bg1,e_a1,e_p1,e_sig1,e_a2,e_p2,e_sig2,e_a3,e_p3,e_sig3] = e_params
             if status > 0:
@@ -7225,10 +7236,10 @@ def updateFitorder(extimg, fitorder1, wheelpos, predict2nd=False, fit_second=Fal
                e_bg0.append(e_params[0])
                e_bg1.append(e_params[1])
             elif chatter > 1:
-               print 'updateFitorder failure fit 1,2,3rd: ' 
-	       print 'INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',array([y1[i],y2[i],y3[i]])
-	       print 'params   : ',params
-	       print 'e_params : ',e_params	 
+               print('updateFitorder failure fit 1,2,3rd: ') 
+               print('INPUT  i: ',i,',   xpos : ',xpos,'   ypos : ',array([y1[i],y2[i],y3[i]]))
+               print('params   : ',params)
+               print('e_params : ',e_params)     
 
    # re-fit the 1,2, 3 order y-offset  and fit background coefficients (remove bad points ???)
  
@@ -7329,10 +7340,10 @@ def rebin(binin,func,binout, mode='interpolate',N=20):
       
    elif mode == 'redistribute':
       # see xspec prep routine for method
-      print 'TBD'
+      print('TBD')
 
    else:
-      print 'rebin: wrong mode'
+      print('rebin: wrong mode')
       raise    
 
 def spectrumpixshift(w1,spec1, w2,spec2, wmin=None, wmax=None, spectrum=False, 
@@ -7389,28 +7400,28 @@ def spectrumpixshift(w1,spec1, w2,spec2, wmin=None, wmax=None, spectrum=False,
    q2 = np.isfinite(spec2)
    w2 = w2[q2].flatten()
    spec2 = spec2[q2].flatten()
-   if chatter > 2: print " * len before min, max - ",len(w1),len(spec1),len(w2),len(spec2)
+   if chatter > 2: print(" * len before min, max - ",len(w1),len(spec1),len(w2),len(spec2))
    # interpolating functions
    tck1 = interpolate.splrep(w1, spec1, )
    tck2 = interpolate.splrep(w2, spec2, )
    # limits
    if type(wmin) == typeNone: 
       wmin = np.max([w1[0],w2[0]])
-      if chatter > 0: print "spectrumpixshift: wmin = ",wmin
+      if chatter > 0: print("spectrumpixshift: wmin = ",wmin)
    if type(wmax) == typeNone: 
       wmax = np.min([w1[-1],w2[-1]])
-      if chatter > 0: print "spectrumpixshift: wmax = ",wmax
+      if chatter > 0: print("spectrumpixshift: wmax = ",wmax)
    q1 = (w1 > wmin) & (w1 < wmax)
    #print "q1:-->   ",np.where(q1)
    # put both spectra on the same footing
    w1 = np.arange(int(w1[q1][0]+0.5),int(w1[q1][-1]+0.5),0.5)
    if len(w1) < 1:
-      print "ERROR in spectrumpixshift; set to 0"
-      print "q1 =  ",q1
+      print("ERROR in spectrumpixshift; set to 0")
+      print("q1 =  ",q1)
       k = 0
       if spectrum: 
          return k, (w2,s2)
-      else: return k	 
+      else: return k     
    s1 = interpolate.splev(w1,tck1,)
    s2 = interpolate.splev(w1,tck2,)
    n = len(s1)
@@ -7423,17 +7434,17 @@ def spectrumpixshift(w1,spec1, w2,spec2, wmin=None, wmax=None, spectrum=False,
      if k > 0:
         dw = (w1[k:]-w1[:-k]).mean()
      elif k < 0:
-        dw = (w1[0:k] - w1[-k:]).mean()	
+        dw = (w1[0:k] - w1[-k:]).mean() 
    except: pass  
    if chatter > 2: 
-      print "spectrumpixshift: k, dw : ",k,dw
+      print("spectrumpixshift: k, dw : ",k,dw)
    if spectrum:   # return second spectrum shifted
       if k < 0: 
          w1 = w1[0:n+k]
-	 s2 = s2[-k:n]
+         s2 = s2[-k:n]
       if k > 0:
          w1 = w1[k:n]
-	 s2 = s2[0:n-k]	 
+         s2 = s2[0:n-k]  
       return k, (w1,s2)
    elif delwav:
       return dw   
@@ -7530,7 +7541,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
    
    when correlate_wavewindow = [none,none] nothing is done
         = [2300,4000] wavelength range where to do cross correlation on flux to 
-	generate corrections to ankx
+        generate corrections to ankx
    
    shiftlist = [None, 0, -2, None ] can be used to force the shifts (in pix) 
       of the given number in the list of spectra (here assumed to be four. 
@@ -7580,42 +7591,42 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
       for m in range(len(pha_file_list)):
          pha_file = pha_file_list[m]
          d = pyfits.getdata(pha_file,2)
-	 #print m," - ",pha_file
-	 if m == 0:
-	    w1 = d['lambda']
-	    f1 = d['flux']
-	    w1 = w1[np.isfinite(f1)]
-	    f1 = f1[np.isfinite(f1)]
-	    norm = f1[(np.abs(w1-w1.mean()) < 0.35 * w1.mean())].mean()
-	    f1 /= norm
-	    #print " len w1, f1 = (",len(w1),',',len(f1),')' 
-	 else:
+         #print m," - ",pha_file
+         if m == 0:
+            w1 = d['lambda']
+            f1 = d['flux']
+            w1 = w1[np.isfinite(f1)]
+            f1 = f1[np.isfinite(f1)]
+            norm = f1[(np.abs(w1-w1.mean()) < 0.35 * w1.mean())].mean()
+            f1 /= norm
+            #print " len w1, f1 = (",len(w1),',',len(f1),')' 
+         else:
             w2 = d['lambda']
-	    f2 = d['flux']
-	    w2 = w2[np.isfinite(f2)]
-	    f2 = f2[np.isfinite(f2)]/norm
-	    #print " len w+, f+ = (",len(w2),',',len(f2),')' 
+            f2 = d['flux']
+            w2 = w2[np.isfinite(f2)]
+            f2 = f2[np.isfinite(f2)]/norm
+            #print " len w+, f+ = (",len(w2),',',len(f2),')' 
             ysh.append( spectrumpixshift(w1,f1, w2,f2, wmin=correlate_wavewindow[0], wmax=correlate_wavewindow[1], ) )
       # adjust ysh to the mean 
       if len(shiftlist) == len(pha_file_list): 
          for ys in range(len(shiftlist)): 
-	     if shiftlist[ys] != None: 
-	        ysh[ys] = shiftlist[ys]
-		print "updated shift for "+pha_file_list[ys]+" to ",ysh[ys]
-      print "shifts are now (in A):",ysh		
+             if shiftlist[ys] != None: 
+                ysh[ys] = shiftlist[ys]
+                print("updated shift for "+pha_file_list[ys]+" to ",ysh[ys])
+      print("shifts are now (in A):",ysh)               
       ysh -= np.mean(ysh)
       # convert ysh (per 0.5 angstrom) to pixels 
-      ysh = np.array( ysh/6+0.5 , dtype=int )	    
-      print "plan to apply pixel shifts to images of magnitude = ",ysh
+      ysh = np.array( ysh/6+0.5 , dtype=int )       
+      print("plan to apply pixel shifts to images of magnitude = ",ysh)
       if not correlate: 
          ysh = 0 * ysh
-	 print "reset shifts ",ysh
+         print("reset shifts ",ysh)
       for m in range(len(pha_file_list)):
          pha_file = pha_file_list[m]
          f = pyfits.open(pha_file)
-	 headers.append( f[1].header )
+         headers.append( f[1].header )
          if chatter > 0 : 
-            print 'reading '+pha_file+'   in mode='+mode
+            print('reading '+pha_file+'   in mode='+mode)
             f.info()
          try:
             ankx = f[3].header['ANKXIMG'] + ysh[m]
@@ -7623,14 +7634,14 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          except:
             ankx,anky = ankerlist[m]
             pass
-	 ankx = int(ankx+0.5)
-	 anky = int(anky+0.5)   
+         ankx = int(ankx+0.5)
+         anky = int(anky+0.5)   
          expo = f[1].header['exposure']
    
          if chatter > 0: 
-            print 'ankx, anky = [',ankx,', ',anky,' ]'
-	    print 'exposure   = ',expo
-	    print 'ankx was shifted by ',ysh[m],' pix'
+            print('ankx, anky = [',ankx,', ',anky,' ]')
+            print('exposure   = ',expo)
+            print('ankx was shifted by ',ysh[m],' pix')
 
          if anky <= 100:
             y0 = 100-anky     
@@ -7641,8 +7652,8 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
             y0 = 0
             y1 = 300-anky
             y2 = anky-100
-	    y3 = 200
-	 	
+            y3 = 200
+                
          x0 = 0
          x2 = ankx-500
          if ankx <= 500: 
@@ -7652,41 +7663,41 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          x1 = x3 - x2
          if x1 > 2000: 
             x1=2000
-	    x3=x2+2000
-         if chatter > 2: 	 
-            print img[y0:y1,x0:x1].shape
-            print f[3].data[y2:y3,x2:x3].shape
-            print y0,y1,y2,y3 
-            print x0,x1,x2,x3
-      	 
-	 #  add to sum
-	 tot_exposure += expo
+            x3=x2+2000
+         if chatter > 2:         
+            print(img[y0:y1,x0:x1].shape)
+            print(f[3].data[y2:y3,x2:x3].shape)
+            print(y0,y1,y2,y3) 
+            print(x0,x1,x2,x3)
+         
+         #  add to sum
+         tot_exposure += expo
          img[y0:y1,x0:x1] += f[3].data[y2:y3,x2:x3] 
          expmap[y0:y1,x0:x1] += expo 
          img2[y0:y1,x0:x1] = f[3].data[y2:y3,x2:x3] 
-	 #quamap[y0:y1,x0:x1] += f[4].data[y2:y3,x2:x3] 
-	 
-	 if m == 0:   # calculate a sensible value for the shift of the spectra
-	    xlam = f[2].data['lambda']
-	    qys = abs(xlam - xlam.mean()) < 0.2*xlam.mean() 
-	    yshift = f[2].data['flux'][qys].mean()
-	 plt.figure(figno)   
-	 p1 = plt.plot(f[2].data['lambda'],(m-1)*yshift+f[2].data['flux'],)
-	 legend.append(pha_file)
-	 plt.legend(legend)
-	 plt.title("images offset in flux by %10.3e"%(yshift))
-	 plt.xlabel('uncorrected wavelength ($\AA$)')
-	 plt.ylabel('flux + shift (erg cm-2 s-1 A-1')
-	 plt.figure(figno+1)
-	 plt.plot( img2[80:120,:].sum(0) )
-	 plt.grid()
-	 plt.legend(legend)
-	 plt.title('adding image: pixels summed y[80:120] to check alignment')
-	 f.close()
-	
+         #quamap[y0:y1,x0:x1] += f[4].data[y2:y3,x2:x3] 
+         
+         if m == 0:   # calculate a sensible value for the shift of the spectra
+            xlam = f[2].data['lambda']
+            qys = abs(xlam - xlam.mean()) < 0.2*xlam.mean() 
+            yshift = f[2].data['flux'][qys].mean()
+         plt.figure(figno)   
+         p1 = plt.plot(f[2].data['lambda'],(m-1)*yshift+f[2].data['flux'],)
+         legend.append(pha_file)
+         plt.legend(legend)
+         plt.title("images offset in flux by %10.3e"%(yshift))
+         plt.xlabel('uncorrected wavelength ($\AA$)')
+         plt.ylabel('flux + shift (erg cm-2 s-1 A-1')
+         plt.figure(figno+1)
+         plt.plot( img2[80:120,:].sum(0) )
+         plt.grid()
+         plt.legend(legend)
+         plt.title('adding image: pixels summed y[80:120] to check alignment')
+         f.close()
+        
 #     create file with sum extracted image
-	 
-      hdr = headers[0]      	
+         
+      hdr = headers[0]          
       fsum = pyfits.PrimaryHDU(data=img,header=hdr)
       hdulist = pyfits.HDUList(fsum)
       hdulist[0].header.update('EXPOSURE',tot_exposure,comment='total exposure time')
@@ -7695,13 +7706,13 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
       
       for head in headers:
          hist = head.get_history()
-	 filetag = head['filetag']
-	 hdulist[0].header.add_history(" copy header[1] of filetag "+filetag)
-	 tstart = min([head['tstart'],tstart])
-	 tstop  = max([head['tstop'],tstop])
+         filetag = head['filetag']
+         hdulist[0].header.add_history(" copy header[1] of filetag "+filetag)
+         tstart = min([head['tstart'],tstart])
+         tstop  = max([head['tstop'],tstop])
          for h in hist:
             hdulist[0].header.add_history(h)
-      for pha_file in pha_file_list:	    
+      for pha_file in pha_file_list:        
          hdulist[0].header.add_history('added file'+pha_file)
       hdulist[0].header.update('TSTART',tstart)
       hdulist[0].header.update('TSTOP',tstop)
@@ -7713,80 +7724,80 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
       #hdulist[2].header.update('EXTNAME','QUALITYMAP')
       hdulist.writeto(sum_file_name,clobber=clobber)
       hdulist.close()
-      print "total exposure of images = ",tot_exposure
-	 	 
+      print("total exposure of images = ",tot_exposure)
+                 
    elif mode == 'read':    #  read the summed, extracted image and header
          hdulist  = pyfits.open(sum_file_name)
-	 hdr = hdulist[0].header
+         hdr = hdulist[0].header
          exposure = hdr['exposure']
          wheelpos = hdulist[0].header['wheelpos']
-	 sumimg   = hdulist[0].data
+         sumimg   = hdulist[0].data
          hist     = hdulist[0].header.get_history()
-	 if len(hdulist) > 1:
+         if len(hdulist) > 1:
             expmap   = hdulist[1].data
-	 else: 
-	    expmap = None   
-	 C_1 = list([])
-	 C_2 = list([])
-	 coef0 = list()
-	 coef1 = list()
-	 coef2 = list()
-	 coef3 = list()
-	 sig0coef = list()
-	 sig1coef = list()
-	 sig2coef = list()
-	 sig3coef = list()
-	 dist12 = None
-	 C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_0'))
-	 C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_1'))
-	 C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_2'))
-	 C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_3'))
-	 C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_4'))
-	 C_1 = np.array(C_1,dtype=float)
-	 C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_0'))
-	 C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_1'))
-	 C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_2'))
-	 C_2 = np.array(C_2,dtype=float)
-	 dist12 = float(uvotmisc.get_keyword_from_history(hist,'DIST12'))
-	 anchor1 = uvotmisc.get_keyword_from_history(hist,'anchor1')
-	 anker = np.array([ float(anchor1.split(',')[0].split('(')[1]), float(anchor1.split(',')[1].split(')')[0]) ] )
-	 coef0.append(uvotmisc.get_keyword_from_history(hist,'COEF0_0'))
-	 coef0.append(uvotmisc.get_keyword_from_history(hist,'COEF0_1'))
-	 coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_0'))
-	 coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_1'))
-	 coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_2'))
-	 coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_3'))
-	 coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_0'))
-	 coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_1'))
-	 coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_2'))
-	 coef3.append(uvotmisc.get_keyword_from_history(hist,'COEF3_0'))
-	 coef3.append(uvotmisc.get_keyword_from_history(hist,'COEF3_1'))
-	 coef0 = np.array(coef0,dtype=float)
-	 coef1 = np.array(coef1,dtype=float)
-	 coef2 = np.array(coef2,dtype=float)
-	 coef3 = np.array(coef3,dtype=float)
-	 sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_0'))
-	 sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_1'))
-	 sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_2'))
-	 sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_0'))
-	 sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_1'))
-	 sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_2'))
-	 sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_3'))
-	 sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_0'))
-	 sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_1'))
-	 sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_2'))
-	 sig3coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF3_0'))
-	 sig3coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF3_1'))
-	 sig0coef = np.array(sig0coef,dtype=float)
-	 sig1coef = np.array(sig1coef,dtype=float)
-	 sig2coef = np.array(sig2coef,dtype=float)
-	 sig3coef = np.array(sig3coef,dtype=float)
-	 if chatter > 0:
-	    print 'first order dispersion = ',C_1
-	    print 'second order dispersion= ',C_2
-	    print '1-2 order distance     = ',dist12
-	 return sumimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, (coef0,
-	        coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr   
+         else: 
+            expmap = None   
+         C_1 = list([])
+         C_2 = list([])
+         coef0 = list()
+         coef1 = list()
+         coef2 = list()
+         coef3 = list()
+         sig0coef = list()
+         sig1coef = list()
+         sig2coef = list()
+         sig3coef = list()
+         dist12 = None
+         C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_0'))
+         C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_1'))
+         C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_2'))
+         C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_3'))
+         C_1.append(uvotmisc.get_keyword_from_history(hist,'DISP1_4'))
+         C_1 = np.array(C_1,dtype=float)
+         C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_0'))
+         C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_1'))
+         C_2.append(uvotmisc.get_keyword_from_history(hist,'DISP2_2'))
+         C_2 = np.array(C_2,dtype=float)
+         dist12 = float(uvotmisc.get_keyword_from_history(hist,'DIST12'))
+         anchor1 = uvotmisc.get_keyword_from_history(hist,'anchor1')
+         anker = np.array([ float(anchor1.split(',')[0].split('(')[1]), float(anchor1.split(',')[1].split(')')[0]) ] )
+         coef0.append(uvotmisc.get_keyword_from_history(hist,'COEF0_0'))
+         coef0.append(uvotmisc.get_keyword_from_history(hist,'COEF0_1'))
+         coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_0'))
+         coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_1'))
+         coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_2'))
+         coef1.append(uvotmisc.get_keyword_from_history(hist,'COEF1_3'))
+         coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_0'))
+         coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_1'))
+         coef2.append(uvotmisc.get_keyword_from_history(hist,'COEF2_2'))
+         coef3.append(uvotmisc.get_keyword_from_history(hist,'COEF3_0'))
+         coef3.append(uvotmisc.get_keyword_from_history(hist,'COEF3_1'))
+         coef0 = np.array(coef0,dtype=float)
+         coef1 = np.array(coef1,dtype=float)
+         coef2 = np.array(coef2,dtype=float)
+         coef3 = np.array(coef3,dtype=float)
+         sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_0'))
+         sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_1'))
+         sig0coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF0_2'))
+         sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_0'))
+         sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_1'))
+         sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_2'))
+         sig1coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF1_3'))
+         sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_0'))
+         sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_1'))
+         sig2coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF2_2'))
+         sig3coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF3_0'))
+         sig3coef.append(uvotmisc.get_keyword_from_history(hist,'SIGCOEF3_1'))
+         sig0coef = np.array(sig0coef,dtype=float)
+         sig1coef = np.array(sig1coef,dtype=float)
+         sig2coef = np.array(sig2coef,dtype=float)
+         sig3coef = np.array(sig3coef,dtype=float)
+         if chatter > 0:
+            print('first order dispersion = ',C_1)
+            print('second order dispersion= ',C_2)
+            print('1-2 order distance     = ',dist12)
+         return sumimg, expmap, exposure, wheelpos, C_1, C_2, dist12, anker, (coef0,
+                coef1,coef2,coef3,sig0coef,sig1coef,sig2coef,sig3coef), hdr   
 
 def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[], 
       ignore_flags=True, use_flags=['bad'], 
@@ -7870,10 +7881,10 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    for phafile in phafiles:
       if not os.access(phafile,os.F_OK):
          raise IOError("input file : %s not found \n"%(phafile))
-	 
+         
    # check wave_shifts and exclude_wave are lists
    if (type(wave_shifts) != list) | (type(exclude_wave) != list):
-      raise IOError("parameters wave_list and exclude_wave must be a list")	 
+      raise IOError("parameters wave_list and exclude_wave must be a list")      
 
    if chatter > 2:
       sys.stderr.write(" INPUT =============================================================================\n")
@@ -7886,7 +7897,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
    exclude_wave_copy = copy.deepcopy(exclude_wave)  
 
    if (interactive == False) & (len(wave_shifts) == nfiles) & (len(exclude_wave) == nfiles):
-      if chatter > 1 : print "merging spectra "
+      if chatter > 1 : print("merging spectra ")
       # create the summed spectrum
       result = None
       # find wavelength range 
@@ -7894,22 +7905,22 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       f = []    #  list of open fits file handles
       for fx in phafiles:
          f.append( pyfits.open(fx) )
-      for fx in f:	 
-	 q = np.isfinite(fx[2].data['flux'])
-	 wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
-	 wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
+      for fx in f:       
+         q = np.isfinite(fx[2].data['flux'])
+         wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
+         wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
       if chatter > 1: 
-	    print 'wav min ',wmin
-	    print 'wav max ',wmax
-	 
+            print('wav min ',wmin)
+            print('wav max ',wmax)
+         
       # create arrays - output arrays
       wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps at integer values 
       nw = len(wave)                     # number of wavelength points
-      flux = np.zeros(nw,dtype=float)	 # flux
+      flux = np.zeros(nw,dtype=float)    # flux
       error = np.zeros(nw,dtype=float)   # mean RMS errors in quadrature
       nsummed = np.zeros(nw,dtype=int)   # number of spectra summed for the given point - if only one, 
                                          # add the typical RMS variance found for points with multiple spectra
-      # local arrays      					 
+      # local arrays                                             
       err_in  = np.zeros(nw,dtype=float)   # error in flux
       err_rms = np.zeros(nw,dtype=float)   # RMS error from variance
       mf = np.zeros(nw,dtype=float)        # mean flux
@@ -7920,67 +7931,67 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       wvar= np.zeros(nw,dtype=float)       # weighted variance
       one = np.ones(nw,dtype=int)          # unit
       sector = np.ones(nw,dtype=int)      # sector numbers for disconnected sections of the spectrum
-	 
+         
       D = []
       for i in range(nfiles):
          fx = f[i]
-	 excl = exclude_wave[i]
+         excl = exclude_wave[i]
          if chatter > 1: 
-	    print 'processing file number ',i,'  from ',fx[1].header['date-obs']
-	    print "filenumber: %i\nexclude_wave type: %s\nexclude_wave values: %s"%(i,type(excl),excl)
-	 #
+            print('processing file number ',i,'  from ',fx[1].header['date-obs'])
+            print("filenumber: %i\nexclude_wave type: %s\nexclude_wave values: %s"%(i,type(excl),excl))
+         #
          # create/append to exclude_wave when not ignore_flags and use_flags non-zero. 
          if (not ignore_flags) & (len(use_flags) > 1) : 
-            if chatter > 1: print "creating/updating exclude_wave" 
+            if chatter > 1: print("creating/updating exclude_wave") 
             quality_range = quality_flags_to_ranges(quality)
             for flg in use_flags:
-	        if flg in quality_range:
-		    pixranges = quality_range[flg]
-		    for pixes in pixranges:
-		        waverange=fx[2].data['lambda'][pixes]
-      	                excl.append(list(waverange))
+                if flg in quality_range:
+                    pixranges = quality_range[flg]
+                    for pixes in pixranges:
+                        waverange=fx[2].data['lambda'][pixes]
+                        excl.append(list(waverange))
          W = fx[2].data['lambda']+wave_shifts[i]
-	 F = fx[2].data['flux']   
-	 E = fx[2].data['fluxerr']
-	 p = np.isfinite(F) & (W > 1600.)
-	 fF = interpolate.interp1d( W[p], F[p], )
-	 fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
-	 
+         F = fx[2].data['flux']   
+         E = fx[2].data['fluxerr']
+         p = np.isfinite(F) & (W > 1600.)
+         fF = interpolate.interp1d( W[p], F[p], )
+         fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
+         
          M = np.ones(len(wave),dtype=bool)     # mask set to True
-	 M[wave < W[p][0]] = False
-	 M[wave > W[p][-1]] = False
-	 while len(excl) > 0:
-	    try:
-	       w1,w2 = excl.pop()
-	       if chatter > 1: print 'excluding from file ',i,"   ",w1," - ",w2
-	       M[ (wave >= w1) & (wave <= w2) ] = False
-	    except: pass 
-	 
-	 flux[M]    = fF(wave[M])
-	 error[M]   = fE(wave[M])
-	 nsummed[M] += one[M] 
-	 mf[M]      += flux[M]                 # => mean flux 
-	 wf[M]      += flux[M]/error[M]**2     # sum weight * flux
-	 wvar[M]    += flux[M]**2/error[M]**2  # sum weight * flux**2
-	 var[M]     += flux[M]**2    	       # first part 	
-	 err[M]     += error[M]**2
-	 wgt[M]     += 1.0/error[M]**2    # sum weights
+         M[wave < W[p][0]] = False
+         M[wave > W[p][-1]] = False
+         while len(excl) > 0:
+            try:
+               w1,w2 = excl.pop()
+               if chatter > 1: print('excluding from file ',i,"   ",w1," - ",w2)
+               M[ (wave >= w1) & (wave <= w2) ] = False
+            except: pass 
+         
+         flux[M]    = fF(wave[M])
+         error[M]   = fE(wave[M])
+         nsummed[M] += one[M] 
+         mf[M]      += flux[M]                 # => mean flux 
+         wf[M]      += flux[M]/error[M]**2     # sum weight * flux
+         wvar[M]    += flux[M]**2/error[M]**2  # sum weight * flux**2
+         var[M]     += flux[M]**2              # first part     
+         err[M]     += error[M]**2
+         wgt[M]     += 1.0/error[M]**2    # sum weights
          D.append(((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed),(mf,wf,wvar),(var,err,wgt)))
-	 
+         
       # make sectors
       sect = 1
       for i in range(1,len(nsummed),1):
           if (nsummed[i] != 0) & (nsummed[i-1] != 0): sector[i] = sect
-	  elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
-	     sect += 1
-	     sector[i]=sect
-      q = np.where(nsummed > 0)	     
+          elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
+             sect += 1
+             sector[i]=sect
+      q = np.where(nsummed > 0)      
       exclude_wave = copy.deepcopy(exclude_wave_copy)
       mf[q] = mf[q]/nsummed[q]              # mean flux
       var[q] = np.abs(var[q]/nsummed[q] - mf[q]**2)    # variance in flux (deviations from mean of measurements)
-      err[q] = err[q]/nsummed[q]            # mean variance from errors in measurements 	
+      err[q] = err[q]/nsummed[q]            # mean variance from errors in measurements         
       wf[q] = wf[q]/wgt[q]                  # mean weighted flux
-      wvar[q] = np.abs(wvar[q]/wgt[q] - wf[q]**2)      # variance weighted from measurement errors		
+      wvar[q] = np.abs(wvar[q]/wgt[q] - wf[q]**2)      # variance weighted from measurement errors              
       # perform a 3-point smoothing? (since PSF spans several pixels)
       # TBD
       # variance smoothing depending on number of spectra summed?
@@ -7988,286 +7999,286 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
       serr = np.sqrt(err)
       result = wave[q], wf[q], wvar[q], mf[q], svar[q], serr[q], nsummed[q], wave_shifts, exclude_wave, sector[q]
 
-      # debug : 	 
+      # debug :          
       D.append( ((W,F,E,p,fF,fE),(M,wave,flux,error,nsummed,sector),(mf,wf,wvar),(var,err,wgt)) )
-      	 	 
-      for fx in f:		# cleanup
+                 
+      for fx in f:              # cleanup
          fx.close()
         
-      if chatter > 1: print "writing output to file: ",outfile
+      if chatter > 1: print("writing output to file: ",outfile)
          #if not clobber:
-	    # TBD test presence outfile first
-	    
+            # TBD test presence outfile first
+            
       fout = open(outfile,'w')
       fout.write("#merged fluxes from the following files\n")
-      for i in range(nfiles): 	      
-	    fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
+      for i in range(nfiles):         
+            fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
       fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
-	    +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
-	    +"#          flux error (mean noise), number of data summed, sector\n")
+            +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
+            +"#          flux error (mean noise), number of data summed, sector\n")
       if chatter > 4: 
-	    print "len arrays : %i\nlen (q) : %i"%(nw,len(q[0]))   
+            print("len arrays : %i\nlen (q) : %i"%(nw,len(q[0])))   
       for i in range(len(q[0])):
-	    if np.isfinite(wf[q][i]): 
+            if np.isfinite(wf[q][i]): 
                fout.write( ("%8.2f %12.5e %12.5e %12.5e %12.5e %12.5e %4i %3i\n") % \
-	            (wave[q][i],wf[q][i],wvar[q][i],
-		     mf[q][i],svar[q][i],serr[q][i],
-		     nsummed[q][i],sector[q][i]))
-      fout.close()		       
+                    (wave[q][i],wf[q][i],wvar[q][i],
+                     mf[q][i],svar[q][i],serr[q][i],
+                     nsummed[q][i],sector[q][i]))
+      fout.close()                     
       
       if returnout:
          return D 
-	 
+         
    else:  # interactive == True OR (len(wave_shifts) == nfiles) OR (len(exclude_wave) == nfiles)
       # build exclude_wave from data quality ? 
       if len(wave_shifts)  != nfiles: wave_shifts = []
       if len(exclude_wave) != nfiles: exclude_wave = []
       if not interactive:
-         if chatter > 1: print "use passed valid ranges for each spectrum; and given shifts"
-	 exwave = []
+         if chatter > 1: print("use passed valid ranges for each spectrum; and given shifts")
+         exwave = []
          for i in range(nfiles):
-	    if len(wave_shifts)  != nfiles: wave_shifts.append(0)
-	    excl = []
-	    if len(exclude_wave) == nfiles: excl = exclude_wave[i]
-	    if not ignore_flags:
-      	       f = pyfits.open(phafiles[i])
-	       W  = f[2].data['lambda']
-	       FL = f[2].data['quality']
-	       f.close()
-	       ex = []
-	       if len(use_flags) == 0:
-                   if chatter > 1: print "creating/updating exclude_wave" 
-   	           if FL[0] != 0: ex=[0]
-	           for i in range(1,len(W)):
-	              same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
-		      good = (FL[i] == 0)
-		      if not same:
-		         if good: ex.append[i]
-		         else: ex = [i]
-	              if len(ex) == 2: 
-		         excl.append(ex)
-		         ex = []
-		      if (i == (len(W)-1)) & (len(ex) == 1): 
-		         ex.append(len(W))
-		         excl.append(ex) 
+            if len(wave_shifts)  != nfiles: wave_shifts.append(0)
+            excl = []
+            if len(exclude_wave) == nfiles: excl = exclude_wave[i]
+            if not ignore_flags:
+               f = pyfits.open(phafiles[i])
+               W  = f[2].data['lambda']
+               FL = f[2].data['quality']
+               f.close()
+               ex = []
+               if len(use_flags) == 0:
+                   if chatter > 1: print("creating/updating exclude_wave") 
+                   if FL[0] != 0: ex=[0]
+                   for i in range(1,len(W)):
+                      same = ((W[i] == 0) & (W[i-1] == 0)) | ( (W[i] != 0) & (W[i-1] !=0) )
+                      good = (FL[i] == 0)
+                      if not same:
+                         if good: ex.append[i]
+                         else: ex = [i]
+                      if len(ex) == 2: 
+                         excl.append(ex)
+                         ex = []
+                      if (i == (len(W)-1)) & (len(ex) == 1): 
+                         ex.append(len(W))
+                         excl.append(ex) 
                else:
-                   if chatter > 1: print "creating/updating exclude_wave" 
+                   if chatter > 1: print("creating/updating exclude_wave") 
                    quality_range = quality_flags_to_ranges(FL)
                    for flg in use_flags:
-	               if flg in quality_range:
-		           pixranges=quality_range[flg]
-			   for pixes in pixranges:
-			       waverange=W[pixes]
-      	                       excl.append(list(waverange))
-            exwave.append(excl) 		       			
-	 exclude_wave = exwave
-	    
-	 if not ignore_flags: 
-	    sum_PHAspectra(phafiles, wave_shifts=wave_shifts, 
-	    exclude_wave=exclude_wave, 
-	    ignore_flags=True, use_flags=use_flags,
-	    interactive=False, 
-	    outfile=outfile, figno=figno, 
-	    chatter=chatter, clobber=clobber)
-	          		 	
+                       if flg in quality_range:
+                           pixranges=quality_range[flg]
+                           for pixes in pixranges:
+                               waverange=W[pixes]
+                               excl.append(list(waverange))
+            exwave.append(excl)                                         
+         exclude_wave = exwave
+            
+         if not ignore_flags: 
+            sum_PHAspectra(phafiles, wave_shifts=wave_shifts, 
+            exclude_wave=exclude_wave, 
+            ignore_flags=True, use_flags=use_flags,
+            interactive=False, 
+            outfile=outfile, figno=figno, 
+            chatter=chatter, clobber=clobber)
+                                        
       else:    # interactively adjust wavelength shifts and clipping ranges
       
          # first flag the bad ranges for each spectrum
-         if chatter > 1: print "Determine valid ranges for each spectrum; determine shifts"
-	 
-	 if (len(exclude_wave) != nfiles):
-	    exclude_wave = []
-	    for i in range(nfiles): exclude_wave.append([])
-	 
+         if chatter > 1: print("Determine valid ranges for each spectrum; determine shifts")
+         
+         if (len(exclude_wave) != nfiles):
+            exclude_wave = []
+            for i in range(nfiles): exclude_wave.append([])
+         
          for i in range(nfiles):
-	    if chatter > 1: 
-	       print "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-	       print " valid ranges for file number %i - file name = %s\n" % (i,phafiles[i])
-	       		 
-      	    f = pyfits.open(phafiles[i])
-	    W = f[2].data['lambda']
-	    F = f[2].data['flux']
-	    E = f[2].data['fluxerr']
-	    FL = f[2].data['quality']
-	    try:
-  	       COI = f[2].data['sp1_coif']
-	       do_COI = True
-	    except: 
-	       COI = np.ones(len(W)) 
-	       do_COI = False  
-	    q = np.isfinite(F)
+            if chatter > 1: 
+               print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
+               print(" valid ranges for file number %i - file name = %s\n" % (i,phafiles[i]))
+                         
+            f = pyfits.open(phafiles[i])
+            W = f[2].data['lambda']
+            F = f[2].data['flux']
+            E = f[2].data['fluxerr']
+            FL = f[2].data['quality']
+            try:
+               COI = f[2].data['sp1_coif']
+               do_COI = True
+            except: 
+               COI = np.ones(len(W)) 
+               do_COI = False  
+            q = np.isfinite(F)
 
-	    if figno != None: fig=plt.figure(figno[0])
-	    fig.clf()
-	    OK = True
-	    
-	    excl_ = exclude_wave[i]
-	    if len(excl_) != 0: 
-	       sys.stderr.write( "exclusions passed by argument for file %s are: %s\n"%
-	       (phafiles[i],excl_) )
+            if figno != None: fig=plt.figure(figno[0])
+            fig.clf()
+            OK = True
+            
+            excl_ = exclude_wave[i]
+            if len(excl_) != 0: 
+               sys.stderr.write( "exclusions passed by argument for file %s are: %s\n"%
+               (phafiles[i],excl_) )
             if (not ignore_flags) & (len(use_flags) > 1) : 
                 quality_range = quality_flags_to_ranges(quality)
                 for flg in use_flags:
-	           if flg in quality_range:
-		      pixranges=quality_range[flg]
-		      for pixes in pixranges:
-			  waverange=W[pixes]
-      	                  excl_.append(list(waverange))
-		sys.stderr.write(
-		"exclusions including those from selected quality flags for file %s are: %s\n"%
-		(phafiles[i],excl_))      
+                   if flg in quality_range:
+                      pixranges=quality_range[flg]
+                      for pixes in pixranges:
+                          waverange=W[pixes]
+                          excl_.append(list(waverange))
+                sys.stderr.write(
+                "exclusions including those from selected quality flags for file %s are: %s\n"%
+                (phafiles[i],excl_))      
 
-	    if len(excl_) > 0:
-	       sys.stdout.write( "wavelength exclusions for this file are: %s\n"%(excl_))
-     	       ans = raw_input(" change this ? (y/N) : ")
-	       if ans.upper()[0] == 'Y' :  OK = True
-	       else: OK = False
-	    else: OK = True   
+            if len(excl_) > 0:
+               sys.stdout.write( "wavelength exclusions for this file are: %s\n"%(excl_))
+               ans = input(" change this ? (y/N) : ")
+               if ans.upper()[0] == 'Y' :  OK = True
+               else: OK = False
+            else: OK = True   
          
-            if chatter > 1: sys.stderr.write("update wavelength exclusions\n")	       
-	    nix1 = 0
-	    while OK:     # update the wavelength exclusions
-	       try:
-	          nix1 += 1
-		  OK = nix1 < 10
-	          excl = []  # note different from excl_
-		  #   consider adding an image panel (resample image on wavelength scale)
-		  #
-		  fig.clf()
-	          ax1 = fig.add_subplot(2,1,1)
-	          ax1.fill_between(W[q],F[q]-E[q],F[q]+E[q],color='y',alpha=0.4,)
-	          ax1.plot(W[q],F[q],label='current spectrum + error' ) 
-	          ax1.set_title(phafiles[i]+' FLAGGING BAD PARTS ')
-		  ax1.legend(loc=0)
-		  ax1.set_ylim(ylim)
-		  ax1.set_xlabel('wavelength in $\AA$')
-		  
-	          ax2 = fig.add_subplot(2,1,2)
-	          ax2.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
-	          if do_COI: ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
-		  ax2.legend(loc=0)
-		  ax2.set_xlabel('wavelength in $\AA$')
-		  
-	       	  
-		  EXCL = True
-		  nix0 = 0
-		  while EXCL:
-		        nix0 +=1 
-			if nix0 > 15: break
-		        print "exclusion wavelengths are : ",excl
-		        ans = raw_input('Exclude a wavelength region ?')
-		        EXCL = not (ans.upper()[0] == 'N')
-			if ans.upper()[0] == 'N': break		     
-		        ans = input('Give the exclusion wavelength range as two numbers separated by a comma: ')
-			lans = list(ans)
-			if len(lans) != 2: 
-			   print "input either the range like: 20,30  or: [20,30] "
-			   continue
-		        excl_.append(lans)	
-		  OK = False
-	       except:
-	          print "problem encountered with the selection of exclusion regions"
-	          print "try again"
-	    exclude_wave[i] = excl_
-	    
+            if chatter > 1: sys.stderr.write("update wavelength exclusions\n")         
+            nix1 = 0
+            while OK:     # update the wavelength exclusions
+               try:
+                  nix1 += 1
+                  OK = nix1 < 10
+                  excl = []  # note different from excl_
+                  #   consider adding an image panel (resample image on wavelength scale)
+                  #
+                  fig.clf()
+                  ax1 = fig.add_subplot(2,1,1)
+                  ax1.fill_between(W[q],F[q]-E[q],F[q]+E[q],color='y',alpha=0.4,)
+                  ax1.plot(W[q],F[q],label='current spectrum + error' ) 
+                  ax1.set_title(phafiles[i]+' FLAGGING BAD PARTS ')
+                  ax1.legend(loc=0)
+                  ax1.set_ylim(ylim)
+                  ax1.set_xlabel('wavelength in $\AA$')
+                  
+                  ax2 = fig.add_subplot(2,1,2)
+                  ax2.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
+                  if do_COI: ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
+                  ax2.legend(loc=0)
+                  ax2.set_xlabel('wavelength in $\AA$')
+                  
+                  
+                  EXCL = True
+                  nix0 = 0
+                  while EXCL:
+                        nix0 +=1 
+                        if nix0 > 15: break
+                        print("exclusion wavelengths are : ",excl)
+                        ans = input('Exclude a wavelength region ?')
+                        EXCL = not (ans.upper()[0] == 'N')
+                        if ans.upper()[0] == 'N': break              
+                        ans = eval(input('Give the exclusion wavelength range as two numbers separated by a comma: '))
+                        lans = list(ans)
+                        if len(lans) != 2: 
+                           print("input either the range like: 20,30  or: [20,30] ")
+                           continue
+                        excl_.append(lans)      
+                  OK = False
+               except:
+                  print("problem encountered with the selection of exclusion regions")
+                  print("try again")
+            exclude_wave[i] = excl_
+            
          if chatter > 0: 
-	     sys.stderr.write("new exclusions are %s\n"%(exclude_wave))
-	            	  
+             sys.stderr.write("new exclusions are %s\n"%(exclude_wave))
+                          
          # get wavelength shifts for each spectrum
-	    # if already passed as argument:  ?
-	 sys.stdout.write(" number  filename \n")
-	 for i in range(nfiles):
-	    sys.stdout.write(" %2i --- %s\n" % (i,phafiles[i]))
-	 try:   
-	    fselect = input(" give the number of the file to use as reference, or 0 : ")
-	    if (fselect < 0) | (fselect >= nfiles):
-	       sys.stderr.write("Error in file number, assuming 0\n")
-	       fselect=0	  
-	    ref = pyfits.open(phafiles[fselect])   
+            # if already passed as argument:  ?
+         sys.stdout.write(" number  filename \n")
+         for i in range(nfiles):
+            sys.stdout.write(" %2i --- %s\n" % (i,phafiles[i]))
+         try:   
+            fselect = eval(input(" give the number of the file to use as reference, or 0 : "))
+            if (fselect < 0) | (fselect >= nfiles):
+               sys.stderr.write("Error in file number, assuming 0\n")
+               fselect=0          
+            ref = pyfits.open(phafiles[fselect])   
          except: 
-	    fselect = 0
-	    ref = pyfits.open(phafiles[0])
-	 refW = ref[2].data['lambda']
-	 refF = ref[2].data['flux']
-	 refE = ref[2].data['fluxerr']
-	 refexcl = exclude_wave[fselect]   
+            fselect = 0
+            ref = pyfits.open(phafiles[0])
+         refW = ref[2].data['lambda']
+         refF = ref[2].data['flux']
+         refE = ref[2].data['fluxerr']
+         refexcl = exclude_wave[fselect]   
 
-	 wheelpos = ref[1].header['wheelpos']
+         wheelpos = ref[1].header['wheelpos']
          if wheelpos < 500:
-     	    q = np.isfinite(refF) & (refW > 1700.) & (refW < 5400)
-	 else:   
-     	    q = np.isfinite(refF) & (refW > 2850.) & (refW < 6600)
-	 if len(refexcl) > 0:   
-	    if chatter > 0: print "refexcl:",refexcl
-  	    for ex in refexcl:
+            q = np.isfinite(refF) & (refW > 1700.) & (refW < 5400)
+         else:   
+            q = np.isfinite(refF) & (refW > 2850.) & (refW < 6600)
+         if len(refexcl) > 0:   
+            if chatter > 0: print("refexcl:",refexcl)
+            for ex in refexcl:
                q[ (refW > ex[0]) & (refW < ex[1]) ] = False
 
-	 if figno != None: 
-	    if len(figno) > 1: fig1=plt.figure(figno[1]) 
-	    else: fig1 = plt.figure(figno[0])
-	 else: fig1 = plot.figure()      
-	 for i in range(nfiles):
-	    if i == fselect:
-	       wave_shifts.append( 0 )
-	    else:
-	       f = pyfits.open(phafiles[i])
-	       W = f[2].data['lambda']
-	       F = f[2].data['flux']
-	       E = f[2].data['fluxerr']
-	       excl = exclude_wave[i]
-	       print "lengths W,F:",len(W),len(F)
+         if figno != None: 
+            if len(figno) > 1: fig1=plt.figure(figno[1]) 
+            else: fig1 = plt.figure(figno[0])
+         else: fig1 = plot.figure()      
+         for i in range(nfiles):
+            if i == fselect:
+               wave_shifts.append( 0 )
+            else:
+               f = pyfits.open(phafiles[i])
+               W = f[2].data['lambda']
+               F = f[2].data['flux']
+               E = f[2].data['fluxerr']
+               excl = exclude_wave[i]
+               print("lengths W,F:",len(W),len(F))
                if wheelpos < 500:
-     	          p = np.isfinite(F) & (W > 1700.) & (W < 5400)
-	       else:   
-     	          p = np.isfinite(F) & (W > 2850.) & (W < 6600)
-	       if len(excl) > 0:  
-	          if chatter > 1: print "excl:",excl
-	          for ex in excl:
-		     if len(ex) == 2:
-  	                p[ (W > ex[0]) & (W < ex[1]) ] = False
+                  p = np.isfinite(F) & (W > 1700.) & (W < 5400)
+               else:   
+                  p = np.isfinite(F) & (W > 2850.) & (W < 6600)
+               if len(excl) > 0:  
+                  if chatter > 1: print("excl:",excl)
+                  for ex in excl:
+                     if len(ex) == 2:
+                        p[ (W > ex[0]) & (W < ex[1]) ] = False
                if chatter > 0:
-	           print "length p ",len(p)
-	           sys.stderr.write("logical array p has  %s  good values\n"%( p.sum() ))
-	       OK = True
-	       sh = 0
-	       while OK: 
-		  fig1.clf()
-		  ax = fig1.add_subplot(111)
-	          ax.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference') 	  
-	          ax.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.1) 
-		  
-	          ax.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift') 	  
-	          ax.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.1)
-	          
-		  ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum') 	  		  
-		  
-		  ax.set_title('file %i applied shift of %e' % (i,sh))
-		  ax.set_xlabel('wavelength $\AA$')
-		  if len(ylim) == 2: ax.set_ylim(ylim)
-		  ax.legend(loc=0)
-		  try:
-  		     sh1 = input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : ")  
+                   print("length p ",len(p))
+                   sys.stderr.write("logical array p has  %s  good values\n"%( p.sum() ))
+               OK = True
+               sh = 0
+               while OK: 
+                  fig1.clf()
+                  ax = fig1.add_subplot(111)
+                  ax.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference')     
+                  ax.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.1) 
+                  
+                  ax.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift')          
+                  ax.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.1)
+                  
+                  ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum')                           
+                  
+                  ax.set_title('file %i applied shift of %e' % (i,sh))
+                  ax.set_xlabel('wavelength $\AA$')
+                  if len(ylim) == 2: ax.set_ylim(ylim)
+                  ax.legend(loc=0)
+                  try:
+                     sh1 = eval(input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : "))  
                      if np.abs(sh1) < 1e-3:
-		        wave_shifts.append(sh)
-			OK = False
-	          except: 
-		     print "input problem. No shift applied"
-		     sh1 = 0
-		  
-		  if chatter > 0: sys.stderr.write("current wave_shifts = %s \n"%(wave_shifts))
-		  if not OK: print 'should have gone to next file'      
-	          sh += sh1
-		  if chatter > 1: print "total shift = ",sh," A" 
-	 if chatter > 1: 
-	    print "selected shifts = ",wave_shifts
-	    print "selected exclude wavelengths = ",exclude_wave    
-	    print "computing weighted average of spectrum" 
-	 #
-	 #  TBD use mean of shifts instead of reference spectrum ?
-	 #       
-	 C = sum_PHAspectra(phafiles, wave_shifts=wave_shifts, exclude_wave=exclude_wave, ignore_flags=True, 
+                        wave_shifts.append(sh)
+                        OK = False
+                  except: 
+                     print("input problem. No shift applied")
+                     sh1 = 0
+                  
+                  if chatter > 0: sys.stderr.write("current wave_shifts = %s \n"%(wave_shifts))
+                  if not OK: print('should have gone to next file')      
+                  sh += sh1
+                  if chatter > 1: print("total shift = ",sh," A") 
+         if chatter > 1: 
+            print("selected shifts = ",wave_shifts)
+            print("selected exclude wavelengths = ",exclude_wave)    
+            print("computing weighted average of spectrum") 
+         #
+         #  TBD use mean of shifts instead of reference spectrum ?
+         #       
+         C = sum_PHAspectra(phafiles, wave_shifts=wave_shifts, exclude_wave=exclude_wave, ignore_flags=True, 
               interactive=False, outfile=outfile, figno=None, chatter=chatter, clobber=True)   
-	 return C       
+         return C       
   
 def coi_func2(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    fudgespec=1.32,coi_length=29,frametime=0.0110329, background=False,
@@ -8302,31 +8313,31 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
       - **sig1coef** : list
       
         polynomial coefficients
-	
+        
       - **frametime** : float
       
         CCD frame time in seconds
-	
+        
       - **trackwidth** : float
       
         width of the extraction in standard deviations of the profile matched across the spectrum
-	
+        
       - **option** : int 
       
         . option = 1 : classic coi-loss, but spectrum is box like 10x32 pix across spectrum
-	
+        
         . option = 2 : bkg classic coi-loss, total (spectrum*poly+bkg*poly) with 
                      polynomial corrections for extended coi-loss. 
-		     classical limit for ccc= [0,0,1] ; ccb[0,0,1] 
-		     
+                     classical limit for ccc= [0,0,1] ; ccb[0,0,1] 
+                     
       - **background** : bool
       
         if the background is `True` an interpolated function for the coi 
-	correction factor in the background count rate is returned
+        correction factor in the background count rate is returned
         
-	if the background is `False` an interpolated function for the 
-	coi correction factor in the net target count rate is returned
-      		       
+        if the background is `False` an interpolated function for the 
+        coi correction factor in the net target count rate is returned
+                       
       
    
    Returns
@@ -8362,7 +8373,7 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    - 2014-04-30 NPMK default changed to option=1, fudgespec=1.32 (415 pixels^2), coi_length=29
      changed frametime to 0.0110329 (was 0.0110302)
      no dependence coi-correction on the background 
-     added fudgespec to coi-area computation   	   
+     added fudgespec to coi-area computation       
    '''   
    import uvotmisc
    import numpy as np
@@ -8424,89 +8435,89 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    # PROBLEM: boxcar smooth does not work for pixels on the array ends. downturn coi-correction. Need something better.
    
    if chatter > 3: 
-	 print "alpha  = ",alpha
-	 print "number of data points ",len(countrate),"  printing every 100th"
-	 print " i    countrate    obs counts/frame "
-	 for ix in range(0,len(countrate),10):
-	   if background: print "%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix])
-	   else: print "%4i %12.5f  %12.5f" % (ix, countrate[ix],obs_countsperframe[ix])
-	   
+         print("alpha  = ",alpha)
+         print("number of data points ",len(countrate),"  printing every 100th")
+         print(" i    countrate    obs counts/frame ")
+         for ix in range(0,len(countrate),10):
+           if background: print("%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix]))
+           else: print("%4i %12.5f  %12.5f" % (ix, countrate[ix],obs_countsperframe[ix]))
+           
    try:
-	 	 
+                 
       bkg_cpf_incident = (-1.0/alpha) * np.log(1.0 - bgareafactor*bkg_countsperframe)/(bgareafactor)
       
       if option == 1:   #
-	 # classic coi formula with coi-area adjusted by fudgespec
+         # classic coi formula with coi-area adjusted by fudgespec
          yy = 1.0 - specfactor*tot_cpf
-	 v[ yy < 1e-6 ] = False
-	 yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+         v[ yy < 1e-6 ] = False
+         yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
          obs_cpf_incident = (-1.0/alpha) * np.log(yy)/specfactor
-	 
+         
          yy = 1.0 - specfactor*bkg_cpf
-	 v[ yy < 1e-6 ] = False
-	 yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
+         v[ yy < 1e-6 ] = False
+         yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
          bkg_cpf_incident = (-1.0/alpha) * np.log(yy)/specfactor
-	 
-      if option == 2: 	 
-	 # new default reverts to classic coi-formula when all coef = 0 except the last one, which must be 1. 
+         
+      if option == 2:    
+         # new default reverts to classic coi-formula when all coef = 0 except the last one, which must be 1. 
          # extended coi-loss coefficients ccc, ccb 
-	 if background: v[bkg_cpf*factor >= 0.9999] = False 
-	 else: v[tot_cpf*factor >= 0.9999] = False	 
+         if background: v[bkg_cpf*factor >= 0.9999] = False 
+         else: v[tot_cpf*factor >= 0.9999] = False       
          ccc = np.asarray(ccc)
          ccb = np.asarray(ccb)
-	 # extended coi-loss correction of counts per frame  - add polynomial corrections
+         # extended coi-loss correction of counts per frame  - add polynomial corrections
          if not background: 
-	    total_cpf  = obs_countsperframe = boxcar((countrate * np.polyval(ccc,tot_cpf*specfactor) + \
-	                 bkgrate * np.polyval(ccb,bkg_cpf*factor)) * frametime , (coi_length,)) 
-         bkg_countsperframe = boxcar( bkgrate * np.polyval(ccb,bkg_cpf*factor) * frametime , (coi_length,)) 	   
+            total_cpf  = obs_countsperframe = boxcar((countrate * np.polyval(ccc,tot_cpf*specfactor) + \
+                         bkgrate * np.polyval(ccb,bkg_cpf*factor)) * frametime , (coi_length,)) 
+         bkg_countsperframe = boxcar( bkgrate * np.polyval(ccb,bkg_cpf*factor) * frametime , (coi_length,))        
          bkg_cpf_incident = (-1.0/alpha) * np.log(1.0 - factor*bkg_countsperframe)/(bgareafactor)
          if not background:
-	    yy = 1.0 - factor*total_cpf
-	    v[ yy < 1e-4 ] = False
-	    yy[ yy < 1e-4 ] = 1e-4    # limit if yy gets very small or negative !!
+            yy = 1.0 - factor*total_cpf
+            v[ yy < 1e-4 ] = False
+            yy[ yy < 1e-4 ] = 1e-4    # limit if yy gets very small or negative !!
             obs_cpf_incident = (-1.0/alpha) * np.log(yy)/factor
-	 	     	 
-      if option == 3: 	 
-	 # extension reverts to classic coi-formula  . 
+                         
+      if option == 3:    
+         # extension reverts to classic coi-formula  . 
          # extended coi-loss coefficients ccc, ccb acting on variable z = cpf * ( 1 - cpf )
-	 # high background coi-loss correction fits FIG 6 in Breeveld et al. 
-	 if background: v[bkg_cpf*factor >= 0.9999] = False 
-	 else: v[tot_cpf*factor >= 0.9999] = False	 
+         # high background coi-loss correction fits FIG 6 in Breeveld et al. 
+         if background: v[bkg_cpf*factor >= 0.9999] = False 
+         else: v[tot_cpf*factor >= 0.9999] = False       
          # convert to actual cpf:
-	 ##CPFnet = net_cpf*specfactor
-	 CPFtot = tot_cpf*specfactor
+         ##CPFnet = net_cpf*specfactor
+         CPFtot = tot_cpf*specfactor
          CPFbkg = bkg_cpf*factor
-	 z_tot = CPFtot * (1. - CPFtot)   # binomial type of variable
-	 z_bkg = CPFbkg * (1. - CPFbkg)
-	 
-	 # extended coi-loss CPF correction of counts per frame  - correct with polynomial corrections in z
+         z_tot = CPFtot * (1. - CPFtot)   # binomial type of variable
+         z_bkg = CPFbkg * (1. - CPFbkg)
+         
+         # extended coi-loss CPF correction of counts per frame  - correct with polynomial corrections in z
          if not background: 
-	    CPFtot_corr = CPFnet*(1. + np.polyval(ca,z_tot)) + CPFbkg*(1. + np.polyval(cb,z_tot))		          
-	 CPFbkg_corr = CPFbkg*(1 + np.polycal(cb,z_bkg))  
+            CPFtot_corr = CPFnet*(1. + np.polyval(ca,z_tot)) + CPFbkg*(1. + np.polyval(cb,z_tot))                         
+         CPFbkg_corr = CPFbkg*(1 + np.polycal(cb,z_bkg))  
          CPFbkg_in   =  (-1.0/alpha) * np.log(1.0 - CPFbkg_corr)
-	 bkg_cpf_incident = CPFbkg_in/factor
+         bkg_cpf_incident = CPFbkg_in/factor
          if not background:
-	    yy = 1.0 - CPFtot_corr
-	    v[ yy < 1e-4 ] = False
-	    yy[ yy < 1e-4 ] = 1e-4    # limit if yy gets very small or negative !!
-	    CPFtot_in = (-1.0/alpha) * np.log(yy)
+            yy = 1.0 - CPFtot_corr
+            v[ yy < 1e-4 ] = False
+            yy[ yy < 1e-4 ] = 1e-4    # limit if yy gets very small or negative !!
+            CPFtot_in = (-1.0/alpha) * np.log(yy)
             obs_cpf_incident = CPFtot_in/specfactor
          
 
    except:
-      print "ERROR: probably the effective counts per frame are > 1."
-      print "WARNING: Continuing Setting COI factor = 1.0"
+      print("ERROR: probably the effective counts per frame are > 1.")
+      print("WARNING: Continuing Setting COI factor = 1.0")
       if not background:
          obs_cpf_incident = obs_countsperframe
       else:
-         obs_cpf_incident = bkg_cpf	 
+         obs_cpf_incident = bkg_cpf      
    
    # notify user that some points were flagged bad
    if v.all() != True: 
       ngood = len( np.where(v)[0] )
-      print "WARNING uvotgetspec.coi_func(): Some data were ignored \n"+\
-      "in the determination of the COI factor, since they exceeded the theoretical limit! "
-      print "                              number of good points used = ",ngood
+      print("WARNING uvotgetspec.coi_func(): Some data were ignored \n"+\
+      "in the determination of the COI factor, since they exceeded the theoretical limit! ")
+      print("                              number of good points used = ",ngood)
    
    # compute the coi-correction factor
    if not background: coi_factor    = (obs_cpf_incident - bkg_cpf_incident) / (obs_countsperframe - bkg_countsperframe)
@@ -8514,15 +8525,15 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    
    # debug info
    if (chatter > 4) & (not background):
-      print "bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor"
+      print("bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor")
       for i in range(len(obs_cpf_incident)):
-         print "%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,bkg_countsperframe[i],bkg_cpf_incident[i],\
-	 obs_countsperframe[i],obs_cpf_incident[i],bg_coi_factor[i],coi_factor[i])
+         print("%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,bkg_countsperframe[i],bkg_cpf_incident[i],\
+         obs_countsperframe[i],obs_cpf_incident[i],bg_coi_factor[i],coi_factor[i]))
    
    # calibrate
    if chatter > 0: 
-      if not background: print option,": coi_factor stats (min, mean, max): ",np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor)
-      print option,": bgcoi_factor stats (min, mean, max): ",np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor)
+      if not background: print(option,": coi_factor stats (min, mean, max): ",np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor))
+      print(option,": bgcoi_factor stats (min, mean, max): ",np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor))
    
    # assume wave is monotonically increasing: 
    if not background: coi_func = interpolate.interp1d(wave[v],coi_factor[v],kind='nearest',bounds_error=False,fill_value=1.0 ) 
@@ -8560,24 +8571,24 @@ def coi_func(pixno,wave,countrate,bkgrate,
    bkgrate : array-like
       background rate for the coi aperture (default coi_width pixels wide)
    kwargs : dict
-   	
+        
       - **frametime** : float
       
         CCD frame time in seconds
-		
+                
       - **option** : int 
       
         . option = 1 : (default) classic coi-loss, for box 16 pixels wide, 
-	               414 pix^2 area 	
-		     
+                       414 pix^2 area   
+                     
       - **background** : bool
       
         if the background is `True` an interpolated function for the coi 
-	correction factor in the background count rate is returned
+        correction factor in the background count rate is returned
         
-	if the background is `False` an interpolated function for the 
-	coi correction factor in the net target count rate is returned
-      		       
+        if the background is `False` an interpolated function for the 
+        coi correction factor in the net target count rate is returned
+                       
       - **wheelpos** : [160,200,955,1000]
          filter wheel position, one of these values.
    
@@ -8590,7 +8601,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
           count rate is returned 
        v : bool 
           only for spectrum. v=True points are valid, False points mean 
-	  observed rate per frame is too large. 	  
+          observed rate per frame is too large.           
    
    Notes
    -----   
@@ -8603,7 +8614,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    - 2012-03-21 NPMK initial version
    - 2014-06-02 NPMK start using a fixed coi-area,remove old options, 
         change meaning parameters    
-   - 2014-07-23 NPMK use calibrated values of coi-box and factor	
+   - 2014-07-23 NPMK use calibrated values of coi-box and factor        
    '''   
    import sys
    import uvotmisc
@@ -8667,13 +8678,13 @@ def coi_func(pixno,wave,countrate,bkgrate,
           (alpha,len(countrate)))
        sys.stderr.write(" i    countrate    obs total counts/frame \n")
        for ix in range(0,len(countrate),25):
-	   if background: 
-	       sys.stderr.write("%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix]))
-	   else: 
-	       sys.stderr.write("%4i %12.5f  %12.5f" % (ix, countrate[ix],tot_cpf[ix]))
-	   
+           if background: 
+               sys.stderr.write("%4i %12.5f %12.5f " % (ix, bkgrate[ix],bkg_cpf[ix]))
+           else: 
+               sys.stderr.write("%4i %12.5f  %12.5f" % (ix, countrate[ix],tot_cpf[ix]))
+           
    try:
-   	 	 
+                 
        if not background:
            #  spectrum plus background       
            yy = 1.0 - factor*tot_cpf
@@ -8681,7 +8692,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
            yy[ yy < 1e-6 ] = 1e-6    # limit if yy gets very small or negative !!
            obs_cpf_incident = (-1.0/alpha) * np.log(yy)/factor
 
-       # background only	 
+       # background only         
        yy = 1.0 - factor*bkg_cpf
        v[ yy < 1e-6 ] = False
        yy[ yy < 1e-6 ] = 1e-6 
@@ -8694,7 +8705,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
        #if not background:
        #    obs_cpf_incident = obs_countsperframe
        #else:
-       #    obs_cpf_incident = bkg_cpf	 
+       #    obs_cpf_incident = bkg_cpf   
    
    # notify user that some points were flagged bad ; limit in wave
    w8,w9 = {'160':(1700,5200),'200':(1700,5200),"955":(2850,6600),"1000":(2850,6600)}[str(wheelpos)]
@@ -8704,9 +8715,9 @@ def coi_func(pixno,wave,countrate,bkgrate,
        ngood = len( np.where(v & (wave > w8) & (wave < w9))[0] )
        sys.stderr.write("WARNING uvotgetspec.coi_func(): Some data were ignored\n"\
              "        in the determination of the COI factor, since they\n"\
-	     "        exceeded the theoretical limit. total number = %i "\
+             "        exceeded the theoretical limit. total number = %i "\
              "                  number of good points used = %i \n"%
-	     (len(wave[((wave > w8) & (wave < w9))]) ,ngood))
+             (len(wave[((wave > w8) & (wave < w9))]) ,ngood))
    
    # compute the coi-correction factor for the net spectrum and the background (these are pixel/wavelength position specific) 
    if not background: 
@@ -8718,15 +8729,15 @@ def coi_func(pixno,wave,countrate,bkgrate,
        sys.stderr.write("bkg_countsperframe bkg_cpf_incident obs_countsperframe obs_cpf_incident bg_coi_factor coi_factor\n")
        for i in range(len(obs_cpf_incident)):
            sys.stderr.write( "%3i  %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f" % (i,
-	      bkg_countsperframe[i],bkg_cpf_incident[i], 
-	      obs_countsperframe[i],obs_cpf_incident[i],
-	      bg_coi_factor[i],coi_factor[i]))
+              bkg_countsperframe[i],bkg_cpf_incident[i], 
+              obs_countsperframe[i],obs_cpf_incident[i],
+              bg_coi_factor[i],coi_factor[i]))
    
    # statistics
    if chatter > 0: 
       if not background: 
           sys.stderr.write( "spectrum: coi factor stats (min=%5.3f, mean=%5.3f, max=%5.3f)\n"%(
-	      np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor) ))
+              np.min(coi_factor),np.mean(coi_factor),np.max(coi_factor) ))
       else:
           sys.stderr.write( "background: coi factor stats (min=%5.3f, mean=%5.3f, max=%5.3f)\n"%(
               np.min(bg_coi_factor),np.mean(bg_coi_factor),np.max(bg_coi_factor) ))
@@ -8826,30 +8837,30 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
           # rough estimate grism effective area at lenticular filter
           gr_ea = [1.5, 7.0, 12.3, 16.3, 12.5, 6.5]
           # central wave lenticular filter = [5468.,4392,3465,2600,2246,1928.] 
-          print "not yet implemented"
-	  return
+          print("not yet implemented")
+          return
      else:
-          print 'grism unknown'
-	  return
-	  	
+          print('grism unknown')
+          return
+                
      # check valid mag and filter     
      if type(mag) == typeNone:
-         print "problem with input parameters: expected a magnitude"
+         print("problem with input parameters: expected a magnitude")
      else:
          # convert to grism CR
          if lentifilter == 'v':
              factor = gr_ea[0]*disp_coef1/(lf_ea[0]*delta_w[0])
-         elif lentifilter == 'b':	
+         elif lentifilter == 'b':       
              factor = gr_ea[1]*disp_coef1/(lf_ea[1]*delta_w[1])
-         elif lentifilter == 'u':	
+         elif lentifilter == 'u':       
              factor = gr_ea[2]*disp_coef1/(lf_ea[2]*delta_w[2])
-         elif lentifilter == 'uvw1':	
+         elif lentifilter == 'uvw1':    
              factor = gr_ea[3]*disp_coef1/(lf_ea[3]*delta_w[3])
-         elif lentifilter == 'uvw2':	
+         elif lentifilter == 'uvw2':    
              factor = gr_ea[4]*disp_coef1/(lf_ea[4]*delta_w[4])
-         elif lentifilter == 'uvm2':	
+         elif lentifilter == 'uvm2':    
              factor = gr_ea[5]*disp_coef1/(lf_ea[5]*delta_w[5])
-         else: factor = 32./(155620.1) # white-ish 	
+         else: factor = 32./(155620.1) # white-ish      
 
       # convert mag to source count rate in filter using ZP
          zp = uvotphot.uvot_zeropoint(lentifilter+'_uvot',date=None,system='VEGA')
@@ -8864,23 +8875,23 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
          noise_cr_squared =  tot_cr + bkgrate 
       # compute exposure for given S2N 
          exposure = S2N**2 * noise_cr_squared / ( src_cr**2 ) 
-         print "for a s/n = ",S2N,"  magnitude "+lentifilter+"=",mag," an exposure = ",exposure,"s is needed."
-         print "assumed background count rate = ",bkgrate
-         print "source count rate = ",src_cr
+         print("for a s/n = ",S2N,"  magnitude "+lentifilter+"=",mag," an exposure = ",exposure,"s is needed.")
+         print("assumed background count rate = ",bkgrate)
+         print("source count rate = ",src_cr)
    else:
       try:
          hdu = pyfits.open(obsfile)
          wave = hdu[2].data['lambda']
-	 flux = hdu[2].data['flux']
-	 hdu.close()
+         flux = hdu[2].data['flux']
+         hdu.close()
       except:
-         try: 	 
-	    tab = uvotmisc.rdTab(obsfile)
-	    wave = tab[:,0]
-	    flux = tab[:,1]
-	 except:
-	    print "FATAL ERROR: problem reading "+obsfile   
-	    return
+         try:    
+            tab = uvotmisc.rdTab(obsfile)
+            wave = tab[:,0]
+            flux = tab[:,1]
+         except:
+            print("FATAL ERROR: problem reading "+obsfile)   
+            return
       good = np.isfinite(flux)
       wave = wave[good]
       flux = flux[good]
@@ -8888,6 +8899,6 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
       f = open('plan_obs_file.tmp','w')
       for i in range(len(wave)):
          f.write("%10.3f  %12.5e\n"%(wave[i],flux[i]))
-      X = uvotphot.uvotmag_from_spectrum(specfile='plan_obs_file.tmp',)	 
-	 	 
+      X = uvotphot.uvotmag_from_spectrum(specfile='plan_obs_file.tmp',)  
+                 
 # end uvotgetspec.py  See Copyright notice in README file [when missing, copyright NPM Kuin, 2013, applies]. 

@@ -33,6 +33,10 @@
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import input
+from builtins import str
 __version__ = '-1.1 20141020' 
 
 '''
@@ -228,9 +232,9 @@ try:
    from uvotpy.uvotmisc import interpgrid,uvotrotvec
    from uvotpy.uvotgetspec import *
 except:    # old versions 
-   from uvotmisc import interpgrid, uvotrotvec
-   import uvotplot
-   from uvotgetspec import *
+   from .uvotmisc import interpgrid, uvotrotvec
+   from . import uvotplot
+   from .uvotgetspec import *
 
 # Global parameters
 
@@ -426,7 +430,7 @@ http://swift.gsfc.nasa.gov/ '''
    if (len(sys.argv) == 1):
       # no arguments given 
       program_name = sys.argv[0]
-      print program_name," no arguments found"
+      print(program_name," no arguments found")
       status = 1
 
 
@@ -442,7 +446,7 @@ http://swift.gsfc.nasa.gov/ '''
       #from uvotgetspec import get_radec
       ra_,dec_ = get_radec(objectid=object_name)
       if ra == None:
-         print "ERROR: unable to get a position from the object_name. \n       Please supply RA, DEC\n"
+         print("ERROR: unable to get a position from the object_name. \n       Please supply RA, DEC\n")
 	 raise         
 
    give_result = False 
@@ -452,8 +456,8 @@ http://swift.gsfc.nasa.gov/ '''
    else:
       offsetlimit = None   
       
-   print "debug: fit_second_order:",options.fit_second
-   print "debug: optimal_extraction:", options.optimal_extraction  
+   print("debug: fit_second_order:",options.fit_second)
+   print("debug: optimal_extraction:", options.optimal_extraction)  
    
    #from uvotgetspec import getSpec
    
@@ -487,15 +491,15 @@ http://swift.gsfc.nasa.gov/ '''
      highlight=contour_on_img, 
      clobber=bool(options.clobber), chatter=int(options.chatter))
      
-   yn = raw_input("Done ?")
-   print "for further processing use the output files" 
-   print today_
-   print datestring
-   print "(c) NPMK 2013-2016 - Mullard Space Science Lab, University College London"
+   yn = input("Done ?")
+   print("for further processing use the output files") 
+   print(today_)
+   print(datestring)
+   print("(c) NPMK 2013-2016 - Mullard Space Science Lab, University College London")
    
 else:
     
-   print "uvotpy"+__version__+'  n.kuin@ucl.ac.uk'
+   print("uvotpy"+__version__+'  n.kuin@ucl.ac.uk')
 
 today_ = datetime.date.today()   
 datestring = today_.isoformat()[0:4]+today_.isoformat()[5:7]+today_.isoformat()[8:10]

@@ -33,6 +33,11 @@
 #
 
 from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import input
+from builtins import str
+from builtins import range
 __version__ = "1.6.0"
 
 # version 1.0 9 Nov 2009
@@ -65,7 +70,7 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass
-import uvotgetspec
+  import uvotgetspec
 
 typeNone = type(None)
 interactive=uvotgetspec.interactive
@@ -107,51 +112,51 @@ def rate2flux(wave, rate, wheelpos,
    Parameters
    ----------
       
-   wave	: float ndarray
-   	wavelength in A
-	
-   rate, bkrate	: float ndarray
-   	net and background count rate/bin in spectrum, aperture corrected
-	
+   wave : float ndarray
+        wavelength in A
+        
+   rate, bkrate : float ndarray
+        net and background count rate/bin in spectrum, aperture corrected
+        
    co_sprate, co_bgrate : ndarray
-   	total of spectrum+background and background rate/bin for the 
-	coincidence area of constant width (default set to 16 pixels) 
-	
+        total of spectrum+background and background rate/bin for the 
+        coincidence area of constant width (default set to 16 pixels) 
+        
    wheelpos : int
-   	filter wheel position
+        filter wheel position
       
    pixno : ndarray
-   	pixel coordinate (zero = anchor; + increasing wavelengths)
-	
+        pixel coordinate (zero = anchor; + increasing wavelengths)
+        
    co_sprate, cp_bgrate : ndarray
         rates for calculating the coincidence loss 
    
    arf1, arf2 : path or "CALDB", optional 
-			
+                        
    effarea1, effarea2 : FITS HDU[, interpolating function]
-        result from a previous call to 	readFluxCalFile() for first or second order
-		
+        result from a previous call to  readFluxCalFile() for first or second order
+                
    spectralorder : int
-   	the spectral order of the spectrum, usually =1
-	
+        the spectral order of the spectrum, usually =1
+        
    trackwidth : float
-   	width of the spectral extraction used in units of sigma 
-	
+        width of the spectral extraction used in units of sigma 
+        
    anker : list
-   	anchor detector coordinate positions (pix) as a 2-element numpy array
-	
+        anchor detector coordinate positions (pix) as a 2-element numpy array
+        
    frametime : float
-   	the frame time for the image is required for the coi-correction
-	
+        the frame time for the image is required for the coi-correction
+        
    swifttime : int
-        swift time of observation in seconds for calculating the sensitivity loss 	
-	
+        swift time of observation in seconds for calculating the sensitivity loss       
+        
    debug : bool
-   	 for development
-	
+         for development
+        
    chatter : int
-   	verbosity (0..5)
-	
+        verbosity (0..5)
+        
    respfunc : bool
         return the response function (used by writeSpectrum())
               
@@ -166,7 +171,7 @@ def rate2flux(wave, rate, wheelpos,
    -----
    2013-05-05 NPMKuin - adding support for new flux calibration files; new kwarg 
    2014-02-28 fixed. applying fnorm now to get specrespfunc, pass earlier effective area
-   2014-04-30 NPMK changed coi_func parameters (option=1,fudgespec=1.322,frametime,coi_length=29)	      
+   2014-04-30 NPMK changed coi_func parameters (option=1,fudgespec=1.322,frametime,coi_length=29)             
    '''
    
    import numpy as np
@@ -186,114 +191,114 @@ def rate2flux(wave, rate, wheelpos,
       if spectralorder == 2: dis -= 260
    else:
       dis = pixno   
-   coef = np.polyfit(dis,wave,4)	 
+   coef = np.polyfit(dis,wave,4)         
    binwidth = np.polyval(coef,dis+0.5) - np.polyval(coef,dis-0.5)      # width of each bin in A (= scale A/pix)
       
    if ((spectralorder == 1) & (effarea1 == None)) | ((spectralorder == 2) & (effarea2 == None)) :
       if (test != None) & (anker != None):
-	 # attempt to use the new spectral response (if returns None then not available)
-	 z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder, msg=msg, chatter=chatter)
-	 if (z == None):  
-      	    specrespfunc = XYSpecResp(wheelpos=wheelpos, \
-	       spectralorder=spectralorder, anker=anker, test=test,chatter=chatter)
-	 else:
-	    # ancher given,  default
-	    hdu,fnorm, msg = z
-	    w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']))     
-	    r = list(( hdu.data['SPECRESP'] )*fnorm(w))
-	    w.reverse() ; r.reverse()
-	    specrespfunc = interpolate.interp1d( w, r,  bounds_error=False, fill_value=np.NaN)
-	    
+         # attempt to use the new spectral response (if returns None then not available)
+         z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder, msg=msg, chatter=chatter)
+         if (z == None):  
+            specrespfunc = XYSpecResp(wheelpos=wheelpos, \
+               spectralorder=spectralorder, anker=anker, test=test,chatter=chatter)
+         else:
+            # ancher given,  default
+            hdu,fnorm, msg = z
+            w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']))     
+            r = list(( hdu.data['SPECRESP'] )*fnorm(w))
+            w.reverse() ; r.reverse()
+            specrespfunc = interpolate.interp1d( w, r,  bounds_error=False, fill_value=np.NaN)
+            
       elif ((anker == None) | ((arf1 != None) & (spectralorder == 1))| ((arf2 != None) & (spectralorder == 2))):
          if spectralorder == 2: xopt='nearest' 
          ans =  readFluxCalFile(wheelpos,spectralorder=spectralorder,msg=msg, chatter=chatter, option=xopt)
-         print type(ans)
-         print ans
-	 if (ans[0] == None): 
+         print(type(ans))
+         print(ans)
+         if (ans[0] == None): 
              specrespfunc = SpecResp(wheelpos, spectralorder, arf1=arf1,arf2=arf2,)
-	 else:
+         else:
             hdu, msg = ans
-	    w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']))
-	    r = list(hdu.data['SPECRESP'] )
-	    w.reverse() ; r.reverse()
-	    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN)
-	    
+            w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']))
+            r = list(hdu.data['SPECRESP'] )
+            w.reverse() ; r.reverse()
+            specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN)
+            
       else:
-	 # attempt to use the new spectral response (if returns None then not available)
-	 if (effarea1 != None) & (spectralorder == 1):
-	     z = effarea1
-	 elif (effarea2 != None) & (spectralorder == 2):   
-	     z = effarea2
-	 else:
+         # attempt to use the new spectral response (if returns None then not available)
+         if (effarea1 != None) & (spectralorder == 1):
+             z = effarea1
+         elif (effarea2 != None) & (spectralorder == 2):   
+             z = effarea2
+         else:
              z =  readFluxCalFile(wheelpos,anchor=anker,spectralorder=spectralorder,msg=msg, chatter=chatter)
-	 if (z == None): 
-	    print "uvotio.rate2flux warning: fall back to XYSpecResp call " 
-      	    specrespfunc = XYSpecResp(wheelpos=wheelpos, spectralorder=spectralorder, anker=anker,chatter=chatter)
-	 else:
-	    # ancher given,  default
-	    hdu,fnorm,msg = z
-	    w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) )    
-	    r = list(hdu.data['SPECRESP'])
-	    w.reverse() 
-	    r.reverse()
-	    r = np.array(r) * fnorm(w)
-	    specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN )
-	    
+         if (z == None): 
+            print("uvotio.rate2flux warning: fall back to XYSpecResp call ") 
+            specrespfunc = XYSpecResp(wheelpos=wheelpos, spectralorder=spectralorder, anker=anker,chatter=chatter)
+         else:
+            # ancher given,  default
+            hdu,fnorm,msg = z
+            w = list(0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) )    
+            r = list(hdu.data['SPECRESP'])
+            w.reverse() 
+            r.reverse()
+            r = np.array(r) * fnorm(w)
+            specrespfunc = interpolate.interp1d( w, r, bounds_error=False, fill_value=np.NaN )
+            
    elif ((spectralorder == 1) & (effarea1 != None)): 
-       if len(effarea1) == 2:	    
-	    hdu,fnorm = effarea1
- 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
-	    r = hdu.data['SPECRESP']
-	    ii = range(len(w)-1,-1,-1) 
-	    r = r * fnorm(w)
-	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+       if len(effarea1) == 2:       
+            hdu,fnorm = effarea1
+            w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+            r = hdu.data['SPECRESP']
+            ii = list(range(len(w)-1,-1,-1)) 
+            r = r * fnorm(w)
+            specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
        else:  
             hdu  = effarea1
- 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
-	    r = hdu.data['SPECRESP']
-	    ii = range(len(w)-1,-1,-1) 
-	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+            w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+            r = hdu.data['SPECRESP']
+            ii = list(range(len(w)-1,-1,-1)) 
+            specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
 
-   elif ((spectralorder == 2) & (effarea2 != None)): 	#this is under development only
-       print "second order Effective area is under development - not for science use"    
-       if len(effarea2) == 2:	    
-	    hdu,fnorm = effarea2
- 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
-	    r = hdu.data['SPECRESP']
-	    ii = range(len(w)-1,-1,-1) 
-	    r = r * fnorm(w)
-	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+   elif ((spectralorder == 2) & (effarea2 != None)):    #this is under development only
+       print("second order Effective area is under development - not for science use")    
+       if len(effarea2) == 2:       
+            hdu,fnorm = effarea2
+            w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+            r = hdu.data['SPECRESP']
+            ii = list(range(len(w)-1,-1,-1)) 
+            r = r * fnorm(w)
+            specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
        else:  
             hdu  = effarea2
- 	    w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
-	    r = hdu.data['SPECRESP']
-	    ii = range(len(w)-1,-1,-1) 
-	    specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
-      	   
+            w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX'])    
+            r = hdu.data['SPECRESP']
+            ii = list(range(len(w)-1,-1,-1)) 
+            specrespfunc = interpolate.interp1d( w[ii], r[ii], bounds_error=False, fill_value=np.NaN )
+           
    else: return None
    
-   if respfunc: return specrespfunc  # feed for writeSpectrum() 	 
+   if respfunc: return specrespfunc  # feed for writeSpectrum()          
 
    if swifttime != None: 
       senscorr = sensitivityCorrection(swifttime)
-      print "Sensitivity correction factor for degradation over time = ", senscorr
+      print("Sensitivity correction factor for degradation over time = ", senscorr)
       msg += "Sensitivity correction factor for degradation over time = %s\n"%( senscorr)
    else: 
       senscorr = 1.0 
-      print "NO Sensitivity correction applied" 
+      print("NO Sensitivity correction applied") 
       msg += "NO Sensitivity correction applied\n" 
    
    if ((type(bkgrate) != typeNone) & (type(pixno) != typeNone)):
-      if chatter > 0: print "performing the COI correction "
+      if chatter > 0: print("performing the COI correction ")
           # do the coi-correction
-	  
+          
       fcoi, coi_valid = uvotgetspec.coi_func(pixno,wave,
            co_sprate,
            co_bgrate,
            wheelpos = wheelpos,
            fudgespec=fudgespec,
            frametime=frametime, 
-	   background=False, 
+           background=False, 
            debug=False,chatter=1)
       bgcoi = uvotgetspec.coi_func(pixno,wave,
            co_sprate,
@@ -308,7 +313,7 @@ def rate2flux(wave, rate, wheelpos,
       flux = hnu*netrate*senscorr/specrespfunc(wave)/binwidth   # [erg/s/cm2/angstrom]
    else:   
       if chatter > 0: 
-          print "WARNING rate2flux: Flux calculated without a COI-correction for spectral order = ",spectralorder
+          print("WARNING rate2flux: Flux calculated without a COI-correction for spectral order = ",spectralorder)
       # no coi correction
       flux = hnu*rate*senscorr/specrespfunc(wave)/binwidth   # [erg/s/cm2/angstrom]
       coi_valid = np.ones(len(wave),dtype=bool)
@@ -387,34 +392,34 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
       ----------
       filestub : str
         the base of the file name, with the Swift project convention,
-	consisting of "sw" + the OBSID, i.e., "sw00032301001" 
+        consisting of "sw" + the OBSID, i.e., "sw00032301001" 
       ext : int
         the number of the extension of the grism file to match
-	
+        
       kwargs : dict
       
        - **lfilt1** : str, optional
        
         name of first lenticular filter used. Must be one of 'uvw2',
-	'uvm2','uvw1','u','b','v','wh'	
-	
+        'uvm2','uvw1','u','b','v','wh'  
+        
        - **directory** : path, str
        
         path for directory. This is the directory with the grism file.
-	
+        
        - **chatter** : int
        
         verbosity
-				
+                                
        - **twait** : float
        
         The maximum time allowed between begin and end of matched 
-	exposures of grism-lenticular filter, for each match.
-	
+        exposures of grism-lenticular filter, for each match.
+        
        - **wheelpos** : imt
         
-	If given, use to discriminate between UV and Visual grisms.	
-	
+        If given, use to discriminate between UV and Visual grisms.     
+        
       Returns
       -------
       specfile, attfile: str
@@ -447,7 +452,7 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
          specfile =  directory+filestub+'ugu_dt.img'
       else: 
          specfile =  directory+filestub+'ugv_dt.img'
-	 uvgrism = False
+         uvgrism = False
    
    if (not directory.endswith('/')) : 
       directory += '/' 
@@ -458,65 +463,65 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
    specfile = ' *filename not yet initialised (directory wrong?)* '
    if uvgrism & os.access(directory+filestub+'ugu_dt.img',os.F_OK):
         specfile =  directory+filestub+'ugu_dt.img'
-	if chatter > 1: print 'reading ',specfile
+        if chatter > 1: print('reading ',specfile)
    elif uvgrism & os.access(directory+filestub+'ugu_dt.img.gz',os.F_OK):
         specfile =  directory+filestub+'ugu_dt.img'
-	os.system( 'gunzip '+specfile+'.gz' )
-	if chatter > 1: print 'reading ',specfile
+        os.system( 'gunzip '+specfile+'.gz' )
+        if chatter > 1: print('reading ',specfile)
    elif vvgrism & os.access(directory+filestub+'ugv_dt.img',os.F_OK):     
         specfile =  directory+filestub+'ugv_dt.img'
-	if chatter > 1: print 'reading ',specfile
+        if chatter > 1: print('reading ',specfile)
    elif vvgrism & os.access(directory+filestub+'ugv_dt.img.gz',os.F_OK):     
         specfile =  directory+filestub+'ugv_dt.img'
-	os.system( 'gunzip '+specfile+'.gz' )
-	if chatter > 1: print 'reading ',specfile
+        os.system( 'gunzip '+specfile+'.gz' )
+        if chatter > 1: print('reading ',specfile)
    else:
-        print "on call fileinfo(sw+obsid="+filestub+",ext=",ext,",lfilt1=",lfilt1,", directory="+directory,",wheelpos=",wheelpos,")"
+        print("on call fileinfo(sw+obsid="+filestub+",ext=",ext,",lfilt1=",lfilt1,", directory="+directory,",wheelpos=",wheelpos,")")
         raise IOError("FILEINFO: cannot find %s: DET file not found - pls check directory/file provided  is correct" % specfile )
-		
+                
    #    attitude file:
    if os.access(directory+filestub+'pat.fits',os.F_OK):
         attfile =  directory+filestub+'pat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(directory+filestub+'pat.fits.gz',os.F_OK):
         attfile =  directory+filestub+'pat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(directory+filestub+'uat.fits',os.F_OK):     
         attfile =  directory+filestub+'uat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(directory+filestub+'uat.fits.gz',os.F_OK):     
         attfile =  directory+filestub+'uat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(directory+filestub+'sat.fits',os.F_OK):     
         attfile =  directory+filestub+'sat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(directory+filestub+'sat.fits.gz',os.F_OK):     
         attfile =  directory+filestub+'sat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'pat.fits',os.F_OK):
         attfile =  auxildir+filestub+'pat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'pat.fits.gz',os.F_OK):
         attfile =  auxildir+filestub+'pat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'uat.fits',os.F_OK):     
         attfile =  auxildir+filestub+'uat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'uat.fits.gz',os.F_OK):     
         attfile =  auxildir+filestub+'uat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'sat.fits',os.F_OK):     
         attfile =  auxildir+filestub+'sat.fits'
-	if chatter > 1: print 'found att file ',attfile
+        if chatter > 1: print('found att file ',attfile)
    elif os.access(auxildir+filestub+'sat.fits.gz',os.F_OK):     
         attfile =  auxildir+filestub+'sat.fits'
-	os.system( 'gunzip '+attfile+'.gz' )
-	if chatter > 1: print 'found att file ',attfile
+        os.system( 'gunzip '+attfile+'.gz' )
+        if chatter > 1: print('found att file ',attfile)
    #    filter file(s)
    lfilt1,lfilt2 = None,None 
    lfilt1_ext = None; lfilt2_ext=None
@@ -529,41 +534,41 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
    tstart = hdr['TSTART']
    tstop  = hdr['TSTOP'] 
    if chatter > 1: 
-      print 'grism times : %s - %s '%(tstart,tstop)
+      print('grism times : %s - %s '%(tstart,tstop))
    lfile=None
    #  
    for k in range(len(ext_names)):
       ftyp = ext_names[k]
       lfiltyp = lfiltnames[k]
-      if chatter > 1: print "testting for "+directory+filestub+ftyp+'_sk.img'
+      if chatter > 1: print("testting for "+directory+filestub+ftyp+'_sk.img')
       if os.access(directory+filestub+ftyp+'_sk.img',os.F_OK):
         lfile =  directory+filestub+ftyp+'_sk.img'
-	if chatter > 1: 
-	   print 'found lenticular sky file ',lfile 
+        if chatter > 1: 
+           print('found lenticular sky file ',lfile) 
       elif os.access(directory+filestub+ftyp+'_sk.img.gz',os.F_OK):
         lfile =  directory+filestub+ftyp+'_sk.img' 
-	os.system( 'gunzip '+lfile+'.gz' )
-	if chatter > 1: print 'found lenticular sky file ',lfile
-      if lfile != None:	
+        os.system( 'gunzip '+lfile+'.gz' )
+        if chatter > 1: print('found lenticular sky file ',lfile)
+      if lfile != None: 
          # check if it has an extension before or after specfile[ext] 
          xxx = fits.open(lfile)
          for i in range(1,len(xxx)):
             t1 = xxx[i].header['TSTART']
-	    t2 = xxx[i].header['TSTOP']
-	    if abs(t2-tstart) < twait:
-	       lfilt1 = lfiltyp
-	       lfilt1_ext = i
-	       if chatter > 0: print "lenticular file observation preceeding grism observation"
-	    if abs(t1-tstop) < twait:
-	       lfilt2 = lfiltyp
-	       lfilt2_ext = i   
-	       if chatter > 1: print "lenticular file observation after grism observation"
-	 lfile = None 
-	 xxx.close()
-	      
+            t2 = xxx[i].header['TSTOP']
+            if abs(t2-tstart) < twait:
+               lfilt1 = lfiltyp
+               lfilt1_ext = i
+               if chatter > 0: print("lenticular file observation preceeding grism observation")
+            if abs(t1-tstop) < twait:
+               lfilt2 = lfiltyp
+               lfilt2_ext = i   
+               if chatter > 1: print("lenticular file observation after grism observation")
+         lfile = None 
+         xxx.close()
+              
    # wrapup in case there is only one, but in lfilt2.
    if ((lfilt1 == None) & (lfilt2 != None)): 
-      if chatter > 2: print "putting only filter info in filter 1"
+      if chatter > 2: print("putting only filter info in filter 1")
       lfilt1 = lfilt2
       lfilt2 = None
       lfilt1_ext = lfilt2_ext
@@ -571,7 +576,7 @@ def fileinfo(filestub,ext,lfilt1=None, directory='./',chatter=0, wheelpos=None, 
    #  
    if attfile == None: 
        raise IOError("The attitude file could not be found.") 
-   return specfile, lfilt1, lfilt1_ext, lfilt2, lfilt2_ext, attfile	
+   return specfile, lfilt1, lfilt1_ext, lfilt2, lfilt2_ext, attfile     
 
 
 def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
@@ -617,7 +622,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
 
    Notes
    ----- 
-   - Modified 15-SEP-2012 by Paul Kuin.	   
+   - Modified 15-SEP-2012 by Paul Kuin.    
    With only wheelpos, spectralorder, wave, specresp input, the output file conforms to 
    the HEASARC approved response file. The additional keywords and error column have not 
    been approved as of 15 September 2012. 
@@ -743,7 +748,7 @@ def writeEffAreaFile (wheelpos,spectralorder,wave,specresp,specresp_err=None,
    ehigh = energy_hi.max()
    specresp = specrespfunc( midwave )
    specresp_err = specresp_errfunc( midwave )
-   ix = range(len(ax))
+   ix = list(range(len(ax)))
    ix.reverse()
    col11 = fits.Column(name='ENERG_LO',format='E',array=energy_lo[ix],unit='KeV')
    col12 = fits.Column(name='ENERG_HI',format='E',array=energy_hi[ix],unit='KeV')
@@ -832,8 +837,8 @@ def XYSpecResp(wheelpos=None,spectralorder=1,anker=[1129,1022], test=None, chatt
    import os
    
    if spectralorder == 1:
-      print 'DEPRECATION NOTICE 2013-04-25: This method will be superseded by readFluxCalFile'
-      print '        - available calibration files are those for the default position ony '
+      print('DEPRECATION NOTICE 2013-04-25: This method will be superseded by readFluxCalFile')
+      print('        - available calibration files are those for the default position ony ')
 
    Xank=anker[0]
    Yank=anker[1]
@@ -845,13 +850,13 @@ def XYSpecResp(wheelpos=None,spectralorder=1,anker=[1129,1022], test=None, chatt
       from scipy import interpolate
       # get boresight anchor 
       if wheelpos == 160:
-	       bsx, bsy = uvotgetspec.boresight("uc160")
+               bsx, bsy = uvotgetspec.boresight("uc160")
       elif wheelpos == 200:   
-	       bsx, bsy = uvotgetspec.boresight("ug200")
+               bsx, bsy = uvotgetspec.boresight("ug200")
       elif wheepos == 955:   
-	       bsx, bsy = uvotgetspec.boresight("vc955")
+               bsx, bsy = uvotgetspec.boresight("vc955")
       elif wheelpos == 1000:   
-	       bsx, bsy = uvotgetspec.boresight("vg1000")
+               bsx, bsy = uvotgetspec.boresight("vg1000")
       # grab the spectral response for the center   
       sr_bs_func = XYSpecResp(wheelpos=wheelpos, spectralorder=spectralorder, anker = [bsx,bsy],  chatter=chatter)
       # get the normalised flux at the anchor position
@@ -860,25 +865,25 @@ def XYSpecResp(wheelpos=None,spectralorder=1,anker=[1129,1022], test=None, chatt
       fnorm = None
       
    if spectralorder == 2:
-      print "WARNING XYSpecResp: anchor dependence second order response has not yet been implemented"
+      print("WARNING XYSpecResp: anchor dependence second order response has not yet been implemented")
       return SpecResp(wheelpos, spectralorder,)
       
    calfiles = os.getenv('UVOTPY')
    if calfiles == '': 
-      print "please define environment variable UVOTPY before proceeding"
+      print("please define environment variable UVOTPY before proceeding")
       raise
    else: 
       calfiles += "/calfiles/"
    status = os.system("ls -1 "+calfiles+" > tmp.1")
    if status != 0:
-      print "FAIL: ls -1 "+calfiles+" > tmp.1"
+      print("FAIL: ls -1 "+calfiles+" > tmp.1")
    f = open("tmp.1")
    clist = f.readlines()
    f.close()      
    status = os.system("rm tmp.1") 
    
    if len(clist) == 0: 
-      print "WARNING XYSpecResp: calfiles directory seems empty"
+      print("WARNING XYSpecResp: calfiles directory seems empty")
    
    if wheelpos == 160: 
       arf1 = 'swugu0160_1_20041120v999.arf'#'swugu0160_ax1130ay1030_dx70dy70_o1_20041120v001.arf'
@@ -905,42 +910,42 @@ def XYSpecResp(wheelpos=None,spectralorder=1,anker=[1129,1022], test=None, chatt
       _dxy = 'dx150dy150'
       _ver = ['20041120', '001']
       _dist = (Xank-_axy[0])**2 + (Yank-_axy[1])**2
-   if chatter > 2: print "initial: _axy = %s\n_dxy = %s\n_ver = %s\n_dist = %7.2f\n" %(_axy, _dxy, _ver, _dist)
+   if chatter > 2: print("initial: _axy = %s\n_dxy = %s\n_ver = %s\n_dist = %7.2f\n" %(_axy, _dxy, _ver, _dist))
       
    for cl in clist:
        cl1 = cl
        cl = cl.split("\n")[0] 
-       if chatter > 2:  print 'processing: ',cl
+       if chatter > 2:  print('processing: ',cl)
        #print 'wheelpos  : ',cl[5:9]
-       try:	  
+       try:       
           if int(cl[5:9]) == wheelpos:
              cl = cl.split("_")
-	     if (cl[3] == 'o'+str(spectralorder)):
+             if (cl[3] == 'o'+str(spectralorder)):
                 #print "spectral order OK: ", cl[3]
-	        axy = [int(cl[1].split('ay')[0].split('ax')[1]),int(cl[1].split('ay')[1]) ]
-	        dxy = cl[2]
-	        ver = cl[4].split('.')[0].split('v') # [date,version]
+                axy = [int(cl[1].split('ay')[0].split('ax')[1]),int(cl[1].split('ay')[1]) ]
+                dxy = cl[2]
+                ver = cl[4].split('.')[0].split('v') # [date,version]
                 dist = (Xank-axy[0])**2 + (Yank-axy[1])**2
-		if chatter > 2: print "order=%i\naxy = %s\ndxy = %s\nver = %s\ndist = %7.2f\n_dist = %7.2f\n" %(spectralorder,axy, dxy, ver, dist,_dist)
-	        if ((spectralorder == 1) & (dist < _dist)) : 
-		   arf1 = cl1
-		   cl1 = arf1
-		   print "1_____using "+arf1
-	        if ((spectralorder == 2) & (dist < _dist)) : 
-		   arf2 = cl1
-		   cl1 = arf2
-		   print "2_____using "+arf2
-	        if ((spectralorder == 1) & (dist == _dist) & (ver[1] > _ver[1])) : 
-		   arf1 = cl1
-		   cl1 = arf1
-		   print "3_____using "+arf1
-	        if ((spectralorder == 2) & (dist == _dist) & (ver[1] > _ver[1])) : 
-		   arf2 = cl1
-		   cl1 = arf2
-		   print "4_____using "+arf2
+                if chatter > 2: print("order=%i\naxy = %s\ndxy = %s\nver = %s\ndist = %7.2f\n_dist = %7.2f\n" %(spectralorder,axy, dxy, ver, dist,_dist))
+                if ((spectralorder == 1) & (dist < _dist)) : 
+                   arf1 = cl1
+                   cl1 = arf1
+                   print("1_____using "+arf1)
+                if ((spectralorder == 2) & (dist < _dist)) : 
+                   arf2 = cl1
+                   cl1 = arf2
+                   print("2_____using "+arf2)
+                if ((spectralorder == 1) & (dist == _dist) & (ver[1] > _ver[1])) : 
+                   arf1 = cl1
+                   cl1 = arf1
+                   print("3_____using "+arf1)
+                if ((spectralorder == 2) & (dist == _dist) & (ver[1] > _ver[1])) : 
+                   arf2 = cl1
+                   cl1 = arf2
+                   print("4_____using "+arf2)
        except:
-	  pass 	
-	  	
+          pass  
+                
    return SpecResp(wheelpos,spectralorder,arf1=arf1,arf2=arf2)
 
 def _specresp (wheelpos, spectralorder, arf1 = None, arf2 = None, chatter=1):
@@ -951,7 +956,7 @@ def _specresp (wheelpos, spectralorder, arf1 = None, arf2 = None, chatter=1):
     wheelpos : int, {160,200,955,1000}
     
     spectralorder : int, {1,2}
-	   
+           
     kwargs : dict
     -------------
      optional input
@@ -991,44 +996,44 @@ def _specresp (wheelpos, spectralorder, arf1 = None, arf2 = None, chatter=1):
          if (arf1 == None): 
             arfdbfile = 'swugu200_1_20041120v999.arf'
             EXTNAME='SPECRESPUGRISM200'
-	 elif arf1 == 'CALDB':   
+         elif arf1 == 'CALDB':   
             arfdbfile = 'swugu0200_20041120v101.arf'
             EXTNAME='SPECRESPUGRISM200'
-	 else: 
-	    arfdbfile = arf1   
+         else: 
+            arfdbfile = arf1   
             EXTNAME='SPECRESPUGRISM200'
       elif wheelpos == 160:
          if (arf1 == None): 
             arfdbfile = 'swugu0160_1_20041120v999.arf'
             EXTNAME='SPECRESPUGRISM160'
-	 elif (arf1 == 'CALDB'):   
+         elif (arf1 == 'CALDB'):   
             arfdbfile = 'swugu0160_20041120v101.arf'
             EXTNAME='SPECRESPUGRISM160'
-	 else: 
-	    arfdbfile = arf1   
+         else: 
+            arfdbfile = arf1   
             EXTNAME='SPECRESPUGRISM160'
       elif wheelpos == 1000:
          if (arf1 == None): 
             arfdbfile = 'swugv1000_1_20041120v999.arf'
             EXTNAME='SPECRESPVGRISM1000'
-	 elif arf1 == 'CALDB':   
+         elif arf1 == 'CALDB':   
             arfdbfile = 'swugv1000_20041120v101.arf'
             EXTNAME='SPECRESPVGRISM1000'
-	 else: 
-	    arfdbfile = arf1   
+         else: 
+            arfdbfile = arf1   
             EXTNAME='SPECRESPVGRISM1000'
       elif wheelpos == 955: 
          if (arf1 == None): 
             arfdbfile = 'swugv0955_1_20041120v999.arf'
             EXTNAME='SPECRESPVGRISM955'
-	 elif arf1 == 'CALDB':   
+         elif arf1 == 'CALDB':   
             arfdbfile = 'swugv0955_20041120v101.arf'
             EXTNAME='SPECRESPVGRISM955'
-	 else: 
-	    arfdbfile = arf1   
+         else: 
+            arfdbfile = arf1   
             EXTNAME='SPECRESPVGRISM955'
       else:   
-         print "FATAL: exposure header does not have filterwheel position encoded"
+         print("FATAL: exposure header does not have filterwheel position encoded")
          return 
       
    if (spectralorder == 2):
@@ -1045,33 +1050,33 @@ def _specresp (wheelpos, spectralorder, arf1 = None, arf2 = None, chatter=1):
          EXTNAME = 'SPECRESP1000GRISM2NDORDER'  
          arfdbfile = 'swugv1000_2_20041120v999.arf'
       else:   
-         print "FATAL: exposure header does not have filterwheel position encoded", wheelpos
+         print("FATAL: exposure header does not have filterwheel position encoded", wheelpos)
          return 
-	 
+         
       if arf2 != None: arfdbfile = arf2 
-       	 
+         
    #
    #  get spectral response [cm**2] from the ARF file 
    #   
    if (spectralorder == 2) | ((spectralorder == 1) & (arf1 != 'CALDB')):
       if chatter > 0:   
-         print "opening spectral response ARF file: "+uvotpy+'/calfiles/'+arfdbfile
+         print("opening spectral response ARF file: "+uvotpy+'/calfiles/'+arfdbfile)
       f = fits.open(uvotpy+'/calfiles/'+arfdbfile)
    else:
       #print "specResp: arf1 | arf2 parameter input = :"+arf1+'  | '+arf2
       dirstub = '/data/swift/uvota/cpf/arf/'
       if chatter > 0:
-         print "opening spectral response ARF file: "+caldb+dirstub+arfdbfile
+         print("opening spectral response ARF file: "+caldb+dirstub+arfdbfile)
       f = fits.open(caldb+dirstub+arfdbfile)
       if chatter > 0:
-         print '********************************************************************'
-         print '*** WARNING: EA ~10% low when no coi-correction is included ********'
-         print '*** WARNING: This means your flux might be too high by ~10%  ********'
-         print '********************************************************************'
+         print('********************************************************************')
+         print('*** WARNING: EA ~10% low when no coi-correction is included ********')
+         print('*** WARNING: This means your flux might be too high by ~10%  ********')
+         print('********************************************************************')
    
    if chatter > 0:
-      print "Read in "+str(spectralorder)+" order ARF file"    
-      print f.info()   
+      print("Read in "+str(spectralorder)+" order ARF file")    
+      print(f.info())   
    
    pext = f[0]
    fext = f[1]
@@ -1103,7 +1108,7 @@ def SpecResp (wheelpos, spectralorder, arf1 = None, arf2 = None):
    ----------
    wheelpos : int, {160,200,955,1000}
    spectralorder : int, {1,2}
-	   
+           
    kwargs : dict
    -------------
     optional input
@@ -1150,15 +1155,15 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
       option for output selection: 
         option=="default" + anchor==None: old flux calibration
         option=="default" + anchor : nearest flux calibration + model extrapolation
-	option=="nearest" : return nearest flux calibration
-	option=="model" : model 
-	
+        option=="nearest" : return nearest flux calibration
+        option=="model" : model 
+        
     - **spectralorder** : int
         spectral order (1, or 2)
-	
-    - **arf**: path	
+        
+    - **arf**: path     
         fully qualified path to a selected response file
-	
+        
     - **msg**: str
         buffer message list (to add to)    
 
@@ -1176,7 +1181,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
    msg : string comments  separated by \n 
    
    Notes
-   -----	
+   -----        
                  
    2013-05-05 NPMKuin
    """
@@ -1196,7 +1201,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
       if (len(anchor) != 2):
          sys.stderr.write("input parameter named anchor is not of length 2")
       elif type(anchor) == str: 
-         anchor = np.array(anchor, dtype=float)	 
+         anchor = np.array(anchor, dtype=float)  
 
    check_extension = False
    # here the "latest" version of the calibration files has been hardcoded    
@@ -1204,20 +1209,20 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
    if spectralorder == 1: 
           if wheelpos == 200:          
              calfile = 'swugu0200_20041120v105.arf'
-	     extname = "SPECRESPUGRISM200"
-	     model   = "ZEMAXMODEL_200"
+             extname = "SPECRESPUGRISM200"
+             model   = "ZEMAXMODEL_200"
           elif wheelpos == 160:
              calfile = 'swugu0160_20041120v105.arf'
-	     extname = "SPECRESPUGRISM160"
-	     model   = "ZEMAXMODEL_160"
+             extname = "SPECRESPUGRISM160"
+             model   = "ZEMAXMODEL_160"
           elif wheelpos == 955: 
              calfile = 'swugv0955_20041120v104.arf'
-	     extname = "SPECRESPVGRISM0955"
-	     model   = "ZEMAXMODEL_955"
+             extname = "SPECRESPVGRISM0955"
+             model   = "ZEMAXMODEL_955"
           elif wheelpos == 1000: 
              calfile = 'swugv1000_20041120v105.arf'
-	     extname = "SPECRESPVGRISM1000"
-	     model   = "ZEMAXMODEL_1000"
+             extname = "SPECRESPVGRISM1000"
+             model   = "ZEMAXMODEL_1000"
           else:   
              raise RuntimeError( "FATAL: [uvotio.readFluxCalFile] invalid filterwheel position encoded" )
              
@@ -1227,32 +1232,32 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
           check_extension = True
           if wheelpos == 200:          
              calfile =  'swugu0200_2_20041120v999.arf' #'swugu0200_20041120v105.arf'
-	     extname = "SPECRESP0160GRISM2NDORDER"
-	     model   = ""
+             extname = "SPECRESP0160GRISM2NDORDER"
+             model   = ""
           elif wheelpos == 160:
              calfile = 'swugu0160_2_20041120v999.arf'  #'swugu0160_20041120v105.arf'
-	     extname = "SPECRESP0160GRISM2NDORDER"
-	     model   = ""
+             extname = "SPECRESP0160GRISM2NDORDER"
+             model   = ""
           elif wheelpos == 955: 
              calfile = 'swugv0955_2_20041120v999.arf' #'swugv0955_20041120v104.arf'
-	     extname = "SPECRESPVGRISM955"
-	     model   = ""
+             extname = "SPECRESPVGRISM955"
+             model   = ""
           elif wheelpos == 1000: 
              calfile = 'swugv1000_2_20041120v999.arf'  #swugv1000_20041120v105.arf'
-	     extname = "SPECRESPVGRISM1000"
-	     model   = ""
+             extname = "SPECRESPVGRISM1000"
+             model   = ""
           else:   
              raise RuntimeError( "FATAL: [uvotio.readFluxCalFile] invalid filterwheel position encoded" )
           if chatter > 3:
-             print "[uvotio.readFluxCalFile] "+calfile
-             print "       extname="+extname
-             print "       model="+model+"|"  
-   else: 	 
-	     raise RuntimeError("spectral order not 1 or 2 - no effective area available")
+             print("[uvotio.readFluxCalFile] "+calfile)
+             print("       extname="+extname)
+             print("       model="+model+"|")  
+   else:         
+             raise RuntimeError("spectral order not 1 or 2 - no effective area available")
              
-	     
+             
    if chatter > 1:
-      print "uvotio.readFluxCalFile attempt to read effective area file: "
+      print("uvotio.readFluxCalFile attempt to read effective area file: ")
       
    if arf != None:
       if arf.upper() == "CALDB":
@@ -1274,27 +1279,27 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
       # the format must give the full path (starting with "/" plus FITS extension
       # if no extension was supplied and there is only one, assume that's it.
       # check version==2, using presence of CBD70001 keyword and see if spectral order is right
-         if chatter > 3: print arf
+         if chatter > 3: print(arf)
          try:  # get extension from path 
             if len(arf.split("+") ) == 2: 
-	       file, extens = arf.split("+")
-	    elif len(arf.split("[") ) == 2:
-	       file = arf.split("[")[0]
-	       extens = arf.split("[")[1].split("]")[0] 
-	    else:
-	       check_extension = True
-	    arf = file
+               file, extens = arf.split("+")
+            elif len(arf.split("[") ) == 2:
+               file = arf.split("[")[0]
+               extens = arf.split("[")[1].split("]")[0] 
+            else:
+               check_extension = True
+            arf = file
          except: 
-            raise IOError("The supplied effective area file name "+arf+" cannot be understood.")	           
+            raise IOError("The supplied effective area file name "+arf+" cannot be understood.")                   
        
          hdu = fits.open(arf)
          if check_extension:  # old version file 
             if hdu[1].header['CBD60001'].split("(")[1].split(")")[0] != spectralorder: 
                raise IOError("The supplied effective area file is not correct spectral order.")
             if ("CBD70001" not in hdu[extens].header) :  # old version
-               print "Spectral order = %i. \t"%(spectralorder)
-	       print "Using the oldest version of the effective area. \n"+\
-	            "Flux, COI correction will be wrong."
+               print("Spectral order = %i. \t"%(spectralorder))
+               print("Using the oldest version of the effective area. \n"+\
+                    "Flux, COI correction will be wrong.")
                return hdu[extname],msg
    
    else:    # argument arf = None      
@@ -1306,18 +1311,18 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
        if check_extension:  # old version file 
             if hdu[1].header['CBD60001'].split("(")[1].split(")")[0] != spectralorder: 
                #raise IOError("The supplied effective area file is not correct spectral order.")
-	       print "Spectral oder = %i:\t"%(spectralorder)
-               print "The supplied effective area file %s is not \n   for the correct spectral order."%(arf)
+               print("Spectral oder = %i:\t"%(spectralorder))
+               print("The supplied effective area file %s is not \n   for the correct spectral order."%(arf))
             if ("CBD70001" not in hdu[extname].header) :  # old version
-	       print "Using the oldest version of the effective area. \n"+\
-	            "Flux, COI correction will be wrong."
+               print("Using the oldest version of the effective area. \n"+\
+                    "Flux, COI correction will be wrong.")
                return hdu[extname],msg
        #except:
        #   print "UVOTPY environment variable not set or calfiles directory entries missing" 
        #   pass      
        #   return None, msg   
       
-   if chatter > 0: print "Spectral order = %i: using flux calibration file: %s"%(spectralorder,arf)   
+   if chatter > 0: print("Spectral order = %i: using flux calibration file: %s"%(spectralorder,arf))   
    if chatter > 2: hdu.info()
    msg += "Flux calibration file: %s\n"%(arf.split('/')[-1])
    
@@ -1327,69 +1332,69 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
          anchor = [1000,1000]
       else:
          if (option == "default"): modelhdu = hdu[model]
-	 if wheelpos < 500:
+         if wheelpos < 500:
             n2 = 16
-	 else: n2 = 12   
-	 names = []      # names extensions
-	 calanchors = [] # anchor positions for each calibration extension
-	 dist = []       # distances 
-	 for h in range(1,len(hdu)):
-	    N = hdu[h].header["EXTNAME"].upper()
-	    NL = N.split("_")
-	    if (len(NL) == 3):
-	       if( int(NL[2][1]) == spectralorder): 
-	          names.append(N)
+         else: n2 = 12   
+         names = []      # names extensions
+         calanchors = [] # anchor positions for each calibration extension
+         dist = []       # distances 
+         for h in range(1,len(hdu)):
+            N = hdu[h].header["EXTNAME"].upper()
+            NL = N.split("_")
+            if (len(NL) == 3):
+               if( int(NL[2][1]) == spectralorder): 
+                  names.append(N)
                   root, ankxy, ord = NL
-	          ankcal = ankxy.split("AY")
+                  ankcal = ankxy.split("AY")
                   ankcal[0] = float(ankcal[0].split("AX")[1])
-		  ankcal[1] = float(ankcal[1])
-	          calanchors.append([ankcal[0],ankcal[1]])
-	          dist.append( (ankcal[0]-anchor[0])**2+(ankcal[1]-anchor[1])**2 )
-	 # now we have a list of valid extnames, and anchor positions 
-	 # for the calibration file fits-extensions
-	 dist = np.array(dist) 
-         k = np.where( dist == np.min(dist) )[0][0]	 
-	 cal = hdu[names[k]]
-	 print "Nearest effective area is %s  - selected"%(names[k])
-	 msg += "Selected nearest effective area FITS extension %s\n"%(names[k])
+                  ankcal[1] = float(ankcal[1])
+                  calanchors.append([ankcal[0],ankcal[1]])
+                  dist.append( (ankcal[0]-anchor[0])**2+(ankcal[1]-anchor[1])**2 )
+         # now we have a list of valid extnames, and anchor positions 
+         # for the calibration file fits-extensions
+         dist = np.array(dist) 
+         k = np.where( dist == np.min(dist) )[0][0]      
+         cal = hdu[names[k]]
+         print("Nearest effective area is %s  - selected"%(names[k]))
+         msg += "Selected nearest effective area FITS extension %s\n"%(names[k])
          if (option == "nearest"): 
-	    return cal, msg
-	 try:  
- 	    if chatter > 4: 
-	       print "ReadFluxCalFile:      calanchor ", calanchors[k] 
-	       print "ReadFluxCalFile:         anchor ", anchor
-	       print "ReadFluxCalFile: MODEL  extname ", modelhdu.header['extname'] 
-	    modelcalflux = getZmxFlux (calanchors[k][0],calanchors[k][1],modelhdu)
-	    modelobsflux = getZmxFlux (anchor[0],anchor[1],modelhdu)
-	    q = np.isfinite(modelcalflux) & np.isfinite(modelobsflux) 
-	    w = 10.0*modelhdu.data['WAVE']
-	    if chatter > 4: 
-	      print "ReadFluxCalFile:         check:  "
-	      print "ReadFluxCalFile:         w.shape ",w.shape
-	      print "ReadFluxCalFile:            =784*",n2," ?"
-	    w = w.reshape(n2,784)[q,0]
-	    fn = modelobsflux[q]/modelcalflux[q]
-	    w1 = 1650.0
-	    f1 = 1.0      # was f1 = (fn[1]-fn[0])/(w[1]-w[0])*(w1-w[0]) + fn[0]
-	    n = len(w)+2
-	    x = np.zeros(n,dtype=float)
-	    y = np.zeros(n,dtype=float)
-	    x[0] = w1
-	    y[0] = f1
-	    x[1:-1] = w
-	    y[1:-1] = fn
+            return cal, msg
+         try:  
+            if chatter > 4: 
+               print("ReadFluxCalFile:      calanchor ", calanchors[k]) 
+               print("ReadFluxCalFile:         anchor ", anchor)
+               print("ReadFluxCalFile: MODEL  extname ", modelhdu.header['extname']) 
+            modelcalflux = getZmxFlux (calanchors[k][0],calanchors[k][1],modelhdu)
+            modelobsflux = getZmxFlux (anchor[0],anchor[1],modelhdu)
+            q = np.isfinite(modelcalflux) & np.isfinite(modelobsflux) 
+            w = 10.0*modelhdu.data['WAVE']
+            if chatter > 4: 
+              print("ReadFluxCalFile:         check:  ")
+              print("ReadFluxCalFile:         w.shape ",w.shape)
+              print("ReadFluxCalFile:            =784*",n2," ?")
+            w = w.reshape(n2,784)[q,0]
+            fn = modelobsflux[q]/modelcalflux[q]
+            w1 = 1650.0
+            f1 = 1.0      # was f1 = (fn[1]-fn[0])/(w[1]-w[0])*(w1-w[0]) + fn[0]
+            n = len(w)+2
+            x = np.zeros(n,dtype=float)
+            y = np.zeros(n,dtype=float)
+            x[0] = w1
+            y[0] = f1
+            x[1:-1] = w
+            y[1:-1] = fn
             x[-1] = 7000.
-	    y[-1] = y[-2]
-	    y[ y < 0 ] = 0.0
-            fnorm = interpolate.interp1d(x,y,bounds_error=False, fill_value=0.)	    
+            y[-1] = y[-2]
+            y[ y < 0 ] = 0.0
+            fnorm = interpolate.interp1d(x,y,bounds_error=False, fill_value=0.)     
             msg += "Flux corrected for variation over detector using model\n"
-	    return cal, fnorm, msg
-	 except RuntimeError:
-	     pass
-	     print "WARNING: Failure to use the model for inter/extrapolation of the calibrated locations."
-	     print "         Using Nearest Eaafective Area File for the Flux calibration."
-	     fnorm = interpolate.interp1d([1600,7000],[1.,1.],)
-	     return cal, fnorm, msg 
+            return cal, fnorm, msg
+         except RuntimeError:
+             pass
+             print("WARNING: Failure to use the model for inter/extrapolation of the calibrated locations.")
+             print("         Using Nearest Eaafective Area File for the Flux calibration.")
+             fnorm = interpolate.interp1d([1600,7000],[1.,1.],)
+             return cal, fnorm, msg 
    elif option == "model":
        return hdu[model]
    else:
@@ -1422,8 +1427,8 @@ def getZmxFlux(x,y,model,ip=1):
    # test input 
    if not ((type(model) != 'astropy.io.fits.hdu.table.BinTableHDU') | \
           (type(model) != 'pyfits.hdu.table.BinTableHDU') ):
-	  raise IOError("getZmxFlux model parameter is not a proper FITS HDU bintable type")
-	  
+          raise IOError("getZmxFlux model parameter is not a proper FITS HDU bintable type")
+          
    n3     = 28*28
    n2     = int(model.header['NAXIS2']/n3)
    if not ((n2 == 12) | (n2 == 16)):
@@ -1449,20 +1454,20 @@ def getZmxFlux(x,y,model,ip=1):
       # filter out outliers
       q = (xp[j2,:] > dminx) & (xp[j2,:] < dmax) & (yp[j2,:] > dminy) & (yp[j2,:] < dmax) 
       if len(np.where(q)[0]) < 17:
-	 print "getZmxFlux warning: at wavelength=",zmxwav[j2]," not sufficient valid points found"
+         print("getZmxFlux warning: at wavelength=",zmxwav[j2]," not sufficient valid points found")
             
       fx = xp[j2,q]
       fy = yp[j2,q]     
       ff = zmxflux[j2,q]
-	    
+            
       try:
          tck = interpolate.bisplrep(fx,fy,ff,xb=dminx,xe=dmax,yb=dminy,ye=dmax,kx=ip,ky=ip,)
-	 flux[j2]  = interpolate.bisplev(x, y, tck)
+         flux[j2]  = interpolate.bisplev(x, y, tck)
       except:
          raise RuntimeError ("getZmxFlux ERROR in interpolation") 
-	    
-   return flux          	       
-	       
+            
+   return flux                         
+               
 
 def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clean=True, chatter=1, clobber=False):
    '''
@@ -1473,14 +1478,14 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
    ----------
    spectrum : path, str
       file name ASCII file, two columns wave(A), flux
-	    
+            
    kwargs : dict
-   -------------	    
+   -------------            
    
     - **fileout** : path, str, optional
     
       if given, the new spectrum will be written to an  output file (ascii)
-	 
+         
     - **wheelpos** : int
     
       the filterwheel position for selecting typical dispersion
@@ -1492,8 +1497,8 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
     - **lsffile** : path, str, optional
     
       the file with LSF data. If not given the file in $UVOTPY/calfiles
-      will be used.   	  
-	  		
+      will be used.       
+                        
     - **clean** : bool
     
       if True remove invalid data       
@@ -1544,8 +1549,8 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
       elif wheelpos == 1000:
          disp = np.array([4.1973e-10,-1.3010e-6,1.4366e-3,3.2537,2607.6]) # placeholder
       else:
-         print "error in wheelpos argument" 
-         status = 1	 
+         print("error in wheelpos argument") 
+         status = 1      
    
    tempfile = 'ab9804573234isfkjldsf.tmp'
    status = os.system('file '+spectrum+' > '+tempfile )
@@ -1556,49 +1561,49 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
       os.system('rm '+tempfile)
       filetype = (line.split(':')[1]).split()[0]
       
-      if chatter > 0: print "spectrum file type = "+filetype
+      if chatter > 0: print("spectrum file type = "+filetype)
       
       if filetype == 'ASCII':
          try:
            spect = rdTab(spectrum)
-	   wave = spect[:,0]
-	   flux = spect[:,1]
-	   q = np.isfinite(flux) & np.isfinite(wave)
-	   wav1 = wave[q]
-	   flx1 = flux[q]
-	   if len(wav1) < 1:
-	      status = 1
-	      print "number of valid wavelengths is zero"
-	 except:
-	   status = 1
-	   print "failure reading the spectrum with routine rdTab. Make sure that the format is right."
+           wave = spect[:,0]
+           flux = spect[:,1]
+           q = np.isfinite(flux) & np.isfinite(wave)
+           wav1 = wave[q]
+           flx1 = flux[q]
+           if len(wav1) < 1:
+              status = 1
+              print("number of valid wavelengths is zero")
+         except:
+           status = 1
+           print("failure reading the spectrum with routine rdTab. Make sure that the format is right.")
       elif filetype == 'FITS':
         status = 1 
-	print "filetype not supported"
+        print("filetype not supported")
         # future support for fits single column spectral format
-	# and wave/flux columns in table SPECTRUM
+        # and wave/flux columns in table SPECTRUM
       else:
          status = 1
-	 print "filetype not supported"
+         print("filetype not supported")
    else:
-      print "error reading file type "	 	 
+      print("error reading file type ")          
 
    instrument_fwhm = 2.7/0.54 # in pix units
    gg = uvotgetspec.singlegaussian(np.arange(-12,12),1.0,0.,instrument_fwhm)
    gg = gg/gg.sum().flatten()  # normalised gaussian 
    
-   if status == 0:         	     
+   if status == 0:                   
       
       NN = len(wav1)  # number good points in the spectrum
       if NN < 3:
-         print "uvotify: not enough valid data points. "
+         print("uvotify: not enough valid data points. ")
          return
       
       if lsffile == None:
          UVOTPY = os.getenv('UVOTPY')
          if UVOTPY == '': 
-            print 'The UVOTPY environment variable has not been set'
-         lsffile =   UVOTPY+'/calfiles/zemaxlsf.fit'	 
+            print('The UVOTPY environment variable has not been set')
+         lsffile =   UVOTPY+'/calfiles/zemaxlsf.fit'     
 
       lsffile = fits.open( lsffile )  
       tlsf = lsffile[1].data
@@ -1611,7 +1616,7 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
          # define the LSF(wave) 
          # convolve flux(wave) * LSF(wave) function  
 
-      flux1 = np.zeros(NN)	 
+      flux1 = np.zeros(NN)       
       for k in range(NN):   
          #  find index e in lsfchan and interpolate lsf
          w = wave[k]
@@ -1620,14 +1625,14 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
             lsf = lsfdata[0,:].flatten()
          elif ((j > 0) & (j < 15) ):
             e1 = lsfwav[j-1]
- 	    e2 = lsfwav[j]
- 	    frac = (w-e1)/(e2-e1)
+            e2 = lsfwav[j]
+            frac = (w-e1)/(e2-e1)
             lsf1 = lsfdata[j-1,:]
-	    lsf2 = lsfdata[j,:]
-	    lsf = ((1-frac) * lsf1 + frac * lsf2).flatten()	 	 
+            lsf2 = lsfdata[j,:]
+            lsf = ((1-frac) * lsf1 + frac * lsf2).flatten()              
          else:
             # j = 15
-	    lsf = lsfdata[14,:].flatten()
+            lsf = lsfdata[14,:].flatten()
 
          # convolution lsf with instrument_fwhm
          lsf_con = convolve(lsf,gg.copy(),)
@@ -1637,35 +1642,35 @@ def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clea
 
          d   = np.arange(-79,79)*0.5 + (uvotgetspec.pix_from_wave(disp, w))[0]
          wave1 = np.polyval(disp,d)  
-	 # wave1 is an increasing function - if not, the interpolating function fails.
+         # wave1 is an increasing function - if not, the interpolating function fails.
          lsf_func = interpolate.interp1d(wave1, lsf_con,bounds_error=False,fill_value=0.0)
-	 
-	 loli = k-39
-	 upli = k+39
+         
+         loli = k-39
+         upli = k+39
          if loli < 0: loli = 0
-	 if upli > NN: upli = NN
-	 norm = np.asarray( lsf_func(wav1[loli:upli])  ).sum()
+         if upli > NN: upli = NN
+         norm = np.asarray( lsf_func(wav1[loli:upli])  ).sum()
          flux1[k] = (flx1[loli:upli] * lsf_func(wav1[loli:upli]) / norm ).sum() 
-	 
+         
       if clean: 
          flux = flux1
-	 wave = wav1
-      else:	 	 
+         wave = wav1
+      else:              
          flux[where(q)] = flux1
-         flux[where(not q)] = np.nan	 
-	    
+         flux[where(not q)] = np.nan     
+            
       if fileout == None:
          return status, wave, flux
       else: 
          f = open(fileout,'w')
-	 q = np.isfinite(wave) & np.isfinite(flux)
-	 wave = wave[q]
-	 flux = flux[q]
-	 for i in range(len(wave)): f.write("%8.2f  %13.5e\n" % (wave[i],flux[i]) )
-	 f.close()
-   else:	 
-      return status	 	 	    
-	    
+         q = np.isfinite(wave) & np.isfinite(flux)
+         wave = wave[q]
+         flux = flux[q]
+         for i in range(len(wave)): f.write("%8.2f  %13.5e\n" % (wave[i],flux[i]) )
+         f.close()
+   else:         
+      return status                         
+            
 
 def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None, 
     arf1=None, arf2=None, fit_second=True, write_rmffile=True,
@@ -1737,19 +1742,19 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
        For fileversion=1:
          The first extension is named  SPECTRUM (future: 'FIRST_ORDER_PHA_SPECTRUM') and 
          contains the standard input for XSPEC, 
-	  - channel number, 
-	  - measured uncorrected counts per channel, total counts not background corrected
+          - channel number, 
+          - measured uncorrected counts per channel, total counts not background corrected
          Includes processing HISTORY records from `getSpec()`
-	 Errors are assumed to be poisonian
-       Modifications for fileversion=2:	 
+         Errors are assumed to be poisonian
+       Modifications for fileversion=2:  
          The output now corrects for coincidence loss, and is in the form of 
-	  - photon rate per second per channel with all known corrections (aperture, 
-	    sensitivity, coincidence-loss) 
+          - photon rate per second per channel with all known corrections (aperture, 
+            sensitivity, coincidence-loss) 
           - errors, including aperture correction, coincidence-loss 
-	    correction (non-poissonian).
+            correction (non-poissonian).
 
        Second extension
-       ----------------	 
+       ----------------  
        The second extension is named CALSPEC  (future: 'FIRST_ORDER_NET_SPECTRUM') 
        contains the standard input for IDL/PYTHON with 
        
@@ -1766,26 +1771,26 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          - aper1corr
          Second order: 
          - wave2, 
-	 - net2rate,(s-1 channel-1) 
-	 - bg2rate, (s-1 channel-1)
-	 - flux2, not calibrated, approximate (erg cm-2 s-1 A-1)
-	 - flux2err, 
-	 - qual2, 
-	 - aper2corr
+         - net2rate,(s-1 channel-1) 
+         - bg2rate, (s-1 channel-1)
+         - flux2, not calibrated, approximate (erg cm-2 s-1 A-1)
+         - flux2err, 
+         - qual2, 
+         - aper2corr
          - coincidence-loss factor as applied to the flux listed. 
-	 
+         
        Modifications for fileversion=2: 
          The first extension now containts the corrected 
          count rates, so the uncorrected count rates are now put in the second extension.
          The flux and flux error still have all corrections applied. 
          - net count rate per second per channel in extraction track, uncorrected 
-	 - bg1rate is now the background rate per second per channel in extraction track, 
-	   uncorrected, new column 
+         - bg1rate is now the background rate per second per channel in extraction track, 
+           uncorrected, new column 
          - bg1rate and bg2rate (count/s/pix) are the mean rates measured 
-	   in the two backgrounds and need to be multiplied by the spectra track 
-	   width in pixels for comparison to the background rate.
-	   
-       Further modifications happeb when the calibration_mode is set.	   
+           in the two backgrounds and need to be multiplied by the spectra track 
+           width in pixels for comparison to the background rate.
+           
+       Further modifications happeb when the calibration_mode is set.      
        
        Third extension
        ---------------
@@ -1801,7 +1806,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
     - 2012-09-14 added coi correction 
     - 2013-03-06 edited header
     - 2015-02-13 change quality flag in SPECTRUM extension to conform to XSPEC range
-  '''	    
+  '''       
    try:
       from astropy.io import fits
    except:   
@@ -1882,27 +1887,27 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       (Y0,Y1,Y2,Y4) = Y
       
       (filestuff), (method),(phistuff), (dist12, ankerimg, ZOpos), expmap, bgimg, bg_limits_used, bgextra = Y0   
-      if filestuff != None:	
+      if filestuff != None:     
          (specfile, lfilt1_, lfilt1_ext_, lfilt2_, lfilt2_ext_, attfile) = filestuff      
          (Xphi, Yphi, date1) = phistuff
       else:
-         Xphi,Yphi = 0,0	 
+         Xphi,Yphi = 0,0         
             
       ( (dis,spnet,angle,anker,anker2,anker_field,ank_c), (bg,bg1,bg2,extimg,spimg,spnetimg,offset), 
         (C_1,C_2,img),  hdr,m1,m2,aa,wav1 ) = Y1
       wheelpos = hdr['WHEELPOS']  
       background_strip1 = bg1
       background_strip2 = bg2
-	   
+           
       ((present0,present1,present2,present3),(q0,q1,q2,q3), (
         y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
+        y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
         y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
+        y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
         x,xstart,xend,sp_all,qquality,co_back) ), (
-	coef0,coef1,coef2,coef3), (
+        coef0,coef1,coef2,coef3), (
         bg_zeroth,bg_first,bg_second,bg_third), (
-	borderup,borderdown),apercorr, expospec  = Y2
+        borderup,borderdown),apercorr, expospec  = Y2
 
       if Y4 != None: 
          wav2p, dis2p, rate2p, qual2p, dist12p = Y4[0]
@@ -1951,11 +1956,11 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    # set up channel numbers and reverse for increasing energy   
    NW = len(wave)
    aa = np.arange(NW)
-   rc = range(NW)
+   rc = list(range(NW))
    rc.reverse()
    channel = aa+1
-   ax = range(NW-1) 
-   ax1= range(1,NW) 
+   ax = list(range(NW-1)) 
+   ax1= list(range(1,NW)) 
    dis1 = uvotgetspec.pix_from_wave(C_1,wave, spectralorder=1)
    binwidth = np.polyval(C_1,dis1+0.5) - np.polyval(C_1,dis1-0.5)# width of each bin in A (= scale A/pix)
    
@@ -1963,14 +1968,14 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    sprate = (counts-bkg)*aper1corr/expospec1     # net count rate, PSF aperture corrected 
    sp1rate_err = np.sqrt( 
          np.abs( (bkg*2.5/trackwidth+            # corrected bakcground to 2.5 sigma trackwidth
-	       (counts-bkg)*aper1corr)*senscorr  # using PSF aperture correction on net rate
-	 *(1+apcorr_errf(trackwidth,wheelpos)))  # error in aperture correction
-	       )/expospec1                       # neglects coi-error in rate error 
+               (counts-bkg)*aper1corr)*senscorr  # using PSF aperture correction on net rate
+         *(1+apcorr_errf(trackwidth,wheelpos)))  # error in aperture correction
+               )/expospec1                       # neglects coi-error in rate error 
    bg1rate = bkg/expospec1*2.5/trackwidth        # background counts for 2.5 sigma width at spectrum
    co_sp1rate = (co_first[q1[0]][qwave]/expospec1).flatten()
    co_bgrate = (co_back [q1[0]][qwave]/expospec1).flatten()
    
-   print "writing output file: computing coincidence loss spectrum, frametime=", hdr['framtime']   
+   print("writing output file: computing coincidence loss spectrum, frametime=", hdr['framtime'])   
    # calculate coincidence correction for coi box   
    fcoi, coi_valid1 = uvotgetspec.coi_func(dis,wave,
        co_sp1rate,
@@ -1980,7 +1985,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
        frametime=hdr['framtime'], 
        background=False, 
        debug=False,chatter=1)
-   print "writing output file: computing coincidence loss background"    
+   print("writing output file: computing coincidence loss background")    
    bgcoi = uvotgetspec.coi_func(dis,wave,
        co_sp1rate,
        co_bgrate,
@@ -2007,21 +2012,21 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       specresp1func = rate2flux(wave, sprate, wheelpos, 
           bkgrate=bg1rate, 
           pixno=None, 
-	      respfunc=True, 
+              respfunc=True, 
           arf1=None, 
           arf2=None, 
           effarea1=effarea1, 
           effarea2=effarea2, 
-	      spectralorder=1, 
-	      anker=anker, 
-	      test=None, 
+              spectralorder=1, 
+              anker=anker, 
+              test=None, 
           option=1, 
-	      fudgespec=1., 
-	      frametime=hdr['framtime'], 
-	      co_sprate = (co_first[q1[0]][qwave]/expospec1),
-	      co_bgrate = (co_back[q1[0]][qwave]/expospec1),
-	      debug=False, 
-	      chatter=1)
+              fudgespec=1., 
+              frametime=hdr['framtime'], 
+              co_sprate = (co_first[q1[0]][qwave]/expospec1),
+              co_bgrate = (co_back[q1[0]][qwave]/expospec1),
+              debug=False, 
+              chatter=1)
       #specresp1func = XYSpecResp(wheelpos=hdr['wheelpos'],spectralorder=1, Xank=anker[0], Yank=anker[1]) 
       
    hnu = h_c_ang/(wave)
@@ -2040,9 +2045,9 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
        spectrum_first = (channel, 
           counts[rc], 
           (np.sqrt(counts*aper1corr))[rc], 
-	  xspec_quality[rc], 
-	  aper1corr[rc], 
-	  expospec1[rc],  )
+          xspec_quality[rc], 
+          aper1corr[rc], 
+          expospec1[rc],  )
        back_first = (channel, bkg[rc], 0.1*np.sqrt(bkg)[rc],
           xspec_quality[rc],aper1corr[rc], expospec1[rc])
        calspec_first = (dis,wave,
@@ -2050,41 +2055,41 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
           bg1rate*bgcoi(wave), # fully corrected counts in the spectrum
           back2rate*bgcoi(wave), # fully corrected counts in the spectrum         
           flux, flux_err,  # fully corrected flux
-	  quality,   
-	  aper1corr,
-	  expospec1,
-	  fcoi(wave),
-	  bgcoi(wave))
-	  
-   elif fileversion == 2:	  
+          quality,   
+          aper1corr,
+          expospec1,
+          fcoi(wave),
+          bgcoi(wave))
+          
+   elif fileversion == 2:         
        spectrum_first = (channel, 
                          sprate[rc]*fcoi(wave[rc]), 
-			 sp1rate_err[rc]*fcoi(wave[rc]),
-			 xspec_quality[rc] )
+                         sp1rate_err[rc]*fcoi(wave[rc]),
+                         xspec_quality[rc] )
        back_first = (channel, bg1rate[rc], 0.1*np.sqrt(bg1rate)[rc],
           xspec_quality[rc],aper1corr[rc], expospec1[rc])
-       if not calibration_mode:	  
+       if not calibration_mode:   
           calspec_first = (dis,wave,
           (counts-bkg)/expospec1, bkg/expospec1,   # uncorrected counts in the spectrum
           [back1rate,back2rate],
           flux, flux_err,  # fully corrected flux
-	  quality,   
-	  aper1corr,
-	  expospec1,
-	  fcoi(wave),
-	  bgcoi(wave))
-       else:	  
+          quality,   
+          aper1corr,
+          expospec1,
+          fcoi(wave),
+          bgcoi(wave))
+       else:      
           calspec_first = (dis,wave,
           (counts-bkg)/expospec1, bkg/expospec1,   # uncorrected counts in the spectrum
           [back1rate,back2rate],
           flux, flux_err,  # fully corrected flux
-	  quality,   
-	  aper1corr,
-	  expospec1,
-	  fcoi(wave),
-	  bgcoi(wave),
-	  co_sp1rate, co_bgrate
-	  )
+          quality,   
+          aper1corr,
+          expospec1,
+          fcoi(wave),
+          bgcoi(wave),
+          co_sp1rate, co_bgrate
+          )
            
    ############### second order
    # predicted second order
@@ -2095,46 +2100,46 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    if present2 & fit_second: 
    
          wave2 = polyval(C_2, x[q2[0]]-dist12) # 2nd order wavelengths
-	 channel2 = np.arange(len(wave2)) +1
-	 rc2 = range(len(wave2))
-	 rc2.reverse()     
+         channel2 = np.arange(len(wave2)) +1
+         rc2 = list(range(len(wave2)))
+         rc2.reverse()     
          sp2counts = sp_second[q2[0]]                                   # total counts in second order
-	 aper2corr = apercorr[2, q2[0]].flatten()                       # aperture correction second order
+         aper2corr = apercorr[2, q2[0]].flatten()                       # aperture correction second order
          expospec2 = expospec[2, q2[0]].flatten()
          bg_2cnt    = bg_second[q2[0]]                                  # background counts second order
-	 
+         
          sp2netcnt = sp2counts - bg_2cnt                                # net counts, uncorrected 
-	 sp2rate = sp2netcnt * aper2corr / expospec2         # net count rate, aperture corrected 
-	 sp2rate_err = np.sqrt(
-	    np.abs(
-	    (bg_2cnt*2.5/trackwidth+sp2netcnt*aper2corr)*
-	    senscorr*(1+
-	    apcorr_errf(trackwidth,wheelpos) )))/expospec2   # fully corrected error in net count rate
-	 bg_2rate = bg_2cnt /expospec2 * 2.5/trackwidth      # aperture corrected background rate 
+         sp2rate = sp2netcnt * aper2corr / expospec2         # net count rate, aperture corrected 
+         sp2rate_err = np.sqrt(
+            np.abs(
+            (bg_2cnt*2.5/trackwidth+sp2netcnt*aper2corr)*
+            senscorr*(1+
+            apcorr_errf(trackwidth,wheelpos) )))/expospec2   # fully corrected error in net count rate
+         bg_2rate = bg_2cnt /expospec2 * 2.5/trackwidth      # aperture corrected background rate 
 
-	 qual2 = qquality[q2[0]]                                        # quality at second order (shared with first order)
-	 dis2 = uvotgetspec.pix_from_wave( C_2, wave2,spectralorder=2 )
+         qual2 = qquality[q2[0]]                                        # quality at second order (shared with first order)
+         dis2 = uvotgetspec.pix_from_wave( C_2, wave2,spectralorder=2 )
          binwidth2 = np.polyval(C_2,dis2+0.5) - np.polyval(C_2,dis2-0.5)
-	 pix2      = x[q2[0]]                                           # pixel number to align with first order
-	 
+         pix2      = x[q2[0]]                                           # pixel number to align with first order
+         
          fcoi_2, coi_valid2 = uvotgetspec.coi_func(pix2,wave2,
-	        (co_second[q2[0]]/expospec2).flatten(),
+                (co_second[q2[0]]/expospec2).flatten(),
                 (co_back  [q2[0]]/expospec2).flatten(),
                 area = 414.,
- 		    wheelpos=wheelpos,
-		    coi_length=29,
-		    frametime=hdr['framtime'], 
-		    background=False, 
-		    debug=False,chatter=1)
+                    wheelpos=wheelpos,
+                    coi_length=29,
+                    frametime=hdr['framtime'], 
+                    background=False, 
+                    debug=False,chatter=1)
          bgcoi2 = uvotgetspec.coi_func(pix2,wave2,
-	        (co_second[q2[0]]/expospec2).flatten(),
+                (co_second[q2[0]]/expospec2).flatten(),
                 (co_back[q2[0]]/expospec2).flatten(),
                 area = 414.,
-		    wheelpos=wheelpos,
-		    coi_length=29,
-		    frametime=hdr['framtime'], 
-		    background=True, 
-   		    debug=False,chatter=1)
+                    wheelpos=wheelpos,
+                    coi_length=29,
+                    frametime=hdr['framtime'], 
+                    background=True, 
+                    debug=False,chatter=1)
 
 
          if len(coi_valid2) == len(qual2):
@@ -2153,7 +2158,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
             specresp2func = XYSpecResp(wheelpos=hdr['wheelpos'],spectralorder=2, anker=anker ) 
          
          hnu2 = h_c_ang/(wave2)
-	 
+         
          flux2 = hnu2*sp2rate*fcoi_2(wave2)/specresp2func(wave2)/binwidth2 # corrected [erg/s/cm2/angstrom]
          flux2_err = hnu2*sp2rate_err*fcoi_2(wave2)/specresp2func(wave2)/binwidth2 
       
@@ -2161,37 +2166,37 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          xspec_qual2[xspec_qual2 > 1] = np.array(np.log2(xspec_qual2[xspec_qual2 > 1]),dtype=int)
       
          # collect data for output
-	 if fileversion == 1:
+         if fileversion == 1:
             spectrum_second = (channel2, sp2counts[rc2], 
-	      (np.sqrt(sp2counts))[rc2], xspec_qual2[rc2], 
-	      aper2corr[rc2], expospec2[rc2] )
-	    back_second = (channel2, bg_2cnt[rc2], 
-	      0.1*(np.sqrt(bg_2cnt))[rc2], 
-	      xspec_qual2[rc2], aper2corr[rc2],expospec2[rc2] )
+              (np.sqrt(sp2counts))[rc2], xspec_qual2[rc2], 
+              aper2corr[rc2], expospec2[rc2] )
+            back_second = (channel2, bg_2cnt[rc2], 
+              0.1*(np.sqrt(bg_2cnt))[rc2], 
+              xspec_qual2[rc2], aper2corr[rc2],expospec2[rc2] )
             calspec_second = (pix2,wave2,
-	       sp2rate*fcoi_2(wave2),
-	       bg_2rate*fcoi_2(wave2),
-	       flux2,flux2_err,
-	       qual2,aper2corr, 
-	       expospec2,fcoi_2(wave2),bgcoi2(wave2))
-	 else:     
+               sp2rate*fcoi_2(wave2),
+               bg_2rate*fcoi_2(wave2),
+               flux2,flux2_err,
+               qual2,aper2corr, 
+               expospec2,fcoi_2(wave2),bgcoi2(wave2))
+         else:     
             spectrum_second = (channel2, 
-	       sp2rate[rc2]*fcoi_2(wave2[rc2]), 
-	       sp2rate_err[rc2]*fcoi_2(wave2[rc2]), 
-	       qual2[rc2])
-	    back_second = (channel2, bg_2rate[rc2]*bgcoi2(wave2[rc2]), 
-	       0.1*(np.sqrt(bg_2cnt))[rc2], 
-	       qual2[rc2] )
+               sp2rate[rc2]*fcoi_2(wave2[rc2]), 
+               sp2rate_err[rc2]*fcoi_2(wave2[rc2]), 
+               qual2[rc2])
+            back_second = (channel2, bg_2rate[rc2]*bgcoi2(wave2[rc2]), 
+               0.1*(np.sqrt(bg_2cnt))[rc2], 
+               qual2[rc2] )
             calspec_second = (pix2,wave2,
-	       (sp2counts-bg_2cnt)/expospec2,
-	       bg_2cnt/expospec2,
-	       flux2,flux2_err,
-	       qual2,aper2corr, 
-	       expospec2,fcoi_2(wave2),bgcoi2(wave2))
+               (sp2counts-bg_2cnt)/expospec2,
+               bg_2cnt/expospec2,
+               flux2,flux2_err,
+               qual2,aper2corr, 
+               expospec2,fcoi_2(wave2),bgcoi2(wave2))
    else:
-         spectrum_second = None	
-	 back_second = None
-	 calspec_second = None 
+         spectrum_second = None 
+         back_second = None
+         calspec_second = None 
    
    if hdr['wheelpos'] > 500: present2 = False
                 
@@ -2200,7 +2205,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    obsid = filestub  
    if fileoutstub != None: 
       obsid = fileoutstub 
-      if chatter > 2: print "output file name base is now:",obsid
+      if chatter > 2: print("output file name base is now:",obsid)
    if used_lenticular: 
       lent='_f'
    else: 
@@ -2234,7 +2239,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       rmffile1 = obsid+'ugv_1ord_'+str(ext)+lent+'.rmf'
       rmffile2 = obsid+'ugv_2ord_'+str(ext)+lent+'.rmf'
    else:   
-      print "FATAL: exposure header does not have filterwheel position encoded"
+      print("FATAL: exposure header does not have filterwheel position encoded")
       return 
    obsid = filestub   
       
@@ -2243,19 +2248,19 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    if clobber == False:
       if (os.access(outfile1,os.F_OK) ^ os.access(backfile1,os.F_OK) 
         ^ os.access(outfile2,os.F_OK) ^ os.access(backfile2,os.F_OK)):
-         print 'Error: output file already present. '
+         print('Error: output file already present. ')
          if write_rmffile & (not os.access(rmffile1,os.F_OK)):
              write_rmf_file (rmffile1, wave, hdr['wheelpos'], C_1, 
-	        anchor=anker, clobber=clobber,chatter=chatter  )
+                anchor=anker, clobber=clobber,chatter=chatter  )
          if present2 & fit_second & write_rmffile & (not os.access(rmffile2,os.F_OK)):
            # write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
-	   #     arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
-	   print "no RMF file for second order available"
-	 if interactive:
-   	    answer =  raw_input('       DO YOU WANT TO REWRITE THE OUTPUT FILES (answer yes/NO)? ')
-	    if len(answer) < 1:  answer = 'NO'
-	    answer = answer.upper()
-	    if (answer == 'Y') ^ (answer == 'YES'):  clobber = True	        
+           #     arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
+           print("no RMF file for second order available")
+         if interactive:
+            answer =  input('       DO YOU WANT TO REWRITE THE OUTPUT FILES (answer yes/NO)? ')
+            if len(answer) < 1:  answer = 'NO'
+            answer = answer.upper()
+            if (answer == 'Y') ^ (answer == 'YES'):  clobber = True             
          if clobber == False: return 
    filetag = obsid+'_'+str(hdr['wheelpos'])+str(rnu)
       
@@ -2276,7 +2281,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    if present2 & fit_second & write_rmffile:
       #write_rmf_file (rmffile2, wave2, hdr['wheelpos'],2, C_2, 
       #      arf1=None, arf2=arf2, clobber=clobber,chatter=chatter   )
-      print "no RMF file for second order available"
+      print("no RMF file for second order available")
       
 def apcorr_errf(trackwidth,wheelpos):
    "The additional RMS percentage rate error when making an aperture correction"
@@ -2329,7 +2334,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    #   
    #                 ============= main spectrum pha file =======
    #
-   if chatter>4: print "uvotio: write main header"
+   if chatter>4: print("uvotio: write main header")
    # create primary header 
    #
    hdu0 = fits.PrimaryHDU()
@@ -2357,7 +2362,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
    hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
-   if chatter>4: print "uvotio: write first header"
+   if chatter>4: print("uvotio: write first header")
    #  first extension: first order spectrum ; add extname everywhere
    #
    if fileversion == 1:
@@ -2458,14 +2463,14 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
    hdulist.append(tbhdu1)
    #
-   if chatter>4: print "uvotio: write second header"
+   if chatter>4: print("uvotio: write second header")
    #  second extension first order
    # 
    if fileversion == 2:
        if calmode:
            (dis,wave,sprate,bg1rate,bck_strips,flux,flux_err,
            quality,aper1corr,expospec1,coi_sp1,bgcoi_sp1,
-	   co_sp1rate,co_bgrate)  = calspec_first
+           co_sp1rate,co_bgrate)  = calspec_first
        else:
            (dis,wave,sprate,bg1rate,bck_strips,flux,flux_err,
            quality,aper1corr,expospec1,coi_sp1,bgcoi_sp1)  = calspec_first
@@ -2479,11 +2484,11 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           bg1rate, # fully corrected background counts under the spectrum
           bg2rate,
           flux, flux_err,  # fully corrected flux
-	  quality,   
-	  aper1corr,
-	  expospec1,
-	  coi_sp1,
-	  bgcoi_sp1 ) = calspec_first
+          quality,   
+          aper1corr,
+          expospec1,
+          coi_sp1,
+          bgcoi_sp1 ) = calspec_first
        col24A = fits.Column(name='BG_L   ',format='E',array=bg1rate,unit='c/s')
        col24B = fits.Column(name='BG_R   ',format='E',array=bg2rate,unit='c/s')
    col20 = fits.Column(name='PIXNO  ',format='I',array=dis    ,unit='pix')
@@ -2512,32 +2517,32 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       col38B = fits.Column(name='BG2_COI',format='E',array=bgcoi_sp2,unit='NONE')
       if fileversion == 1:
           cols2 = fits.ColDefs([col20,col21,col22,col24A,col25,col26,col27,col28,
-	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
-		   col37,col38,col38A,col24B])      
+                   col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
+                   col37,col38,col38A,col24B])      
       elif fileversion == 2:
           if calmode:
-	      colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
-	      colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
+              colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
+              colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
               cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,col28,
-	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
-		   col37,col38A,col38B,col24A,col24B,colcoA,colcoB])
-	  else:
+                   col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
+                   col37,col38A,col38B,col24A,col24B,colcoA,colcoB])
+          else:
               cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,col28,
-	           col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
-		   col37,col38A,col38B,col24A,col24B])
+                   col29,col29A,col29B,col30,col31,col32,col33,col34,col35,col36,
+                   col37,col38A,col38B,col24A,col24B])
    else: # not present2
       if fileversion == 1:  
           cols2 = fits.ColDefs([col20,col21,col22,col24A,col25,col26,col27,
-	          col28,col29,col29A,col29B,col24B]) 
+                  col28,col29,col29A,col29B,col24B]) 
       elif fileversion == 2:
           if calmode:
-	      colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
-	      colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
+              colcoA =fits.Column(name='COSP1RAT',format='E',array=co_sp1rate,unit='c/s')
+              colcoB =fits.Column(name='COBG1RAT',format='E',array=co_bgrate,unit='c/s')
               cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
-	          col28,col29,col29A,col29B,col24A,col24B,colcoA,colcoB])
-	  else:
+                  col28,col29,col29A,col29B,col24A,col24B,colcoA,colcoB])
+          else:
               cols2 = fits.ColDefs([col20,col21,col22,col23,col25,col26,col27,
-	          col28,col29,col29A,col29B,col24A,col24B])
+                  col28,col29,col29A,col29B,col24A,col24B])
       
    tbhdu2 = fits.BinTableHDU.from_columns(cols2)
    if fileversion == 1:
@@ -2590,7 +2595,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       tbhdu2.header['STALLOSS']=hdr['STALLOSS']
       tbhdu2.header['TOSSLOSS']=hdr['TOSSLOSS']
    except:
-      print "WARNING problem found in uvotio line 2440 try update XXXXLOSS keywords"
+      print("WARNING problem found in uvotio line 2440 try update XXXXLOSS keywords")
       pass 
    if calmode:     
       tbhdu2.header['COIWIDTH'] = 2*coi_half_width   
@@ -2604,7 +2609,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    tbhdu2.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
    hdulist.append(tbhdu2)
    #
-   if chatter>4: print "uvotio: write third header"
+   if chatter>4: print("uvotio: write third header")
    #  THIRD extension: extracted image
    #
    hdu3 = fits.ImageHDU(extimg)
@@ -2626,7 +2631,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       try: 
          hdu4.header['EXPID']=hdr['expid']
       except:
-         pass	 
+         pass    
       hdu4.header['ANKXIMG']=(ank_c[1],'Position anchor in image')
       hdu4.header['ANKYIMG']=(ank_c[0],'Position anchor in image')
       hdu4.header['FILETAG']=(filetag,'unique set id')
@@ -2634,14 +2639,14 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    try:   
      hdulist.writeto(outfile1,clobber=clobber)
    except:
-      print "WARNING : NO OUTPUT FILE CREATED.  "+outfile1+" EXISTS and CLOBBER not set" 
+      print("WARNING : NO OUTPUT FILE CREATED.  "+outfile1+" EXISTS and CLOBBER not set") 
       pass  
    #
    #   
    ################ ============= second order spectrum pha file ======= ###############
    if present2:
      #
-     if chatter>4: print "uvotio: write 2nd order 0 header"
+     if chatter>4: print("uvotio: write 2nd order 0 header")
      # create primary header 
      #
      hdu0 = fits.PrimaryHDU()
@@ -2678,7 +2683,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
         col25 = fits.Column(name='APERCORR',format='E',array=aper2corr )
         col26 = fits.Column(name='EXPOSURE',format='E',array=expospec2,unit='s' )
         cols1 = fits.ColDefs([col21,col22,col23,col24,col25,col26])
-     elif fileversion == 2:	
+     elif fileversion == 2:     
         (channel2, sp2rate, rate_err, qual2) = spectrum_second
         col21 = fits.Column(name='CHANNEL ',format='I',array=channel2 )
         col22 = fits.Column(name='RATE  ',format='E',array=sp2rate,unit='COUNTS/S')
@@ -2689,8 +2694,8 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      try:
         tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
      except:
-        pass	
-     if chatter>4: print "uvotio: write 2nd order 1 header"
+        pass    
+     if chatter>4: print("uvotio: write 2nd order 1 header")
 
      tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
      tbhdu1.header['TELESCOP']=('SWIFT   ','Telescope (mission) name')
@@ -2763,14 +2768,14 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      try:
         hdulist.writeto(outfile2nd,clobber=clobber)
      except:
-        print "WARNING : NO OUTPUT FILE CREATED.  "+outfile2nd+" EXISTS and CLOBBER not set" 
+        print("WARNING : NO OUTPUT FILE CREATED.  "+outfile2nd+" EXISTS and CLOBBER not set") 
         pass  
-	
+        
    if fileversion == 1: 
    #
    # ================= background PHA files ============================
    #
-       if chatter>4: print "uvotio: write bkg 0 order header"
+       if chatter>4: print("uvotio: write bkg 0 order header")
    #   first order background PHA file
    #
    # create primary header 
@@ -2798,7 +2803,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        hdr0['POSY_AS']=(phy,'angle boresight in deg in DETY direction')
        hdr0['SPEC_OFF']=(offset,'distance to spectrum from anker position (DETX_X,DETY_X)')
    #
-       if chatter>4: print "uvotio: write bkg 1 order header"
+       if chatter>4: print("uvotio: write bkg 1 order header")
    #  first extension: first order spectrum ; add extname everywhere
    #
        channel = back_first[0]
@@ -2816,7 +2821,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        try:
            tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
        except:
-          pass	   
+          pass     
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
        tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
        tbhdu1.header['FILETAG']=(filetag,'unique set id')
@@ -2889,7 +2894,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        try:
           hdulist.writeto(backfile1,clobber=clobber)
        except:
-            print "WARNING : NO OUTPUT FILE CREATED.  "+backfile1+" EXISTS and CLOBBER not set" 
+            print("WARNING : NO OUTPUT FILE CREATED.  "+backfile1+" EXISTS and CLOBBER not set") 
             pass  
    #      
    #   second order background PHA file
@@ -2897,7 +2902,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        if back_second != None:
       # create primary header 
       #
-          if chatter>4: print "uvotio: write bck 2nd order header"
+          if chatter>4: print("uvotio: write bck 2nd order header")
           hdu0 = fits.PrimaryHDU()
           hdu0.header['CREATED']='written by uvotio.py '+version
           hdu0.header['DATE']=str(now)
@@ -2935,10 +2940,10 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           col15 = fits.Column(name='EXPOSURE',format='E',array=expospec2 ,unit='s' )
           cols1 = fits.ColDefs([col11,col12,col13,col14,col15])
           tbhdu1 = fits.BinTableHDU.from_columns(cols1)
-	  try:
+          try:
               tbhdu1.header['EXPID']=(hdr['expid'],'Exposure ID')
-	  except:
-	      pass    
+          except:
+              pass    
 #   tbhdu1.header.update('EXTNAME','FIRST_ORDER_PHA_BACKGROUND','Name of this binary table extension')
           tbhdu1.header['EXTNAME']=('SPECTRUM','Name of this binary table extension')
           tbhdu1.header['FILETAG']=(filetag,'unique set id')
@@ -3007,7 +3012,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           try:
              hdulist.writeto(backfile2,clobber=clobber)
           except:
-             print "WARNING : NO OUTPUT FILE CREATED.  "+backfile2+" EXISTS and CLOBBER not set" 
+             print("WARNING : NO OUTPUT FILE CREATED.  "+backfile2+" EXISTS and CLOBBER not set") 
              pass  
 
 
@@ -3029,7 +3034,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
 
        main header: edited copy of grism det image, history?, RA DEC  extracted source; 
                  anchor point, input angles, ank_c, angle, 
-		 offset (distance anchor to spectrum) in arcsec
+                 offset (distance anchor to spectrum) in arcsec
    
        the first extension is named  SPECTRUM (future: 'FIRST_ORDER_PHA_SPECTRUM') and 
        contains the standard input for XSPEC
@@ -3048,7 +3053,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
 
   revised 2011-12-10 NPM Kuin, superseded 
          
-  '''	    
+  '''       
    try:
       from astropy.io import fits
    except:   
@@ -3078,7 +3083,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       
    ################# prepare data for writing to output file
    
-   if mode == 0:	    # uvotcal output  === probably obsolete
+   if mode == 0:            # uvotcal output  === probably obsolete
       ( (dis, spnet, angle, anker, coef_zmx, pix_zmx, wav_zmx), 
             (anker_uvw1,anker_as, anker_field,ank_c),
             (bg, bg1, bg2, extimg, spimg, spnetimg, offset) ,
@@ -3092,14 +3097,14 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       if hdr['wheelpos'] > 500: spwidth = 7*1.5
       if hdr['wheelpos'] > 500: a2 = ank_c[1]+500
       if a2 >= len(dis): a2=len(dis) -1
-      aa = range(a1,a2)
+      aa = list(range(a1,a2))
       dis = dis[aa]
       counts = (spnet+bg)[aa] 
       bkg = bg[aa]
       exposure=hdr['exposure']
       wave =  polyval(C_1, dis)  
       NW = len(wave)
-      ax = range(NW-1) ; ax1=range(1,NW) 
+      ax = list(range(NW-1)) ; ax1=list(range(1,NW)) 
       binwidth = 1.0*(wave[ax1]-wave[ax])
       sprate = spnet[aa]/exposure
       bgrate = bg[aa]*spwidth/exposure
@@ -3114,19 +3119,19 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
         (Xphi, Yphi, date1), (dist12, ankerimg, ZOpos) = Y0
       
       ( (dis,spnet,angle,anker,anker2,anker_field,ank_c), (bg,bg1,bg2,extimg,spimg,spnetimg,offset), 
-           (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )	= Y1
-	   
+           (C_1,C_2,img),  hdr,m1,m2,aa,wav1 )  = Y1
+           
       fit, (coef0,coef1,coef2,coef3), (
-	      bg_zeroth,bg_first,bg_second,bg_third), (
-	      borderup,borderdown), apercorr,expospec  = Y2
-	      
+              bg_zeroth,bg_first,bg_second,bg_third), (
+              borderup,borderdown), apercorr,expospec  = Y2
+              
       (present0,present1,present2,present3),(q0,q1,q2,q3),(
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
-	      y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first ,co_first ),(
               y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
-	      y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
-	      x,xstart,xend,sp_all,qquality, co_back) = fit
-	      
+              y3,dlim3L,dlim3U,sig3coef,sp_third ,co_third ),(
+              x,xstart,xend,sp_all,qquality, co_back) = fit
+              
       opcounts, variance, borderup, borderdown, (fractions,cnts,vars,newsigmas) = Y3 
 
       wav2p, dis2p, flux2p, qual2p, dist12p = Y4[0]
@@ -3143,7 +3148,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       wave = wave[qwave]
       NW = len(wave)
       aa = np.arange(NW)
-      ax = range(NW-1) ; ax1=range(1,NW) 
+      ax = list(range(NW-1)) ; ax1=list(range(1,NW)) 
       binwidth = 1.0*(wave[ax1]-wave[ax])
       sprate = (opcounts[1,q1[0]]/exposure)[qwave]
       bgrate = bkg/exposure
@@ -3154,7 +3159,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       #sp2netcnt = counts[2,q2[0]]
       #bg2cnt    = bg_second[q2[0]]
       #sp2counts = sp2netcnt + bg2cnt
-               	    	     
+                             
    else:                 # straight slit only
       ( hdr,anker,phx,phy,dis,wave,sprate,bgrate,bg1rate,bg2rate,offset,ank_c,extimg, C_1) = Y
       a1 = int(ank_c[1])-370
@@ -3164,7 +3169,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       if hdr['wheelpos'] > 500: spwidth = 7*1.5
       if hdr['wheelpos'] > 500: a2 = ank_c[1]+500
       if a2 >= len(dis): a2=len(dis) -1
-      aa  = range(a1,a2)
+      aa  = list(range(a1,a2))
       dis = dis[aa]
       sprate = sprate[aa]
       bgrate = bgrate[aa]*spwidth
@@ -3175,7 +3180,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       bkg = bgrate*exposure
       wave = wave[aa]
       NW = len(wave)
-      ax = range(NW-1) ; ax1=range(1,NW) 
+      ax = list(range(NW-1)) ; ax1=list(range(1,NW)) 
       binwidth = 1.0*(wave[ax1]-wave[ax])
 
             
@@ -3196,7 +3201,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
    obsid = filestub  
    if fileout != None: 
       obsid = fileout 
-      if chatter > 2: print "output file name base is now:",obsid
+      if chatter > 2: print("output file name base is now:",obsid)
    if hdr['wheelpos'] == 200:
       outfile = obsid+'ugu_'+str(ext)+'.pha'
       backfile = obsid+'ugu_'+str(ext)+'_back.pha'
@@ -3226,7 +3231,7 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       rmffile = obsid+'ugv_'+str(ext)+'.rmf'
       EXTNAME='SPECRESPVGRISM955'
    else:   
-      print "FATAL: exposure header does not have filterwheel position encoded"
+      print("FATAL: exposure header does not have filterwheel position encoded")
       return 
    obsid = filestub   
       
@@ -3234,12 +3239,12 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
    
    if clobber == False:
       if os.access(outfile,os.F_OK) ^ os.access(backfile,os.F_OK) ^ os.access(outfile,os.F_OK) ^ os.access(backfile,os.F_OK):
-         print 'Error: output file already present. '
-	 if interactive:
-   	    answer =  raw_input('       DO YOU WANT TO REWRITE THE OUTPUT FILES (answer yes/NO)? ')
-	    if len(answer1) < 1:  answer = 'NO'
-	    answer = answer.upper()
-	    if (answer == 'Y') ^ (answer == 'YES'):  clobber = True	        
+         print('Error: output file already present. ')
+         if interactive:
+            answer =  input('       DO YOU WANT TO REWRITE THE OUTPUT FILES (answer yes/NO)? ')
+            if len(answer1) < 1:  answer = 'NO'
+            answer = answer.upper()
+            if (answer == 'Y') ^ (answer == 'YES'):  clobber = True             
          if clobber == False: return 
    filetag = obsid+'_'+str(hdr['wheelpos'])+str(rnu)
 
@@ -3252,21 +3257,21 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
    
    # sort out the inputs and prepare the arrays to write.
        
-   if mode == 0:	    
-      channel = range(len(aa))
-      rc      = range(len(aa)) ; rc.reverse()
+   if mode == 0:            
+      channel = list(range(len(aa)))
+      rc      = list(range(len(aa))) ; rc.reverse()
       channel = np.array(channel)
       stat_err = (np.sqrt(counts))[rc]
       counts  = counts[rc]
       if quality == None:
          quality = np.zeros(len(aa))  # see definition from OGIP
          q = np.where(counts < 0)
-	 if q[0].shape != (0,) :
+         if q[0].shape != (0,) :
            if q[0][0] != -1:
               stat_err[q] = 0.
-              quality[q] = 5	      	      
+              quality[q] = 5                  
       else:
-         quality = (quality[aa])[rc]	    
+         quality = (quality[aa])[rc]        
       
       cpp2fpa = 1     # count2flux(dis,wave,wheelpos,anker) count rate per pixel to flux per angstroem
       #flux     = cpp2fpa*sprate
@@ -3276,32 +3281,32 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
       hnu = h_c_ang/(wave)
       flux = hnu*sprate/specrespfunc(wave)/dlam_per_pix   # [erg/s/cm2/angstrom]
       flux_err = hnu*sprate_err/specrespfunc(wave)/dlam_per_pix 
-          	    	     
+                             
    else:
-      channel = range(len(wave)) 
-      rc      = range(len(wave))
+      channel = list(range(len(wave))) 
+      rc      = list(range(len(wave)))
       rc.reverse()     
       if present2:
-         channel2 = range(len(wave2))
-	 rc2      = range(len(wave2))
-	 rc2.reverse()
+         channel2 = list(range(len(wave2)))
+         rc2      = list(range(len(wave2)))
+         rc2.reverse()
        
       channel = np.array(channel)
       stat_err = (np.sqrt(counts))[rc]  # poisson error on counts (no background)
       counts  = counts[rc]
       if present2:
          channel2 = np.array(channel2)
-	 stat_err = (np.sqrt(sp2counts))[rc2]
-	 sp2counts = sp2counts[rc2]
-	 
+         stat_err = (np.sqrt(sp2counts))[rc2]
+         sp2counts = sp2counts[rc2]
+         
       if quality == None: 
          quality = np.zeros(len(aa))  # see definition from OGIP
-	 quality2 = quality
+         quality2 = quality
       else:
          quality = quality[rc]
-	 quality[np.where(quality != 0)] = 2 # see definition from OGIP	 
-	 quality2 = quality
-	 
+         quality[np.where(quality != 0)] = 2 # see definition from OGIP  
+         quality2 = quality
+         
       q = np.where(counts < 0)
       if q[0].shape != (0,) :
          if q[0][0] != -1:
@@ -3315,8 +3320,8 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
          dlam_per_pix = wave*0. ; dlam_per_pix[ax]=binwidth ; dlam_per_pix[-1]=binwidth[-1] 
       else:
          sprate_err = sp1rate_err
-	 dlam_per_pix = binwidth
-	 	 
+         dlam_per_pix = binwidth
+                 
       hnu = h_c_ang/wave
       flux = hnu*sprate/specrespfunc(wave)/dlam_per_pix   # [erg/s/cm2/angstrom]
       flux_err = hnu*sprate_err/specrespfunc(wave)/dlam_per_pix 
@@ -3325,16 +3330,16 @@ def OldwriteSpectrum(ra,dec,filestub,ext, Y, mode=1, quality=None,
          if arf2file != None:
             flux2 = hnu*sp2rate/specrespfunc2(wave)/dlam_per_pix2   # [erg/s/cm2/angstrom]
             flux2_err = hnu*sp2rate_err/specrespfunc2(wave)/dlam_per_pix2 
-	 else:
-	    flux2 = sp2rate*0
-	    flux2_err = sp2rate_err*0 
-	      
+         else:
+            flux2 = sp2rate*0
+            flux2_err = sp2rate_err*0 
+              
       if Y4 != None:
          if arf2file != None:
             flux2p = hnu*rate2p/specrespfunc2(wave2p)/dlam_per_pix2
-	 else:
-	    flux2p = rate2p*0
-	       
+         else:
+            flux2p = rate2p*0
+               
    spectrum_first = (channel, counts, star_err, quality, np.ones(len(channel)) ) 
    back_first = (channel, bkg, sqrt(bkg), quality, np.ones(len(channel)) )
    calspec_first = (dis,wave,sprate,bg1rate,bg2rate,flux,flux_err,quality, np.ones(len(channel)) )
@@ -3369,16 +3374,16 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
        kwargs : dict
        
         - *lsffile* : path
-	
+        
           The lsffile is in the $UVOTPY/calfiles directory
         
-	- *clobber* : bool
+        - *clobber* : bool
         
-	  overwrite output.
+          overwrite output.
         
-	- *chatter* : int
+        - *chatter* : int
         
-	  verbosity
+          verbosity
        
        Returns
        -------
@@ -3414,7 +3419,7 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    
    UVOTPY = os.getenv('UVOTPY')
    if UVOTPY == '': 
-      print 'The UVOTPY environment variable has not been set'
+      print('The UVOTPY environment variable has not been set')
 
    lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' )  
    tlsf = lsffile[1].data
@@ -3458,14 +3463,14 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
             lsf = lsfdata[0,:]
          elif ((j > 0) & (j < 15) ):
             e1 = lsfchan[j-1]
- 	    e2 = lsfchan[j]
- 	    frac = (e_mid[k]-e1)/(e2-e1)
+            e2 = lsfchan[j]
+            frac = (e_mid[k]-e1)/(e2-e1)
             lsf1 = lsfdata[j-1,:]
-	    lsf2 = lsfdata[j,:]
-	    lsf = (1-frac) * lsf1 + frac * lsf2	 	 
+            lsf2 = lsfdata[j,:]
+            lsf = (1-frac) * lsf1 + frac * lsf2          
          else:
             # j = 15
-	    lsf = lsfdata[14,:]
+            lsf = lsfdata[14,:]
 
          # convolution lsf with instrument_fwhm and multiply with response 
          lsf_con = convolve(lsf,ww.copy(),)
@@ -3480,25 +3485,25 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
 
          # new array to fill 
          lsfnew   = np.zeros(k5)
-	 ener_ = list(ener)
-	 lsf_con_ = list(lsf_con)
-	 ener_.reverse()
-	 lsf_con_.reverse()
-	 # now we have ener as an increasing function - if not, the function fails.
+         ener_ = list(ener)
+         lsf_con_ = list(lsf_con)
+         ener_.reverse()
+         lsf_con_.reverse()
+         # now we have ener as an increasing function - if not, the function fails.
          inter = interpolate.interp1d(ener_, lsf_con_,bounds_error=False,fill_value=0.0)
          for i in range(k5):
-	    lsfnew[i] = inter( e_mid[i]) 
-	 lsfnew_norm = lsfnew.sum() 
-	 if (np.isnan(lsfnew_norm)) | (lsfnew_norm <= 0.0): lsfnew_norm = 5.0e9  
-         lsfnew = ( lsfnew / lsfnew_norm) * resp[k]	 
+            lsfnew[i] = inter( e_mid[i]) 
+         lsfnew_norm = lsfnew.sum() 
+         if (np.isnan(lsfnew_norm)) | (lsfnew_norm <= 0.0): lsfnew_norm = 5.0e9  
+         lsfnew = ( lsfnew / lsfnew_norm) * resp[k]      
          matrix[k] =  lsfnew  
-	 if (k/48*48 == k): print 'processed up to row --> ',k
+         if (k/48*48 == k): print('processed up to row --> ',k)
           
    #hdulist.update()  
-   if chatter > 1: print "updating the LSF in the response file now"     
+   if chatter > 1: print("updating the LSF in the response file now")     
    hdu.header['HISTORY']=('Updated LSF by uvotgetspec.uvotio.updateResponseMatrix()')
    hdulist.update_tbhdu()
-   print 'updated'
+   print('updated')
    hdulist.verify()
    hdulist.flush()
    hdulist.close()
@@ -3541,7 +3546,7 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
            wave = f['CALSPEC'].data['lambda']
        elif spectral_order == 2:
            wave = f['CALSPEC'].data['lambda2']
-           print "THE RMF for the second order are DUMMY values taken from first order"
+           print("THE RMF for the second order are DUMMY values taken from first order")
        else: raise IOError("Illegal value for spectral_order")    
        wheelpos = f['SPECTRUM'].header['wheelpos']
        hdr = f['SPECTRUM'].header
@@ -3550,10 +3555,10 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
        anc = uvotmisc.get_keyword_from_history(hist,'anchor1')
        anchor = np.array(anc.split('(')[1].split(')')[0].split(','),dtype=float)
        if chatter > 2: 
-           print "call write_rmf_file parameters are :"
-           print "rmffile=",rmffile,"  wheelpos=", wheelpos,"  disp=", disp
-           print "lsfVersion=",lsfVersion," anchor=",anchor
-           print "wave : ", wave
+           print("call write_rmf_file parameters are :")
+           print("rmffile=",rmffile,"  wheelpos=", wheelpos,"  disp=", disp)
+           print("lsfVersion=",lsfVersion," anchor=",anchor)
+           print("wave : ", wave)
        write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
        lsfVersion=lsfVersion, 
        chatter=chatter,clobber=clobber)
@@ -3561,7 +3566,7 @@ def make_rmf(phafile,rmffile=None,spectral_order=1,
        f['SPECTRUM'].header['RESPFILE'] = (rmffile,"RMF file name")
        f.close() 
     except:
-       print "ERROR in call write_rmf_file. Trying again ... "
+       print("ERROR in call write_rmf_file. Trying again ... ")
        write_rmf_file(rmffile,wave,wheelpos,disp,anchor=anchor,
        lsfVersion=lsfVersion, 
        chatter=chatter,clobber=clobber)
@@ -3584,17 +3589,17 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    ----------
       rmffile : path, str
          file name output file
-	 
+         
       wave : ndarray
          mid-wavelengths of the bins in the spectrum
          
       flux : ndarray [default None]
          used to omit channels of invalid (NaN) or negative 
          flux values from the response file   
-	 
+         
       wheelpos : int
-         filter wheel position 	 
-	 
+         filter wheel position   
+         
       disp : ndarray
          dispersion coefficients 
          
@@ -3615,10 +3620,10 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
          
       chatter : int
          verbosity
-	 
+         
       clobber : bool
          if true overwrite output file if it already exists
-	 
+         
    Returns
    -------
    Writes the RMF file 
@@ -3669,7 +3674,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    
    now = datetime.date.today()
    datestring = now.isoformat()[0:4]+now.isoformat()[5:7]+now.isoformat()[8:10]
-   if chatter > 0: print "computing RMF file."
+   if chatter > 0: print("computing RMF file.")
    
    # telescope and image intensifier broadening   
    if lsfVersion == '001':
@@ -3683,11 +3688,11 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
       if len(effarea1) == 2:
           hdu, fnorm = effarea1          
           w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
-	  fnorm = fnorm(w)    
+          fnorm = fnorm(w)    
       else: 
           hdu = effarea1
           w = 0.5*(hdu.data['WAVE_MIN']+hdu.data['WAVE_MAX']) 
-	  fnorm = 1    
+          fnorm = 1    
    else:
        hdu, fnorm, msg = uvotio.readFluxCalFile(wheelpos,anchor=anchor,
                     spectralorder=spectralorder,msg=msg, chatter=chatter)
@@ -3695,7 +3700,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
        fnorm = fnorm(w)  
        
    r = hdu.data['SPECRESP']
-   ii = range(len(w)-1,-1,-1)
+   ii = list(range(len(w)-1,-1,-1))
    w = w[ii]
    r = r[ii]
    r = r * fnorm
@@ -3710,8 +3715,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
                    
    NN = len(wave)  # number of channels in spectrum (backward since we will use energy)
    if NN < 20:
-      print "write_rmf_file: not enough valid data points.\n"+\
-      " No rmf file written for wheelpos=",wheelpos,", order=",spectralorder
+      print("write_rmf_file: not enough valid data points.\n"+\
+      " No rmf file written for wheelpos=",wheelpos,", order=",spectralorder)
       return
    
    iNL = np.arange(0,NN,1,dtype=int)  # index energy array spectrum
@@ -3720,8 +3725,8 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    aa = uvotgetspec.pix_from_wave(disp, wave, spectralorder=spectralorder)  # slow !
    tck_Cinv = interpolate.splrep(wave,aa,)  # B-spline coefficients to look up pixel position (wave)
    
-   channel = range(NN)
-   aarev   = range(NN-1,-1,-1)  # reverse channel numbers (not 1-offset)
+   channel = list(range(NN))
+   aarev   = list(range(NN-1,-1,-1))  # reverse channel numbers (not 1-offset)
    channel = np.array(channel) + 1  # start channel numbers with 1 
 
    # spectral response as function of energy
@@ -3782,9 +3787,9 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
          qpix = np.arange(pdel*4-2,-1,-2,dtype=int)
          
          
-         matrixrow   = np.zeros(NN)	 
+         matrixrow   = np.zeros(NN)      
          matrixrow[qrange] = lsf[qpix]+lsf[qpix+1]
-	 # centre is in middle of a channel
+         # centre is in middle of a channel
          matrix[k,:] = matrixrow*resp[k]
 
    # for output
@@ -3793,7 +3798,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    else:
       filtername = "VGRISM"
 
-   if chatter > 0 : print "writing RMF file"
+   if chatter > 0 : print("writing RMF file")
 
    hdu = fits.PrimaryHDU()
    hdulist=fits.HDUList([hdu])
@@ -3879,8 +3884,8 @@ def _interpolate_lsf(en,lsfener,lsfdata,lsfepix,):
     """
     import numpy as np
     if  not ((type(en) == float) | (type(en) == np.float32)):  
-        print "en = ",en
-        print "type en = ", type(en)
+        print("en = ",en)
+        print("type en = ", type(en))
         raise IOError("_interpolate_lsf only works on one *en* element at a time")
     #  find index of the nearest LSF
     indx = np.argsort(lsfener) # indices  
@@ -3891,13 +3896,13 @@ def _interpolate_lsf(en,lsfener,lsfdata,lsfepix,):
             lsf = lsfdata[0,:].flatten()
     elif ((j > 0) & (j < k) ):
             e1 = lsfener[j-1]
- 	    e2 = lsfener[j]
- 	    frac = (en-e1)/(e2-e1)
+            e2 = lsfener[j]
+            frac = (en-e1)/(e2-e1)
             lsf1 = lsfdata[j-1,:].flatten()
-	    lsf2 = lsfdata[j,:].flatten()
-	    lsf = ((1-frac) * lsf1 + frac * lsf2) 	 
+            lsf2 = lsfdata[j,:].flatten()
+            lsf = ((1-frac) * lsf1 + frac * lsf2)        
     else:
-	    lsf = lsfdata[k-1,:].flatten()
+            lsf = lsfdata[k-1,:].flatten()
             
     return lsf
 
@@ -3918,7 +3923,7 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
         try:  
             lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf0160_v001.fit' ) 
         except:
-            print "WARNING: the oldest zemaxlsf calfile has been read in (= wheelpos 160; version 001)"
+            print("WARNING: the oldest zemaxlsf calfile has been read in (= wheelpos 160; version 001)")
             lsffile = fits.open(  UVOTPY+'/calfiles/zemaxlsf.fit' ) 
     else:
           # in later versions the instrumental broadening is already included in the Line Spread Function
@@ -3927,8 +3932,8 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
     if wheelpos < 500: 
         lsfextension = 1
     else:
-        print "using the LSF model of the UV grism for the Visible grism "+\
-        "until such time as the LSF model for the visible grism can be incorporated" 
+        print("using the LSF model of the UV grism for the Visible grism "+\
+        "until such time as the LSF model for the visible grism can be incorporated") 
         
     lsfener = lsffile[1].data['channel'][0:15]   # energy value (keV)
     lsfepix = lsffile[1].data['epix'][0,:]         # 156 or 158 values - offset in half pixels (to be converted to wave(wave))
