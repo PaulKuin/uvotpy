@@ -1546,7 +1546,7 @@ class fit_spectrum(object):
     """
     import sys
     import numpy as np
-    from .mpfit import mpfit
+    import mpfit
 
     def __init__(self, ax, spectrum, fit_parameters=[], ):
         self.spectrum = spectrum
@@ -1798,7 +1798,7 @@ def fit2g_bg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
    
    '''
    import numpy as np
-   from .mpfit import mpfit
+   import mpfit
    
    #gp = np.array(gaussian_parameters,)
    
@@ -1921,7 +1921,7 @@ def dofit2poly(x,f,err,coef1=[0,1],coef2=[0,1],
    PROBLEM: gives some numbers that don't make sense...
    '''
    import numpy as np
-   from .mpfit import mpfit
+   import mpfit
       
    p0 = (coef1[1],coef1[0],coef2[1],coef2[0])
    
