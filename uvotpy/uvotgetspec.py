@@ -69,8 +69,8 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-from uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
-import uvotplot
+from .uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
+
 import datetime
 import os
 
@@ -406,7 +406,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     The background must be consistent with the width of the spectrum summed. 
    
    from uvotio import fileinfo, rate2flux, readFluxCalFile
-   
+   from uvotplot import plot_ellipsoid_regions
    if (type(RA) == np.ndarray) | (type(DEC) == np.array): 
       raise IOError("RA, and DEC arguments must be of float type ")
 
@@ -1131,7 +1131,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #  TBD : add curvature 
          plt.plot(xpnt,ypnt,'+k',markersize=14)
          if not skip_field_src:   
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,
+            plot_ellipsoid_regions(Xim,Yim,
                        Xa,Yb,Thet,b2mag,matched,ondetector,
                        pivot_ori,pivot_ori,dims,17.,)
          if zoom:
@@ -1168,7 +1168,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             #pivot_ori=ankerimg
             mlim = 17.
             if wheelpos > 500: mlim = 15.5
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
+            plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
                      matched,ondetector,
                      pivot,pivot_ori,
                      dims2,mlim,

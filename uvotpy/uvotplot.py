@@ -21,8 +21,8 @@ from past.utils import old_div
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
-  pass  
-  import uvotgetspec as uvotgrism
+  pass
+#from . import uvotgetspec as uvotgrism
 
 import numpy as N
 
@@ -35,7 +35,7 @@ from pylab import ioff,ion,arange, plot, subplot, xlim, ylim, title, xlabel, \
      ylabel, polyval, figure, contour, plt, legend, polyval, polyfit, savefig, \
      text , grid, clf, gca
 import os
-import uvotmisc, uvotgetspec
+from . import uvotmisc, uvotgetspec
 
 def binplot(*args, **kwargs):
    '''Bin up the arrays with the keyword bin=<number> 
