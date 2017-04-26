@@ -39,9 +39,9 @@ from __future__ import absolute_import
 # uvotpy 
 # (c) 2009-2016, see Licence  
 
-from builtins import str
-from builtins import input
-from builtins import range
+from future.builtins import str
+from future.builtins import input
+from future.builtins import range
 __version__ = '2.7.0 20161031'
  
 import sys
