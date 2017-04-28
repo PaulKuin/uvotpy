@@ -35,9 +35,9 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-from builtins import input
-from builtins import str
-from builtins import range
+from future.builtins import input
+from future.builtins import str
+from future.builtins import range
 __version__ = "1.6.0"
 
 # version 1.0 9 Nov 2009
@@ -70,7 +70,7 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass
-  import uvotgetspec
+  from . import uvotgetspec
 
 typeNone = type(None)
 interactive=uvotgetspec.interactive
