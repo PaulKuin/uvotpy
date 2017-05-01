@@ -405,8 +405,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     
    #     The background must be consistent with the width of the spectrum summed. 
    
-   from uvotio import fileinfo, rate2flux, readFluxCalFile
-   from uvotplot import plot_ellipsoid_regions
+   from .uvotio import fileinfo, rate2flux, readFluxCalFile
+   from .uvotplot import plot_ellipsoid_regions
    if (type(RA) == np.ndarray) | (type(DEC) == np.array): 
       raise IOError("RA, and DEC arguments must be of float type ")
 
@@ -5908,7 +5908,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    except:
       import pyfits as fits
 
-   from uvotwcs import makewcshdr 
+   from .uvotwcs import makewcshdr 
    import os, sys
    
    __version__ = '1.1 NPMK 20150716 NPMK(MSSL)'
