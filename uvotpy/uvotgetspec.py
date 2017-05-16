@@ -37,7 +37,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2016, see Licence  
+# (c) 2009-2017, see Licence  
 
 from builtins import str
 from builtins import input
@@ -129,7 +129,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       fixed_angle=None, spextwidth=13, curved="update",
       fit_second=False, predict2nd=True, skip_field_src=False,      
       optimal_extraction=False, catspec=None,write_RMF=write_RMF,
-      get_curve=False,fit_sigmas=True,get_sigma_poly=False, 
+      get_curve=None,fit_sigmas=True,get_sigma_poly=False, 
       lfilt1=None, lfilt1_ext=None, lfilt2=None, lfilt2_ext=None,  
       wheelpos=None, interactive=interactive,  sumimage=None, set_maglimit=None,
       plot_img=True, plot_raw=True, plot_spec=True, zoom=True, highlight=False, 
@@ -252,10 +252,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         
         optional full path to the catalog specification file for uvotgraspcorr.
      
-      - **get_curve** : bool
+      - **get_curve** : bool or path
         
-        option to supply the curvature coefficients of all orders by hand.
-        implemented but not tested.
+        True: activate option to supply the curvature coefficients of all 
+        orders by hand.
+        path: filename with coefficients of curvature
      
       - **fit_sigmas** : bool
         
@@ -416,17 +417,29 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
            
    get_curve_filename = None
    
-   if type(get_curve) == str:
+   a_str_type = type(curved)
+   if chatter > 4 : 
+       print ("a_str_type = ",a_str_type)
+       print ("value of get_cure = ",get_curve)
+       print ("type of parameter get_curve is %s\n"%(type(get_curve)) )
+       print ("type curved = ",type(curved))
+   if type(get_curve) == a_str_type:
        # file name: check this file is present
        if os.access(get_curve,os.F_OK):
           get_curve_filename = get_curve
           get_curve = True
        else:
-          raise IOError("ERROR: get_curve is not a boolean value nor the name of a file that is on the disk.")   
+          raise IOError(
+          "ERROR: get_curve *%s* is not a boolean value nor the name of a file that is on the disk."
+          %(get_curve)   )
    elif type(get_curve) == bool:
        if get_curve: 
           get_curve_filename = None
-          print("requires input of curvature coefficients")
+          print("requires input of curvature coefficients") 
+   elif type(get_curve) == type(None):
+       get_curve = False        
+   else:
+       raise IOError("parameter get_curve should by type str or bool, but is %s"%(type(get_curve)))    
 
    # check environment
    CALDB = os.getenv('CALDB')
@@ -1032,7 +1045,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
       "apercorr":apercorr,"expospec":expospec})  
                         
-      ank_c[0] = y1[ank_c[1]]         
+      ank_c[0] = y1[int(ank_c[1])]         
       Yout.update({"ank_c":ank_c,"extimg":extimg,"expmap":expmap})              
          
       msg += "orders present:"
@@ -1153,8 +1166,12 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          ac = -ank_c[1]
          plt.winter()
          net[net<0.] = 1e-16
-         plt.imshow(np.log10(net),vmin=-0.8,vmax=0.8,extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
-         plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]))
+         plt.imshow(np.log10(net),vmin=-0.8,vmax=0.8,
+                    extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]),
+                    origin='lower',cmap=plt.cm.winter)
+         plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],
+                    extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]),
+                    origin='lower')
          #plt.imshow( extimg,vmin= (bg1.mean())*0.1,vmax= (bg1.mean()+bg1.std())*2, extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
          #levels = np.array([5,10,20,40,70,90.])
          #levels = spnet[ank_c[2]:ank_c[3]].max()  * levels * 0.01                                  
@@ -2668,6 +2685,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    if not os.access(outfile,os.F_OK):  
       # so you can provide it another way
       useuvotdetect = False
+      rate = 0
    
    if useuvotdetect:
        f = fits.open(outfile)
@@ -2737,7 +2755,14 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        else:
            use_previous_search = False
    else: 
-       use_previous_search = False                 
+       use_previous_search = False         
+   # empty file            
+   if    os.access('search.ub1',os.F_OK) : 
+       searchf = open('search.ub1')
+       stab = searchf.readlines()
+       searchf.close()
+       if len(stab) < 3: use_previous_search = False
+   # retrieve catalog data    
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
       command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
       if chatter > 1: print(command)
@@ -2764,7 +2789,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
           ra.append(row_values[1])
           dec.append(row_values[2])
           b2mag.append(row_values[5])
-   M = len(ra)  
+   M = len(ra) 
+   if M == 0:
+      return 
    ra = np.asarray(ra,dtype=np.float64)
    dec = np.asarray(dec,dtype=np.float64)
    b2mag = np.asarray(b2mag,dtype=np.float)
@@ -3260,7 +3287,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
          2016-01-17 trackcentroiding parameter added to disable centroiding         
    '''
    import pylab as plt
-   from numpy import array,arange,where, zeros,ones, asarray, abs
+   from numpy import array,arange,where, zeros,ones, asarray, abs, int
    from uvotplot import plot_ellipsoid_regions
    import uvotmisc
    
@@ -3579,8 +3606,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       # default single track extraction 
       sphalfwid = 4.*sig1coef[0]
       spwid = 2*sphalfwid
-      splim1 = 100+offset-sphalfwid+1
-      splim2 = splim1 + spwid
+      splim1 = int(100+offset-sphalfwid+1)
+      splim2 = int(splim1 + spwid)
       sp_all  = extimg[splim1:splim2,:].sum(axis=0).flatten()
       bg_all  = bgimg[splim1:splim2,:].sum(axis=0).flatten()
       borderup[4,:]   = splim2
@@ -4893,7 +4920,7 @@ def predict_second_order(dis,spnet,C_1,C_2,d12,qual,dismin,dismax,wheelpos):
 
    '''   
    import numpy as np
-   from numpy import where, searchsorted
+   from numpy import where, searchsorted, int
    
    dis   = np.asarray(1.0*dis)  # ensure floating point array
    spnet = np.asarray(spnet)
@@ -4920,7 +4947,7 @@ def predict_second_order(dis,spnet,C_1,C_2,d12,qual,dismin,dismax,wheelpos):
    # first order points to use to predict second order (range dis and indices)
    #dlo, dhi   = np.polyval(C_1inv,wmin2), np.polyval(C_1inv,wmax2)
    dlo, dhi   = pix_from_wave(C_1,wmin2), pix_from_wave(C_1,wmax2)
-   idlo, idhi = dis.searchsorted(dlo), dis.searchsorted(dhi)
+   idlo, idhi = int(dis.searchsorted(dlo)), int(dis.searchsorted(dhi))
    wav1cut = wave[idlo:idhi]
    dis1cut = dis [idlo:idhi]
    qua1cut = qual[idlo:idhi]

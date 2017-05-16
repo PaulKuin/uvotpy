@@ -1,6 +1,23 @@
 The uvot grism python software release notes
 ============================================
 
+Version 2.2  2017-05-16 
+
+Due to changes in the Astropy package and others, minor fixes 
+were made throughout the code. For Astropy 1.2.1 a part of the 
+FITS code was broken, but it is not a critical problem. That 
+was fixed in Astropy-1.2.2.
+
+A refined calibration is being worked on, as with ten years of 
+observations we can refine our numbers a little. That will be in 
+a future release. 
+
+The uvotspec script has not been maintained for some time now, 
+as the data reduction is more effectively done using the ipython 
+environment.  If anyone wants to contribute an update, that would 
+be great. 
+
+
 Version 2.1.0 2016-03-11
 
 The code in the core modules has been cleaned up somewhat and

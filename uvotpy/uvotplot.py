@@ -296,7 +296,7 @@ def maskEllipse(maskimg, x,y,a,b,theta, test=0, chatter=1):
    ----
     x and y , a and b are interchanged    
    '''
-   from numpy import sin, cos, abs, arange, ones, where, outer, asarray, pi
+   from numpy import sin, cos, abs, arange, ones, where, outer, asarray, pi, int
    
    maskimg = asarray(maskimg)
    ca = old_div(1.,(a*a))
@@ -310,8 +310,8 @@ def maskEllipse(maskimg, x,y,a,b,theta, test=0, chatter=1):
           # and operate on the subset 
    xmin, xmax = x-abs(a), x+abs(a)+1
    ymin, ymax = y-abs(a), y+abs(a)+1
-   x8,x9 = xmin, xmax
-   y8,y9 = ymin, ymax
+   x8,x9 = int(xmin), int(xmax)
+   y8,y9 = int(ymin), int(ymax)
    
    # if ellipse (x,y,a,b,theta) outside maskimg, then return
    if not ( (xmin < x) & (x < xmax) & (ymin < y) & (y < ymax) ):
