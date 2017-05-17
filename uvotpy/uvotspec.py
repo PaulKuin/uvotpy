@@ -603,7 +603,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     ax.legend(loc=0)  
     ax.set_title(filename) 
     fig.show()
-    print("Now is a good time to select a part of the figure to use for shifting the wavelengths.")
+    print("Before continuing select a part of the figure to use for shifting the wavelengths.")
     #  drag figure
     #background = canvas.copy_from_bbox(ax.bbox)
     newspec = DraggableSpectrum(ax,spectrum)
@@ -615,7 +615,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         delwav0 = 0
         delwav = 0
     try:
-        ans1 = input("Do you want to adjust wavelengths ? (Y/N) ").upper()
+        ans1 = raw_input("Do you want to adjust wavelengths ? (Y/N) ").upper()
         print("answer read = ", ans1," length = ", len(ans1))
         if len(ans1) > 0:
           if ans1[0] == 'Y':
@@ -625,7 +625,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
                 newspec.connect()
                 print("The selected wavelength shift is ",newspec.delwav," and will be applied when done. ") 
                 # register the shift from the last run          
-                ans = eval(input("When done hit a key"))
+                ans = raw_input("When done hit a key\n")
                 delwav += newspec.out_delwav()
                 ax.set_title(filename)
                 done = True
@@ -856,7 +856,7 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
     The header will be updated with the value of the wavelength shift 
     
     """
-    from .uvotgetspec import quality_flags
+    from uvotgetspec import quality_flags
     if openfile != None:
        f = openfile
        if f.fileinfo(1)['filemode'] != 'update' :
@@ -908,14 +908,14 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
     done = False
     try:
         while not done:
-            ans = input("Do you want to mark bad regions ? (Y) ").upper()
+            ans = raw_input("Do you want to mark bad regions ? (Y) ").upper()
             if len(ans) > 0:
                 if ans[0] == 'Y':
                     print('Select bad wavelengths in the spectrum until happy')
                     ax.set_title("when done press key")   
                     s.connect()
                     # register the shift from the last run              
-                    ans = eval(input("When done hit the d key, then return, or just return to abort"))
+                    ans = raw_input("When done hit the d key, then return, or just return to abort")
                     badregions, lines = s.get_badlines()
                     print("got so far: ")
                     for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
@@ -997,7 +997,7 @@ def plotquality(ax,
        -----
        Should add an option to plot quality in a different way. 
        """
-       from .uvotgetspec import quality_flags
+       from uvotgetspec import quality_flags
        
        typeNone = type(None)
        
@@ -1048,7 +1048,7 @@ def plotquality(ax,
 def check_flag(quality,flag,chatter=0):
    """ return a logical array where the elements are 
        True if flag is set """
-   from .uvotgetspec import quality_flags
+   from uvotgetspec import quality_flags
    loc = np.zeros(len(quality),dtype=bool) 
    if flag == 'good': return loc
    qf = quality_flags()[flag]
@@ -1374,7 +1374,7 @@ def plot_spectrum(ax,spectrumfile,
         raise IOError("Spectrum type (extname) is not recognised")
     ax.legend(loc=0)    
     ax.set_ylim(ylim[0],ylim[1])       
-    ax.figure.canvas.show()
+    ax.figure.show()
 
 
 def quality_flags_to_ranges(quality,chatter=0):
@@ -1395,7 +1395,7 @@ def quality_flags_to_ranges(quality,chatter=0):
           a dictionary of ranges for each flag except 'good'  
        
        """
-       from .uvotgetspec import quality_flags
+       from uvotgetspec import quality_flags
        
        flagdefs = quality_flags()
        flags=list(flagdefs.keys())
@@ -2021,10 +2021,21 @@ def sum_PHAspectra(phafiles, outfile=None,
                'sw00031935002ugu_1ord_4_f.pha']
    
    sum_PHAspectra(phafiles,ignore_flags=True,flag_bad_areas=True,adjust_wavelengths=True)
-   
+ 
    This will interactively (1) select bad regions and (2) 
    ask for shifts to the wavelengths of one spectra compared 
    to one chosen as reference. 
+   
+   or 
+   
+   uvotspec.sum_PHAspectra(phafiles,outfile='sum_2010-01-23T19:07_to_-24T06:30UT.fits',
+     ...: wave_shifts=[0,0,0,0,0],exclude_wave=[[[1600,1730],[3350,3450]],[[1600,1730],
+     ...: [3370,3420]],[[1600,1730],[3370,3415]],[[1600,1712],[3380,3430]],[[1600,1730],
+     ...: [3370,3430]]],objectname='Nova KT Eri 2009',chatter=5,ignore_flags=True)
+     
+   Here the wavelength shifts are set to zero, and the exclusion regions have been given, 
+   while no exclusion regions are taken from the quality in the file.  
+      
    
    Notes
    -----
@@ -2034,6 +2045,8 @@ def sum_PHAspectra(phafiles, outfile=None,
    
    ** not yet implemented:  selection on flags using use-flags 
    ** smooth each spectrum, correlate for shift [all quality='good' data points]
+   
+   BUGS: the quality is not read from the file into exclusion sets at the moment 
    
    '''
    import os, sys
@@ -2102,6 +2115,7 @@ def sum_PHAspectra(phafiles, outfile=None,
    elif chatter > 2: sys.stdout.write("  sum_PHAspectra: input wave_shifts = %s\n"%(wave_shifts))      
           
    if len(exclude_wave) != nfiles:  
+      if chatter > 2: sys.stdout.write("exclude_wave length does not match number of files")
       exclude_wave = []
       for i in range(nfiles):
          exclude_wave.append([]) 
@@ -2113,7 +2127,7 @@ def sum_PHAspectra(phafiles, outfile=None,
        # valid ranges in fits file used to determine exclude sections 
        exclude_wave = _sum_exclude_sub1(f, nfiles, wave_shifts, 
                        exclude_wave_copy, exclude_wave, ignore_flags, 
-                       use_flags, chatter=0) 
+                       use_flags, chatter=chatter) 
        if chatter > 2: 
           sys.stdout.write( "revised exclude_wave _sum_exclude_sub1: %s\n"%(exclude_wave))        
 
@@ -2201,7 +2215,7 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
     for i in range(nfiles):
         if len(wave_shifts)  != nfiles: 
             wave_shifts.append(0)
-        excl = []  # per file 
+        excl = exclude_wave[i]  # per file 
         if not ignore_flags:
             fx = f[i]
             W  = fx[2].data['lambda']
@@ -2224,7 +2238,7 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
                         ex = []
                     if (i == (len(W)-1)) & (len(ex) == 1): 
                         ex.append(len(W))
-                        excl.append(ex) 
+                    if len(ex) > 0: excl.append(ex) 
             else:
                 quality_range = quality_flags_to_ranges(FL)
                 for flg in use_flags:
@@ -2233,7 +2247,8 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
                         for pixes in pixranges:
                             waverange=fx[2].data['lambda'][pixes]
                             ex.append(list(waverange))
-                    excl.append(ex)                                          
+                    excl.append(ex) 
+        if len(excl) == 0: excl.append([])                                                     
         exwave.append(excl)                                     
     if chatter > 1: 
         sys.stderr.write("_sum_exclude_sub1 returns: %s\n"%exwave)
@@ -2299,7 +2314,7 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
         if len(excl_) > 0:
             sys.stdout.write( 
                "wavelength exclusions for this file are: %s\n"%(excl_))
-            ans = eval(input(" change this ? (y/N) : "))
+            ans = raw_input(" change this ? (y/N) : ")
             if ans.upper()[0] == 'Y' :  OK = True
             else:                       OK = False
         else: 
@@ -2338,16 +2353,16 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
                     nix0 +=1 
                     if nix0 > 15: break
                     sys.stdout.write( "exclusion wavelengths are : %s\n"%excl_)
-                    ans = eval(input('Exclude a wavelength region ?'))
+                    ans = raw_input('Exclude a wavelength region ?')
                     if len(ans) > 0:
                         EXCL = not (ans.upper()[0] == 'N')
                         if ans.upper()[0] == 'N': break              
-                        ans = eval(input(
+                        ans = eval(raw_input(
     'Give the exclusion wavelength range as two numbers separated by a comma: '))
                         lans = list(ans)
                         if len(lans) != 2: 
                             sys.stderr.write( 
-    "input either the range like: 20,30  or: [20,30] \n")
+    "input either the range like: 20,30  or: [20,30] ;was %s \n"%(lans))
                             continue
                         excl_.append(lans)      
                 OK = False
@@ -2378,8 +2393,8 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
     for i in range(nfiles):
         sys.stdout.write(" %2i --- %s\n" % (i,phafiles[i]))
     try:   
-        fselect = eval(input(
-          " give the number of the file to use as reference, or 0 : "))
+        fselect = input(
+          " give the number of the file to use as reference, or 0 : ")
         if (fselect < 0) | (fselect >= nfiles):
             sys.stderr.write("Error in file number, assuming 0\n")
             fselect=0     
@@ -2447,7 +2462,7 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
                      if len(ylim) == 2: ax.set_ylim(ylim)
                      ax.legend(loc=0)
                      try:
-                        sh1 = eval(input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : "))  
+                        sh1 = eval(raw_input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : "))  
                         if np.abs(sh1) < 1e-3:
                            wave_shifts.append(sh)
                            OK = False
@@ -2477,7 +2492,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
    import os
    import sys
    from astropy.io import fits
-   from .uvotmisc import swtime2JD, get_keyword_from_history
+   from uvotmisc import swtime2JD, get_keyword_from_history
    import datetime
    
    now = datetime.date.today().isoformat()
@@ -2487,7 +2502,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
 
    if os.access(outfile,os.F_OK) & (not clobber):
           sys.stderr.write("output file %s already present\nGive new filename (same will overwrite)"%(outfile)) 
-          outfile = eval(input("new filename = "))
+          outfile = raw_input("new filename = ")
           if type(outfile) != string: 
              outfile = "invalid_filename.txt"
              sys.stderr.write("invalid filename, writing emergency file %s"%(outfile))
@@ -2641,7 +2656,7 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
     D = []
     for i in range(nfiles):
         if chatter > 3 : 
-            sys.stderr.write("for i in range(nfiles):\n")
+            sys.stderr.write("working on %s:\n"%(f[i][2].header['filetag']))
         fx = f[i]
         excl = exclude_wave[i]
         if chatter > 3: 
@@ -2664,7 +2679,7 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
                 w1,w2 = exclpop
                 if chatter > 1: 
                     sys.stderr.write(
-'_sum_weightedsum: Excluding from file %i - %f-%f\npopped:%s  original:%s\n'%
+'_sum_weightedsum: Excluding from file %i - %f-%f\t popped from excl:%s remains to do:%s\n'%
 (i,w1,w2,exclpop,excl))
                 M[ (wave >= w1) & (wave <= w2) ] = False
             except: 

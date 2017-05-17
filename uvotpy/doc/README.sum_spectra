@@ -110,4 +110,9 @@ A new PHA file is created for the sum spectrum:
 -rw-r--r--  1 kuin  staff  4878720 Nov 19 20:03 sw00032150001ugu_4_pha.fits
 -rw-r--r--  1 kuin  staff  3291840 Nov 19 20:14 sum_image_phaugu_1_pha.fits
 
+2017-05-16 NPMK:  The routine to sum PHA files has been rewritten and is now part of the uvotspec 
+module. The header of uvotspec.sum_PHAspectra contains some working examples. Some combinations 
+of input parameters are not working, but those from the examples do.
+
+
 Done.
