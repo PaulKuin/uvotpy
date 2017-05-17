@@ -53,8 +53,8 @@ setup(name='uvotpy',
 			     'doc/*']}, 			      
       requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve','stsci.imagestats',],
       # futurize? 
-      Programming Language :: Python ::2.7,
-      Programming Language :: Python ::3.5,
+      classifiers=['Programming Language :: Python ::2.7',
+                   'Programming Language :: Python ::3.5'],
       # requires HEADAS, WCStools, internet connection
       # environment setup  requires UVOTPY to point to the installed uvotpy library and calfiles.
       scripts=['uvotpy/scripts/uvotgrism','uvotpy/scripts/fileinfo','uvotpy/scripts/uvotmakermf','uvotpy/scripts/convert_sky2det2raw'],		   
