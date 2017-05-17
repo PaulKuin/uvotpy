@@ -7,7 +7,7 @@
 # Developed by N.P.M. Kuin (MSSL/UCL)
 #
 #
-
+from __future__ import print_function
 def readout_streak(obsid,
        target='target',
        radec=None,
@@ -115,13 +115,14 @@ def readout_streak(obsid,
       wcstools.)  
    	
    '''
+   
    import os
    import numpy as np
    try:
      from astropy.io import fits
    except:
      import pyfits as fits  
-   from __future__ import print_function
+   
    
    # write header to magfile (will append existing file)
    if magfile != None: 
