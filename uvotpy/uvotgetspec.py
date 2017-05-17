@@ -42,7 +42,7 @@ from __future__ import absolute_import
 from builtins import str
 from builtins import input
 from builtins import range
-__version__ = '2.7.0 20161031'
+__version__ = '2.8.0 20170517'
  
 import sys
 import optparse
@@ -116,7 +116,7 @@ senscorr = True # do sensitivity correction
 
 print(66*"=")
 print("uvotpy module uvotgetspec version=",__version__)
-print("N.P.M. Kuin (c) 2009-2016, see uvotpy licence.") 
+print("N.P.M. Kuin (c) 2009-2017, see uvotpy licence.") 
 print("please use reference provided at http://github.com/PaulKuin/uvotpy")
 print(66*"=","\n")
 
@@ -5923,6 +5923,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    better aspect solution.
          
    '''
+   # 2017-05-17 an error was found in fits header read of the extension of a second filter
+   #            which was introduced when converting to astropy wcs transformations
    # 2015-06-10 output the lenticular filter anchor position
    #            and fix deleted second lenticular filter 
    # 2015-07-16 changeover to astropy.wcs from ftools 
@@ -5938,7 +5940,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    from uvotwcs import makewcshdr 
    import os, sys
    
-   __version__ = '1.1 NPMK 20150716 NPMK(MSSL)'
+   __version__ = '1.2 NPMK 20170517 NPMK(MSSL)'
 
    msg = ""
    lenticular_anchors = {}
@@ -6105,15 +6107,16 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       if lfilt2 == 'uvm2' : f2ile = indir+'/'+filestub+'um2_sk.img'
       if lfilt2 == 'uvw2' : f2ile = indir+'/'+filestub+'uw2_sk.img'
       if lfilt2 == 'fk'   : f2ile = indir+'/'+filestub+'ufk_sk.img'
-      hf2 = fits.getheader(f2ile,lfext)   
-      W1 = wcs.WCS(hf2,)
-      xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
-      W2 = wcs.WCS(hf2,key='D',relax=True)    
-      x2, y2 = W2.wcs_pix2world(xpix_,ypix_,0)    
       if lfilt2_ext == None: 
           lf2ext = ext 
       else: 
           lf2ext = lfilt2_ext  
+      if chatter > 4: print("getting fits header for %s + %i\n"%(f2ile,lf2ext))
+      hf2 = fits.getheader(f2ile,lf2ext)   
+      W1 = wcs.WCS(hf2,)
+      xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
+      W2 = wcs.WCS(hf2,key='D',relax=True)    
+      x2, y2 = W2.wcs_pix2world(xpix_,ypix_,0)    
       #command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
       #       +f2ile+'['+str(lf2ext)+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
       #if chatter > 0: print command
