@@ -2642,9 +2642,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       import pyfits as fits
    from numpy import array, zeros, log10, where
    import datetime
-   import uvotwcs
+   from . import uvotwcs
    from astropy import wcs
-   
+
    if chatter > 0: 
        print("find_zeroth_orders: determining positions zeroth orders from USNO-B1")
    
