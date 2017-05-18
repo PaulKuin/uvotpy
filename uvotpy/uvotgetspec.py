@@ -911,7 +911,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if (not skip_field_src) & (sumimage == None):
       if chatter > 2: print("================== locate zeroth orders due to field sources =============")
       if wheelpos > 500: zeroth_blim_offset = 2.5 
-      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", )
+      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
       pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
       Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,"matched":matched,"ondetector":ondetector}
