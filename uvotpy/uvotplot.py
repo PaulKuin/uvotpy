@@ -148,7 +148,7 @@ def plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector,
    -------
    None or boolean map image, plots an ellipse on the current figure     
    '''   
-   from uvotmisc import uvotrotvec
+   from .uvotmisc import uvotrotvec
    from numpy import where, sin, cos, ones, asarray, outer
    
    ann_size = 49.0

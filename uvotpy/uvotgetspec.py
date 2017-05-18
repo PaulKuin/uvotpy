@@ -2644,7 +2644,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    import datetime
    from . import uvotwcs
    from astropy import wcs
-   
+
    if chatter > 0: 
        print("find_zeroth_orders: determining positions zeroth orders from USNO-B1")
    
@@ -2656,7 +2656,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        zp = 18.90   # estimated visible grism zeropoint for same   
                  
    exts = repr(ext)
-   gfile = indir+'/'+filestub+grtype+"_dt.img"   
+   gfile = indir+'/'+filestub+grtype+"_dt.img"
    infile = indir+'/'+filestub+grtype+"_dt.img["+exts+"]"
    outfile = indir+'/'+filestub+grtype+"_"+exts+"_detect.fits"
       
@@ -3288,8 +3288,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    '''
    import pylab as plt
    from numpy import array,arange,where, zeros,ones, asarray, abs, int
-   from uvotplot import plot_ellipsoid_regions
-   import uvotmisc
+   from .uvotplot import plot_ellipsoid_regions
+   from . import uvotmisc
    
    anky,ankx,xstart,xend = ank_c
    xstart -= ankx
@@ -3874,7 +3874,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
                
       2013-12-15  revised aperture functions, one for each grism (low coi)
    '''
-   import uvotmisc
+   from . import uvotmisc
    import scipy
    from scipy.interpolate import interp1d, splev
    import numpy as np
