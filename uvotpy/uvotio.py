@@ -1304,7 +1304,7 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
    
    else:    # argument arf = None      
        uvotpy = os.getenv("UVOTPY")  
-       arf = uvotpy+"/calfiles/"+calfile
+       arf = os.path.join(uvotpy,"calfiles",calfile)
        
        #try:    
        hdu = fits.open(arf)

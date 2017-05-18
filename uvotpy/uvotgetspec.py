@@ -2656,9 +2656,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        zp = 18.90   # estimated visible grism zeropoint for same   
                  
    exts = repr(ext)
-   gfile = indir+'/'+filestub+grtype+"_dt.img"
-   infile = indir+'/'+filestub+grtype+"_dt.img["+exts+"]"
-   outfile = indir+'/'+filestub+grtype+"_"+exts+"_detect.fits"
+   gfile = os.path.join(indir,filestub+grtype+"_dt.img")   
+   infile = os.path.join(indir,filestub+grtype+"_dt.img["+exts+"]")
+   outfile = os.path.join(indir,filestub+grtype+"_"+exts+"_detect.fits")
       
    if ((wheelpos == 160) ^ (wheelpos == 200)):
        command = "uvotdetect infile="+infile+ " outfile="+outfile + \
