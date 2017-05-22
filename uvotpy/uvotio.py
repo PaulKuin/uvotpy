@@ -175,7 +175,7 @@ def rate2flux(wave, rate, wheelpos,
    '''
    
    import numpy as np
-   from uvotgetspec import coi_func
+   from .uvotgetspec import coi_func
    from scipy import interpolate
    
    __version__ = '130505'
@@ -1258,7 +1258,6 @@ def readFluxCalFile(wheelpos,anchor=None,option="default",spectralorder=1,
              
    if chatter > 1:
       print("uvotio.readFluxCalFile attempt to read effective area file: ")
-      
    if arf != None:
       if arf.upper() == "CALDB":
    # try to get the file from the CALDB
@@ -1816,7 +1815,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    from scipy import interpolate
    import os
    from pylab import polyval
-   import uvotgetspec
+   from . import uvotgetspec
 
    now = datetime.date.today()
    rnu = now.day*1.2+now.month*0.99+now.year*0.3
@@ -2314,7 +2313,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
    from scipy import interpolate
    import os
    from pylab import polyval
-   from uvotgetspec import get_coi_box
+   from .uvotgetspec import get_coi_box
 
    version = '140723'
    

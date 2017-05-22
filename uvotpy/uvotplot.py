@@ -372,7 +372,7 @@ def Ellipse(xxx_todo_changeme, xxx_todo_changeme1, angle=0.0, resolution=200,  *
     (rx, ry) = xxx_todo_changeme1
     from numpy import arange, cos, sin, pi
     from matplotlib.pylab import plot
-    from uvotmisc import uvotrotvec
+    from .uvotmisc import uvotrotvec
     
     # check x is a single value etc.
     

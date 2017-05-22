@@ -1478,7 +1478,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if wr_outfile:      # write output file
     
       if ((chatter > 0) & (not clobber)): print("trying to write output files")
-      import uvotio
+      from . import uvotio
       
       if (curved == 'straight') & (not optimal_extraction): 
          ank_c2 = np.copy(ank_c) ; ank_c2[1] -= m1
@@ -2686,7 +2686,6 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       # so you can provide it another way
       useuvotdetect = False
       rate = 0
-   
    if useuvotdetect:
        f = fits.open(outfile)
        g = f[1].data
@@ -3748,7 +3747,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
          print("FATAL error in uvotgetspec.curved_extraction array sizes wrong")
 
       # this parameter allows you to restrict the range along the dispersion being considered    
-      if (test == None) | (test == 'cal'): 
+      if (test == None) | (test == 'cal'):
         ileft = 2
         irite = nx -2
       else:
@@ -8644,7 +8643,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    - 2014-07-23 NPMK use calibrated values of coi-box and factor        
    '''   
    import sys
-   import uvotmisc
+   from . import uvotmisc
    import numpy as np
    #try:
    #  from uvotpy import uvotgetspec as uvotgrism
