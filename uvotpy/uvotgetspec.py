@@ -2120,12 +2120,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg1_1= np.max(np.array([yloc_spectrum - sig1*background_lower[0],20 ]))
       #bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[0]+background_lower[1]),0]))
       bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[1]),0]))
-      bg1 = bgimg[bg1_0:bg1_1,:].copy() 
+      bg1 = bgimg[int(bg1_0):int(bg1_1),:].copy() 
       bg_limits_used[0]=bg1_0
       bg_limits_used[1]=bg1_1
-      bg1_good = img_good[bg1_0:bg1_1,:] 
-      kx0 = np.min(np.where(img_good[bg1_0,:]))+10  # assuming the spectrum is in the top two thirds of the detector   
-      kx1 = np.max(np.where(img_good[bg1_0,:]))-10  # corrected for edge effects
+      bg1_good = img_good[int(bg1_0):int(bg1_1),:] 
+      kx0 = np.min(np.where(img_good[int(bg1_0),:]))+10  # assuming the spectrum is in the top two thirds of the detector   
+      kx1 = np.max(np.where(img_good[int(bg1_0),:]))-10  # corrected for edge effects
       
    #if ((kx2-kx0) < 20): 
    #   print 'not enough valid upper background points'   
