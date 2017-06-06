@@ -1218,13 +1218,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
          else:   
           if background_lower[0] != None:
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[1]),'-k',lw=1.5 ) 
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[1]),'-k',lw=1.5 ) 
           elif background_lower[1] != None:
             plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 )              
           if background_upper[1] != None:     
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[1]),'-k',lw=1.5 )   
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[1]),'-k',lw=1.5 )   
           elif background_upper[0] != None:
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
             
