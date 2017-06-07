@@ -2120,12 +2120,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg1_1= np.max(np.array([yloc_spectrum - sig1*background_lower[0],20 ]))
       #bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[0]+background_lower[1]),0]))
       bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[1]),0]))
-      bg1 = bgimg[bg1_0:bg1_1,:].copy() 
+      bg1 = bgimg[int(bg1_0):int(bg1_1),:].copy() 
       bg_limits_used[0]=bg1_0
       bg_limits_used[1]=bg1_1
-      bg1_good = img_good[bg1_0:bg1_1,:] 
-      kx0 = np.min(np.where(img_good[bg1_0,:]))+10  # assuming the spectrum is in the top two thirds of the detector   
-      kx1 = np.max(np.where(img_good[bg1_0,:]))-10  # corrected for edge effects
+      bg1_good = img_good[int(bg1_0):int(bg1_1),:] 
+      kx0 = np.min(np.where(img_good[int(bg1_0),:]))+10  # assuming the spectrum is in the top two thirds of the detector   
+      kx1 = np.max(np.where(img_good[int(bg1_0),:]))-10  # corrected for edge effects
       
    #if ((kx2-kx0) < 20): 
    #   print 'not enough valid upper background points'   
@@ -2141,12 +2141,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg2_0= np.min(np.array([yloc_spectrum + sig1*background_upper[0],180 ]))
       #bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[0]+background_upper[1]),ny]))
       bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[1]),ny]))
-      bg2 = bgimg[bg2_0:bg2_1,:].copy()
+      bg2 = bgimg[int(bg2_0):int(bg2_1),:].copy()
       bg_limits_used[2]=bg2_0
       bg_limits_used[3]=bg2_1
-      bg2_good = img_good[bg2_0:bg2_1,:]
-      kx2 = np.min(np.where(img_good[bg2_1,:]))+10  # assuming the spectrum is in the top two thirds of the detector
-      kx3 = np.max(np.where(img_good[bg2_1,:]))-10
+      bg2_good = img_good[int(bg2_0):int(bg2_1),:]
+      kx2 = np.min(np.where(img_good[int(bg2_1),:]))+10  # assuming the spectrum is in the top two thirds of the detector
+      kx3 = np.max(np.where(img_good[int(bg2_1),:]))-10
       
    #if ((kx3-kx2) < 20): 
    #   print 'not enough valid upper background points'   
