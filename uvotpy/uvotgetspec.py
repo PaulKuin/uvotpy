@@ -2289,7 +2289,7 @@ def interpol(xx,x,y):
       s = (y1[k+1]-y1[k])/(x1[k+1]-x1[k])
       f[i] = y1[k]+s*(xx[q2[0]][i]-x1[k]) 
    f2[q2] = f   
-   f2[not q2] = np.NaN
+   f2[int(not q2)] = np.NaN
    return f2      
 
 
