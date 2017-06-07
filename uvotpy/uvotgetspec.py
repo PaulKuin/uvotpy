@@ -911,7 +911,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if (not skip_field_src) & (sumimage == None):
       if chatter > 2: print("================== locate zeroth orders due to field sources =============")
       if wheelpos > 500: zeroth_blim_offset = 2.5 
-      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", )
+      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
       Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
       pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
       Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,"matched":matched,"ondetector":ondetector}
@@ -1218,13 +1218,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
          else:   
           if background_lower[0] != None:
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[1]),'-k',lw=1.5 ) 
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[1]),'-k',lw=1.5 ) 
           elif background_lower[1] != None:
             plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 )              
           if background_upper[1] != None:     
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[1]),'-k',lw=1.5 )   
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[1]),'-k',lw=1.5 )   
           elif background_upper[0] != None:
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
             
@@ -2120,12 +2120,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg1_1= np.max(np.array([yloc_spectrum - sig1*background_lower[0],20 ]))
       #bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[0]+background_lower[1]),0]))
       bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[1]),0]))
-      bg1 = bgimg[bg1_0:bg1_1,:].copy() 
+      bg1 = bgimg[int(bg1_0):int(bg1_1),:].copy() 
       bg_limits_used[0]=bg1_0
       bg_limits_used[1]=bg1_1
-      bg1_good = img_good[bg1_0:bg1_1,:] 
-      kx0 = np.min(np.where(img_good[bg1_0,:]))+10  # assuming the spectrum is in the top two thirds of the detector   
-      kx1 = np.max(np.where(img_good[bg1_0,:]))-10  # corrected for edge effects
+      bg1_good = img_good[int(bg1_0):int(bg1_1),:] 
+      kx0 = np.min(np.where(img_good[int(bg1_0),:]))+10  # assuming the spectrum is in the top two thirds of the detector   
+      kx1 = np.max(np.where(img_good[int(bg1_0),:]))-10  # corrected for edge effects
       
    #if ((kx2-kx0) < 20): 
    #   print 'not enough valid upper background points'   
@@ -2141,12 +2141,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg2_0= np.min(np.array([yloc_spectrum + sig1*background_upper[0],180 ]))
       #bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[0]+background_upper[1]),ny]))
       bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[1]),ny]))
-      bg2 = bgimg[bg2_0:bg2_1,:].copy()
+      bg2 = bgimg[int(bg2_0):int(bg2_1),:].copy()
       bg_limits_used[2]=bg2_0
       bg_limits_used[3]=bg2_1
-      bg2_good = img_good[bg2_0:bg2_1,:]
-      kx2 = np.min(np.where(img_good[bg2_1,:]))+10  # assuming the spectrum is in the top two thirds of the detector
-      kx3 = np.max(np.where(img_good[bg2_1,:]))-10
+      bg2_good = img_good[int(bg2_0):int(bg2_1),:]
+      kx2 = np.min(np.where(img_good[int(bg2_1),:]))+10  # assuming the spectrum is in the top two thirds of the detector
+      kx3 = np.max(np.where(img_good[int(bg2_1),:]))-10
       
    #if ((kx3-kx2) < 20): 
    #   print 'not enough valid upper background points'   
@@ -2289,7 +2289,7 @@ def interpol(xx,x,y):
       s = (y1[k+1]-y1[k])/(x1[k+1]-x1[k])
       f[i] = y1[k]+s*(xx[q2[0]][i]-x1[k]) 
    f2[q2] = f   
-   f2[not q2] = np.NaN
+   f2[int(not q2)] = np.NaN
    return f2      
 
 
@@ -2656,9 +2656,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        zp = 18.90   # estimated visible grism zeropoint for same   
                  
    exts = repr(ext)
-   gfile = indir+'/'+filestub+grtype+"_dt.img"   
-   infile = indir+'/'+filestub+grtype+"_dt.img["+exts+"]"
-   outfile = indir+'/'+filestub+grtype+"_"+exts+"_detect.fits"
+   gfile = os.path.join(indir,filestub+grtype+"_dt.img")  
+   infile = os.path.join(indir,filestub+grtype+"_dt.img["+exts+"]")
+   outfile = os.path.join(indir,filestub+grtype+"_"+exts+"_detect.fits")
       
    if ((wheelpos == 160) ^ (wheelpos == 200)):
        command = "uvotdetect infile="+infile+ " outfile="+outfile + \
