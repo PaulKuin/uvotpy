@@ -389,6 +389,83 @@ def continuum_nova_del_byobs(obsday,wave,time,sp,norm):
     fnorm = interp1d(ww,nn,bounds_error=False,)
     return interp1d(w,np.polyval(bgcoef,w) * fnorm(w),bounds_error=False ) 
   
+def actual_line_flux(wavelength,flux, center=None,pass_it=True):
+    """Measure actual line flux:
+    
+    parameters
+    ----------
+    wavelength: float array
+    flux: float array
+    center: float 
+       wavelength to center plot on
+    
+    output parameters
+    -----------------
+    flux in line integrated over region
+    flux in background over same region
+    
+    Notes
+    -----
+    In novae the line profile is composed of a superposition of emission from 
+    different regions, sometimes optically thick, sometimes thin, but not gaussian in 
+    shape. 
+    
+    Here we plot the profile 
+    provide endpoints (w1,f1), (w2,f2) at the flux level of the background
+    """
+    import numpy as np
+    from pylab import plot,xlim, ylim, title, xlabel, ylabel, ginput, figure, subplot
+    from scipy.interpolate import interp1d
+    # find plot center and range 
+    if type(center) == type(None): center=wavelength.mean()
+    x1 = center - 7./300*center
+    x2 = center + 7./300*center
+    q = (wavelength > x1) & (wavelength < x2)
+    w = wavelength[q]
+    flx = flux[q]
+    y2 = flx.max()
+    f = figure()
+    ax = subplot(111)
+    getit = True
+    while getit:
+       ax.plot(w,flx,ls='steps',color='darkblue')
+       print ("please click the desired limits of the profile at the background level")
+       print ("no timeout")
+       aa = ginput(n=2,timeout=0)
+       x1,y1 = aa[0]
+       x2,y2 = aa[1]
+       x1 = float(x1)
+       x2 = float(x2)
+       y1 = float(y1)
+       y2 = float(y2)
+       q = (w >= x1) & (w <= x2)
+       bg = interp1d([x1,x2],[y1,y2],)
+       ax.fill_between(w[q], bg(w[q]), flx[q], color='c')
+       ans = raw_input("Do you want to continue ?")
+       if (ans.upper()[0] != 'Y') & (pass_it == False) :
+           print ("Answer is not yes\n TRY AGAIN ")
+           ax.cla()
+       else:
+           getit = False           
+    # not compute the fluxes
+    w = w[q]
+    flx = flx[q]
+    tot_flx = []
+    tot_bkg = (y2+y1)*(x2-x1)*0.5 
+    for k in range(1,len(w)):
+        tot_flx.append(0.25*(flx[k-1]+flx[k])*(w[k-1]+w[k]))
+    line_flx = np.asarray(tot_flx).sum() - tot_bkg
+    print (type(line_flx), line_flx)
+    print (type(tot_bkg), tot_bkg)
+    print (type( 0.5*(x2+x1) ), 0.5*(x2+x1) )
+    print ( (" wavelength = %10.2f\n line flux = %10.3e\n"+
+        " background flux = %10.2e\n FWZI = %10.2f\n")
+        %( (x2+x1)*0.5, line_flx, tot_bkg, (x2-x1) ) )   
+    return {'wavelength':(x2+x1)*0.5,
+            'line_flux':line_flx,
+            'integrated_background_flux':tot_bkg,
+            "FWZI":(x2-x1)}
+      
 ############################
 
     
