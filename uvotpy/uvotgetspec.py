@@ -42,7 +42,9 @@ from __future__ import absolute_import
 from future.builtins import str
 from future.builtins import input
 from future.builtins import range
-__version__ = '2.7.0 20161031'
+
+__version__ = '2.8.0 20170608'
+
  
 import sys
 import optparse
@@ -116,7 +118,7 @@ senscorr = True # do sensitivity correction
 
 print(66*"=")
 print("uvotpy module uvotgetspec version=",__version__)
-print("N.P.M. Kuin (c) 2009-2016, see uvotpy licence.") 
+print("N.P.M. Kuin (c) 2009-2017, see uvotpy licence.") 
 print("please use reference provided at http://github.com/PaulKuin/uvotpy")
 print(66*"=","\n")
 
@@ -1218,13 +1220,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
          else:   
           if background_lower[0] != None:
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]-background_lower[1]),'-k',lw=1.5 ) 
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]-background_lower[1]),'-k',lw=1.5 ) 
           elif background_lower[1] != None:
             plt.plot(ac+q1[0],plt_bg*(background_lower[1]),'-k',lw=1.5 )              
           if background_upper[1] != None:     
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[0]),'-k',lw=1.5 )
-            plt.plot(ac+q1[0],plt_bg*(y1[ank_c[1]]+background_upper[1]),'-k',lw=1.5 )   
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[0]),'-k',lw=1.5 )
+            plt.plot(ac+q1[0],plt_bg*(y1[int(ank_c[1])]+background_upper[1]),'-k',lw=1.5 )   
           elif background_upper[0] != None:
             plt.plot(ac+q1[0],plt_bg*(background_upper[0]),'-k',lw=1.5 )
             
@@ -2120,12 +2122,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg1_1= np.max(np.array([yloc_spectrum - sig1*background_lower[0],20 ]))
       #bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[0]+background_lower[1]),0]))
       bg1_0=  np.max(np.array([yloc_spectrum - sig1*(background_lower[1]),0]))
-      bg1 = bgimg[bg1_0:bg1_1,:].copy() 
+      bg1 = bgimg[int(bg1_0):int(bg1_1),:].copy() 
       bg_limits_used[0]=bg1_0
       bg_limits_used[1]=bg1_1
-      bg1_good = img_good[bg1_0:bg1_1,:] 
-      kx0 = np.min(np.where(img_good[bg1_0,:]))+10  # assuming the spectrum is in the top two thirds of the detector   
-      kx1 = np.max(np.where(img_good[bg1_0,:]))-10  # corrected for edge effects
+      bg1_good = img_good[int(bg1_0):int(bg1_1),:] 
+      kx0 = np.min(np.where(img_good[int(bg1_0),:]))+10  # assuming the spectrum is in the top two thirds of the detector   
+      kx1 = np.max(np.where(img_good[int(bg1_0),:]))-10  # corrected for edge effects
       
    #if ((kx2-kx0) < 20): 
    #   print 'not enough valid upper background points'   
@@ -2141,12 +2143,12 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
       bg2_0= np.min(np.array([yloc_spectrum + sig1*background_upper[0],180 ]))
       #bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[0]+background_upper[1]),ny]))
       bg2_1=  np.min(np.array([yloc_spectrum + sig1*(background_upper[1]),ny]))
-      bg2 = bgimg[bg2_0:bg2_1,:].copy()
+      bg2 = bgimg[int(bg2_0):int(bg2_1),:].copy()
       bg_limits_used[2]=bg2_0
       bg_limits_used[3]=bg2_1
-      bg2_good = img_good[bg2_0:bg2_1,:]
-      kx2 = np.min(np.where(img_good[bg2_1,:]))+10  # assuming the spectrum is in the top two thirds of the detector
-      kx3 = np.max(np.where(img_good[bg2_1,:]))-10
+      bg2_good = img_good[int(bg2_0):int(bg2_1),:]
+      kx2 = np.min(np.where(img_good[int(bg2_1),:]))+10  # assuming the spectrum is in the top two thirds of the detector
+      kx3 = np.max(np.where(img_good[int(bg2_1),:]))-10
       
    #if ((kx3-kx2) < 20): 
    #   print 'not enough valid upper background points'   
@@ -2289,7 +2291,7 @@ def interpol(xx,x,y):
       s = (y1[k+1]-y1[k])/(x1[k+1]-x1[k])
       f[i] = y1[k]+s*(xx[q2[0]][i]-x1[k]) 
    f2[q2] = f   
-   f2[not q2] = np.NaN
+   f2[int(not q2)] = np.NaN
    return f2      
 
 
@@ -3957,7 +3959,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
                  apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
                  apercorr = renormal / apercf4(xx)                       
       else: 
-       # when xx<4.5, mode !gaussian, wheelpos==None use the following
+       #Â when xx<4.5, mode !gaussian, wheelpos==None use the following
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
        # the function does not rise as steeply so has more prominent wings
         tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
@@ -5922,6 +5924,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    better aspect solution.
          
    '''
+   # 2017-05-17 an error was found in fits header read of the extension of a second filter
+   #            which was introduced when converting to astropy wcs transformations
    # 2015-06-10 output the lenticular filter anchor position
    #            and fix deleted second lenticular filter 
    # 2015-07-16 changeover to astropy.wcs from ftools 
@@ -5937,7 +5941,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    from .uvotwcs import makewcshdr 
    import os, sys
    
-   __version__ = '1.1 NPMK 20150716 NPMK(MSSL)'
+   __version__ = '1.2 NPMK 20170517 NPMK(MSSL)'
 
    msg = ""
    lenticular_anchors = {}
@@ -6104,15 +6108,16 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       if lfilt2 == 'uvm2' : f2ile = indir+'/'+filestub+'um2_sk.img'
       if lfilt2 == 'uvw2' : f2ile = indir+'/'+filestub+'uw2_sk.img'
       if lfilt2 == 'fk'   : f2ile = indir+'/'+filestub+'ufk_sk.img'
-      hf2 = fits.getheader(f2ile,lfext)   
-      W1 = wcs.WCS(hf2,)
-      xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
-      W2 = wcs.WCS(hf2,key='D',relax=True)    
-      x2, y2 = W2.wcs_pix2world(xpix_,ypix_,0)    
       if lfilt2_ext == None: 
           lf2ext = ext 
       else: 
           lf2ext = lfilt2_ext  
+      if chatter > 4: print("getting fits header for %s + %i\n"%(f2ile,lf2ext))
+      hf2 = fits.getheader(f2ile,lf2ext)   
+      W1 = wcs.WCS(hf2,)
+      xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
+      W2 = wcs.WCS(hf2,key='D',relax=True)    
+      x2, y2 = W2.wcs_pix2world(xpix_,ypix_,0)    
       #command = HEADAS+'/bin/uvotapplywcs infile=radec.txt outfile=skyfits.out wcsfile=\"'\
       #       +f2ile+'['+str(lf2ext)+']\" operation=WORLD_TO_PIX chatter='+str(chatter)
       #if chatter > 0: print command
@@ -8697,7 +8702,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    else: 
        tot_cpf = None   
        
-   bkg_cpf = bkg_countsperframe = bkgrate * frametime   # background was already smoothed
+   bkg_cpf = bkg_countsperframe = bkgrate * frametime   #Â background was already smoothed
    
    if chatter > 3: 
        sys.stderr.write("alpha  = %f\nnumber of data points %i  printing every 25th"%
