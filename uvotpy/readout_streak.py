@@ -7,7 +7,7 @@
 # Developed by N.P.M. Kuin (MSSL/UCL)
 #
 #
-
+from __future__ import print_function
 def readout_streak(obsid,
        target='target',
        radec=None,
@@ -115,12 +115,15 @@ def readout_streak(obsid,
       wcstools.)  
    	
    '''
+   
    import os
    import numpy as np
    try:
      from astropy.io import fits
    except:
      import pyfits as fits  
+   
+   
    # write header to magfile (will append existing file)
    if magfile != None: 
       magfh = open(magfile,'a')
@@ -137,34 +140,34 @@ def readout_streak(obsid,
        bands = [bands[k_band]]
    for b in bands:
      filename = 'sw'+obsid+b+'_rw.img'
-     print "looking for "+filename
+     print("looking for "+filename)
      if os.access(filename, os.F_OK):
         rawfiles.append(filename)
      elif os.access(filename+'.gz', os.F_OK):
         if os.system('gunzip '+filename+'.gz'):
 	   rawfiles.append(filename)
    if len(rawfiles) == 0:
-      print " no valid raw files found in the current directory; unzipping any present; try to rerun."
+      print(" no valid raw files found in the current directory; unzipping any present; try to rerun.")
       return
-   print "raw files found : ",rawfiles
+   print("raw files found : ",rawfiles)
    # check the small mode image size is consistent with naxis; update header
    for rf in rawfiles:
      obses=[]
-     print "examining "+rf
+     print("examining "+rf)
      hdu = fits.open(rf,'update')
      n_ext= len(hdu)
      for k in range(1,n_ext):
-        print "examining HDU number :",k
+        print("examining HDU number :",k)
         ft = hdu[k].header['framtime'] 
 	ax1 = hdu[k].header['naxis1']
 	binx = hdu[k].header['binx']
 	tstart=hdu[k].header['tstart']
-	print "TSTART = ",tstart
+	print("TSTART = ",tstart)
 	#
 	expected = int(8*256/binx/0.0110322*ft + 0.1)	   	
         if (np.abs(expected - ax1) > 5) & (ax1 == 2048/binx) : 
             # make sub image for the extension
-	    print "converting image size - checking presence HK file"
+	    print("converting image size - checking presence HK file")
 	    if os.access('../hk/sw'+obsid+'uct.hk.gz', os.F_OK): 
 	       os.system('gunzip '+'../hk/sw'+obsid+'uct.hk.gz')
 	    if os.access('../hk/sw'+obsid+'uct.hk', os.F_OK):
@@ -186,7 +189,7 @@ def readout_streak(obsid,
 	       x1=(DW_X0+DW_XSIZ)*16
 	       y0=DW_Y0*16
 	       y1=(DW_Y0+DW_YSIZ)*16 
-	       print "updating image size to x:",x0,x1," y:",y0,y1
+	       print("updating image size to x:",x0,x1," y:",y0,y1)
 	       hdu[k].data = hdu[k].data[x0:x1,y0:y1]
 	       hdu[k].header['DW_X0'] = DW_X0
 	       hdu[k].header['DW_Y0'] = DW_Y0
@@ -198,8 +201,8 @@ def readout_streak(obsid,
 	       hdu[k].header['WINDOWDY'] = DW_YSIZ*16
                hk.close()	    
 	    else:
-	       print 'no HK data available to update the raw image header'
-	       print 'readout streak data questionable'
+	       print('no HK data available to update the raw image header')
+	       print('readout streak data questionable')
      hdu.writeto(rf+".new",output_verify='fix',clobber=True)
      #hdu.close()
      # apply mod8 correction to  raw image
@@ -219,28 +222,28 @@ def readout_streak(obsid,
      sk_ = ""
      for snip in sk: sk_ += snip
      sk = sk_
-     print rf
-     print bp
-     print md
-     print sk
+     print(rf)
+     print(bp)
+     print(md)
+     print(sk)
      if not os.access(md, os.F_OK):
         command = "uvotbadpix infile="+rf+".new"+" badpixlist=CALDB outfile="+\
         bp+" compress=YES clobber=yes history=yes chatter="+str(chatter)
-        print command	
+        print(command)
         os.system(command)	         
         command = "uvotmodmap infile="+rf+".new"+" badpixfile="+bp+" outfile="+md+\
         " mod8prod=NO mod8file=CALDB nsig=3 ncell=16 subimage=NO "+\
         " xmin=0 xmax=2047 ymin=0 ymax=2047 clobber=yes history=yes chatter="\
         +str(chatter)
-        print command 
+        print(command)
         os.system(command)	    
      # run Mat's readout_streak c program on the mod8 corrected file
      resfile = "results."+b+".1234.txt"
      command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
-     print "calling readout_streak main program:\n\t",command
+     print("calling readout_streak main program:\n\t",command)
      if (not os.access(resfile, os.F_OK)) or rerun_readout_streak: 
         # if already present only rerun if parameter is set
-        print command
+        print(command)
         os.system(command)
      # process the output from readout_streak 
      hdu = fits.open(md)
@@ -260,11 +263,11 @@ def readout_streak(obsid,
 	 )
      # run readout_streak_mag 
      for obs in obses:
-        print "============== LSS and magnitudes for : "+obs["infile"]+"+",obs["extension"]
+        print("============== LSS and magnitudes for : "+obs["infile"]+"+",obs["extension"])
 	if radec != None:
 	    if type(radec) != list: 
 	       rawxy = None
-	       print "radec parameter is not a list!"
+	       print("radec parameter is not a list!")
 	    else:   
 	       ra,dec=radec
 	       ext = obs['extension']
@@ -284,7 +287,7 @@ def readout_streak(obsid,
 	    obs.update( {'det_coord':det_coord})       
 	    result.append(obs)
 	else:
-	    print "\nskipping this image\nconsider running uvotsource\n"  
+	    print("\nskipping this image\nconsider running uvotsource\n")
 	    #   
 
    # mag output : cycle through filters
@@ -303,7 +306,7 @@ def readout_streak(obsid,
        for obj in result:
            if (do_only_band != None) & (fi != do_only_band): 
 	       break
-           print "obj band=",obj['band']," searching band =",fi
+           print("obj band=",obj['band']," searching band =",fi)
            if obj['band'] == fi:
 	       try:
 	          x = obj['img_coord'][0]
@@ -339,11 +342,11 @@ def readout_streak(obsid,
 	          datobs = obj['dateobs']
 		  ext = obj['extension']
 		  tsta = obj['tstart']
-		  print mag,err,tsta, datobs,ext
-		  print fmt
+		  print(mag,err,tsta, datobs,ext)
+		  print(fmt)
                   magfh.write(fmt%(mag,err,tsta,datobs[0:16],obsid,ext))
                except:
-	          print "there seems to be a problem with:", obj
+	          print("there seems to be a problem with:", obj)
 	          pass    		  
        
    magfh.close()
@@ -378,16 +381,16 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
       countrates.append(k[2])
    kol = np.array(kol)   
    if len(kol) == 0:   
-      print "zero array kol in _lss_corr ???!!!!"
-      print "LSS correction cannot be determined."	 
+      print("zero array kol in _lss_corr ???!!!!")
+      print("LSS correction cannot be determined.")
       return 1.0, (0,0), (1100.5,1100.5)
    k_sn_max = np.where(np.max(kol) == kol) # maximum s/n column
-   print "k S/N max=",k_sn_max[0][0]
+   print("k S/N max=",k_sn_max[0][0])
    kol = []
    for k in cols:
       kol.append(k[0]) # column number relative to bottom rh corner subimage
    if len(kol) == 0:   
-      print "LSS correction cannot be determined."	 
+      print("LSS correction cannot be determined.")
       return 1.0, (0,0), (1100.5,1100.5)
    im=fits.getdata(file, ext=ext)   
    hdr=fits.getheader(file, ext=ext)
@@ -417,15 +420,15 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
    skip = False
    count = 0
    while not happy :  
-      print "put the cursor on the location of your source"
+      print("put the cursor on the location of your source")
       count += 1
       coord = ginput(timeout=0)
-      print "selected:",coord
+      print("selected:",coord)
       if len(coord[0]) == 2: 
-         print "window corner:", hdr['windowx0'],hdr['windowy0']
+         print("window corner:", hdr['windowx0'],hdr['windowy0'])
          xloc = coord[0][0]+hdr['windowx0']
          yloc = coord[0][1]+hdr['windowy0']
-         print "on detector (full raw image)  should be :",xloc,yloc
+         print("on detector (full raw image)  should be :",xloc,yloc)
          #plot(coord[0][0],coord[0][1],'+',markersize=14,color='k',lw=2) #can't see it
 	 axhspan(coord[0][1]-6,coord[0][1]+6,0,1,facecolor='k',alpha=0.3)
 	 if rawxy != None:
@@ -441,9 +444,9 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
 	    if ans.upper()[0] == 'S': 
 	        return 0.0, coord[0], (yloc+104,xloc+78) 
       else:
-         print "no position found"	 
+         print("no position found")
       if count > 10:
-         print "Too many tries: aborting" 
+         print("Too many tries: aborting" )
          happy = True
    im = ''
    try:
@@ -454,17 +457,17 @@ def _lss_corr(obs,interactive=True,maxcr=False,figno=20,
          " SKYFLAT "+\
          obs['dateobs'].split('T')[0]+"  "+\
 	 obs['dateobs'].split('T')[1]+" - > lssfile.1234.tmp"
-      print command	 
+      print(command)
       os.system(command)
       f = open('lssfile.1234.tmp')
       lssfile = f.readline()
       f.close()
       f = fits.getdata(lssfile.split()[0],ext=int(lssfile.split()[1]))
       lss = f[ yloc,xloc]
-      print "lss correction = ",lss,"  coords=",coord[0], (yloc+104,xloc+78)
+      print("lss correction = ",lss,"  coords=",coord[0], (yloc+104,xloc+78))
       return lss, coord[0], (yloc+104,xloc+78) 
    except:
-      print "LSS correction cannot be determined."	 
+      print("LSS correction cannot be determined.")
       return 1.0, (0,0), (1100.5,1100.5)
     
 def _read_readout_streak_output(obses,inp='results.1234.txt',
@@ -514,8 +517,8 @@ def _read_readout_streak_output(obses,inp='results.1234.txt',
 	   ))
       if r[0:3] == 'Ext':
          if int(r[3:6]) != int(ext):
-	    print r
-	    print "check extension failed : ",int(r[3:6])," not equal to ",int(ext) 
+	    print(r)
+	    print("check extension failed : ",int(r[3:6])," not equal to ",int(ext))
          ext_data.append(dict(
 	    ext = ext,
 	    column = r.split(',')[0].split()[4],
@@ -531,7 +534,7 @@ def _read_readout_streak_output(obses,inp='results.1234.txt',
       for mm in range(len(ext_data)):
 	 try:
             if ext_data[mm]['ext'] == extension:
-               print "debug ",m, mm, extension, ext_data[mm]
+               print("debug ",m, mm, extension, ext_data[mm])
 	       streak_col_SN_CR_ERR.append([
 	          float(ext_data[mm]['column']),
 	          float(ext_data[mm]['SN']),
@@ -592,7 +595,7 @@ def _readout_streak_mag(obs, target='target',lss=1.0,
    t_MCP=2.36e-4
    overlimit = False
    band = obs['band'].lower()
-   print "\n%s Readout Streak for %s in the %s filter. "%(target,obs['dateobs'], band)
+   print("\n%s Readout Streak for %s in the %s filter. "%(target,obs['dateobs'], band))
    
    # correction for sensitivity loss
    date=obs['dateobs']
@@ -604,7 +607,7 @@ def _readout_streak_mag(obs, target='target',lss=1.0,
          int(date[8:10]),int(date[11:13]), int(date[14:16]),
          int(date[17:20]),0) - datetime.datetime(2005,1,1,0,0,0)
    xyear = xseconds.days/365.26
-   print "sensitivity correction = %7.3f"%((1+0.01*xyear))
+   print("sensitivity correction = %7.3f"%((1+0.01*xyear)))
 
    # index for the proper frametime   
    try:
@@ -625,9 +628,9 @@ def _readout_streak_mag(obs, target='target',lss=1.0,
      result = []
      for streak in obs['streak_col_SN_CR_ERR']:
          column,SN,rate,err = streak 
-	 print "column,S/N,rate,err= ",streak
+	 print("column,S/N,rate,err= ",streak)
 	 if subimg_coord != None:
-	    print "distance column to target: ", column-subimg_coord[0]
+	    print("distance column to target: ", column-subimg_coord[0])
 	   
 	 result.append(
 	   _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,lss,zp,
@@ -648,7 +651,7 @@ def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
        r_coi= -(np.log(1.0-(S[k]*rate*t_MCP)))/(S[k] * t_MCP)
        r_coi_u = -(np.log(1.0-(S[k]*(rate-err)*t_MCP)))/(S[k] * t_MCP)
        r_coi_d = -(np.log(1.0-(S[k]*(rate+err)*t_MCP)))/(S[k] * t_MCP)
-       print "observed CR =%10.5f,  MCP-loss corrected CR =%10.5f"%(rate,r_coi)
+       print("observed CR =%10.5f,  MCP-loss corrected CR =%10.5f"%(rate,r_coi))
    # correct for LSS
    
    r_coi = r_coi * (1+0.01*xyear)/lss
@@ -661,11 +664,11 @@ def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
    mag_u = zp[band][k] - 2.5*np.log10(r_coi_u)
    mag_d = zp[band][k] - 2.5*np.log10(r_coi_d)
    if overlimit: 
-      print "count rate is over the recommended limit - returning negative errors. Deal with it properly !!!"
-      print "%s magnitude <%7.3f (+%7.3f -%7.3f)\n"%(band,mag,mag_u-mag,mag-mag_d)
+      print("count rate is over the recommended limit - returning negative errors. Deal with it properly !!!")
+      print("%s magnitude <%7.3f (+%7.3f -%7.3f)\n"%(band,mag,mag_u-mag,mag-mag_d))
       return overlimit,band,mag,-mag_u+mag,-mag+mag_d
    else:   
-      print "%s magnitude = %7.3f +%7.3f -%7.3f\n"%(band,mag,mag_u-mag,mag-mag_d)
+      print("%s magnitude = %7.3f +%7.3f -%7.3f\n"%(band,mag,mag_u-mag,mag-mag_d))
    return overlimit,band,mag,mag_u-mag,mag-mag_d
 
 def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
@@ -713,7 +716,7 @@ def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
    status = 0
    # check the files are present
    if not os.access(skyfile,os.F_OK):
-      if chatter > 0: print "sky position to raw img position: skyfile not found" 
+      if chatter > 0: print("sky position to raw img position: skyfile not found" )
       status = 1
       return status, -1,-1
    # check for raw file was done in calling program
@@ -723,7 +726,7 @@ def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
    # match exposure id
    expid = (sky[ext].header['extname'] == raw[ext].header['extname'] )
    if not expid:  
-      if chatter > 0: print "sky file extension does not match raw file"
+      if chatter > 0: print("sky file extension does not match raw file")
       status = 1
       return status, -1,-1
          
@@ -740,7 +743,7 @@ def _sky_to_raw(ra,dec,skyfile,rawfile,ext,chatter=1):
    y = dety/scl+1100.5 -78   # img pixels undistorted
    x = x/binx
    y = y/binx
-   if chatter > 0 : print "detector image position should be [%i,%i]"%(x,y)
+   if chatter > 0 : print("detector image position should be [%i,%i]"%(x,y))
    # convert xdet,ydet -> x,y (raw)
    #os.system("cat "+str(detx)+","+str(dety)+" > detxy.txt")
    #command = HEADAS+'/bin/uvotapplywcs infile=detxy.txt'\

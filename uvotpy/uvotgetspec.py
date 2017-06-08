@@ -42,7 +42,9 @@ from __future__ import absolute_import
 from future.builtins import str
 from future.builtins import input
 from future.builtins import range
+
 __version__ = '2.8.0 20170608'
+
  
 import sys
 import optparse
@@ -69,8 +71,8 @@ try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
   pass  
-from uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
-import uvotplot
+from .uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
+
 import datetime
 import os
 
@@ -406,8 +408,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #     
    #     The background must be consistent with the width of the spectrum summed. 
    
-   from uvotio import fileinfo, rate2flux, readFluxCalFile
-   
+   from .uvotio import fileinfo, rate2flux, readFluxCalFile
+   from .uvotplot import plot_ellipsoid_regions
    if (type(RA) == np.ndarray) | (type(DEC) == np.array): 
       raise IOError("RA, and DEC arguments must be of float type ")
 
@@ -1144,7 +1146,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #  TBD : add curvature 
          plt.plot(xpnt,ypnt,'+k',markersize=14)
          if not skip_field_src:   
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,
+            plot_ellipsoid_regions(Xim,Yim,
                        Xa,Yb,Thet,b2mag,matched,ondetector,
                        pivot_ori,pivot_ori,dims,17.,)
          if zoom:
@@ -1185,7 +1187,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             #pivot_ori=ankerimg
             mlim = 17.
             if wheelpos > 500: mlim = 15.5
-            uvotplot.plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
+            plot_ellipsoid_regions(Xim,Yim,Xa,Yb,Thet,b2mag,
                      matched,ondetector,
                      pivot,pivot_ori,
                      dims2,mlim,
@@ -1478,7 +1480,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if wr_outfile:      # write output file
     
       if ((chatter > 0) & (not clobber)): print("trying to write output files")
-      import uvotio
+      from . import uvotio
       
       if (curved == 'straight') & (not optimal_extraction): 
          ank_c2 = np.copy(ank_c) ; ank_c2[1] -= m1
@@ -2642,9 +2644,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       import pyfits as fits
    from numpy import array, zeros, log10, where
    import datetime
-   import uvotwcs
+   from . import uvotwcs
    from astropy import wcs
-   
+
    if chatter > 0: 
        print("find_zeroth_orders: determining positions zeroth orders from USNO-B1")
    
@@ -2686,7 +2688,6 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       # so you can provide it another way
       useuvotdetect = False
       rate = 0
-   
    if useuvotdetect:
        f = fits.open(outfile)
        g = f[1].data
@@ -3288,8 +3289,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    '''
    import pylab as plt
    from numpy import array,arange,where, zeros,ones, asarray, abs, int
-   from uvotplot import plot_ellipsoid_regions
-   import uvotmisc
+   from .uvotplot import plot_ellipsoid_regions
+   from . import uvotmisc
    
    anky,ankx,xstart,xend = ank_c
    xstart -= ankx
@@ -3748,7 +3749,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
          print("FATAL error in uvotgetspec.curved_extraction array sizes wrong")
 
       # this parameter allows you to restrict the range along the dispersion being considered    
-      if (test == None) | (test == 'cal'): 
+      if (test == None) | (test == 'cal'):
         ileft = 2
         irite = nx -2
       else:
@@ -3874,7 +3875,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
                
       2013-12-15  revised aperture functions, one for each grism (low coi)
    '''
-   import uvotmisc
+   from . import uvotmisc
    import scipy
    from scipy.interpolate import interp1d, splev
    import numpy as np
@@ -3958,7 +3959,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
                  apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
                  apercorr = renormal / apercf4(xx)                       
       else: 
-       # when xx<4.5, mode !gaussian, wheelpos==None use the following
+       #Â when xx<4.5, mode !gaussian, wheelpos==None use the following
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
        # the function does not rise as steeply so has more prominent wings
         tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
@@ -5937,7 +5938,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    except:
       import pyfits as fits
 
-   from uvotwcs import makewcshdr 
+   from .uvotwcs import makewcshdr 
    import os, sys
    
    __version__ = '1.2 NPMK 20170517 NPMK(MSSL)'
@@ -8647,7 +8648,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    - 2014-07-23 NPMK use calibrated values of coi-box and factor        
    '''   
    import sys
-   import uvotmisc
+   from . import uvotmisc
    import numpy as np
    #try:
    #  from uvotpy import uvotgetspec as uvotgrism
@@ -8701,7 +8702,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    else: 
        tot_cpf = None   
        
-   bkg_cpf = bkg_countsperframe = bkgrate * frametime   # background was already smoothed
+   bkg_cpf = bkg_countsperframe = bkgrate * frametime   #Â background was already smoothed
    
    if chatter > 3: 
        sys.stderr.write("alpha  = %f\nnumber of data points %i  printing every 25th"%
