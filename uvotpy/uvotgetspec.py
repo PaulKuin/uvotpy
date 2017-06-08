@@ -39,10 +39,10 @@ from __future__ import absolute_import
 # uvotpy 
 # (c) 2009-2017, see Licence  
 
-from builtins import str
-from builtins import input
-from builtins import range
-__version__ = '2.8.0 20170517'
+from future.builtins import str
+from future.builtins import input
+from future.builtins import range
+__version__ = '2.8.0 20170608'
  
 import sys
 import optparse
