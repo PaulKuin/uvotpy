@@ -7592,10 +7592,8 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
    
    Paul Kuin 2011 (MSSL/UCL)
    '''
-   try:
-      from astropy.io import fits as pyfits
-   except:
-      import pyfits
+   
+   from astropy.io import fits 
    import numpy as np
    import uvotmisc
    import pylab as plt
@@ -7621,7 +7619,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
    if mode == 'create':         
       for m in range(len(pha_file_list)):
          pha_file = pha_file_list[m]
-         d = pyfits.getdata(pha_file,2)
+         d = fits.getdata(pha_file,2)
          #print m," - ",pha_file
          if m == 0:
             w1 = d['lambda']
@@ -7654,7 +7652,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          print("reset shifts ",ysh)
       for m in range(len(pha_file_list)):
          pha_file = pha_file_list[m]
-         f = pyfits.open(pha_file)
+         f = fits.open(pha_file)
          headers.append( f[1].header )
          if chatter > 0 : 
             print('reading '+pha_file+'   in mode='+mode)
@@ -7729,11 +7727,12 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
 #     create file with sum extracted image
          
       hdr = headers[0]          
-      fsum = pyfits.PrimaryHDU(data=img,header=hdr)
-      hdulist = pyfits.HDUList(fsum)
-      hdulist[0].header.update(['EXPOSURE',tot_exposure,comment='total exposure time'])
-      hdulist[0].header.update(['EXTNAME','SPECTRUMSUM'])
-      hdulist[0].header.update(['EXPID','989979969'])
+      fsum = fits.PrimaryHDU(data=img,header=hdr)
+      hdulist = fits.HDUList(fsum)
+      hdr0 = hdulist[0].header
+      hdu0['EXPOSURE']= (tot_exposure,'total exposure time')
+      hdu0['EXTNAME']='SPECTRUMSUM'
+      hdu0['EXPID']='989979969'
       
       for head in headers:
          hist = head.get_history()
@@ -7745,20 +7744,20 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
             hdulist[0].header.add_history(h)
       for pha_file in pha_file_list:        
          hdulist[0].header.add_history('added file'+pha_file)
-      hdulist[0].header.update(['TSTART',tstart])
-      hdulist[0].header.update(['TSTOP',tstop])
-      exthdu = pyfits.ImageHDU(expmap) # add extension for the expmap 
+      hdulist[0].header['TSTART']=tstart
+      hdulist[0].header['TSTOP']=tstop
+      exthdu = fits.ImageHDU(expmap) # add extension for the expmap 
       hdulist.append(exthdu)
-      hdulist[1].header.update(['EXTNAME','EXPOSUREMAP'])
-      # quahdu = pyfits.ImageHDU( quahdu )
+      hdulist[1].header['EXTNAME']='EXPOSUREMAP'
+      # quahdu = fits.ImageHDU( quahdu )
       # hdulist.append(quahdu)
-      #hdulist[2].header.update(['EXTNAME','QUALITYMAP'])
+      #hdulist[2].header['EXTNAME']='QUALITYMAP'
       hdulist.writeto(sum_file_name,clobber=clobber)
       hdulist.close()
       print("total exposure of images = ",tot_exposure)
                  
    elif mode == 'read':    #  read the summed, extracted image and header
-         hdulist  = pyfits.open(sum_file_name)
+         hdulist  = fits.open(sum_file_name)
          hdr = hdulist[0].header
          exposure = hdr['exposure']
          wheelpos = hdulist[0].header['wheelpos']
