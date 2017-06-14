@@ -7721,7 +7721,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          plt.plot( img2[80:120,:].sum(0) )
          plt.grid()
          plt.legend(legend)
-         plt.title('adding image: pixels summed y[80:120] to check alignment')
+         plt.title('adding image: pixels summed y[80:120] to check x-alignment')
          f.close()
         
 #     create file with sum extracted image
@@ -7730,12 +7730,12 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
       fsum = fits.PrimaryHDU(data=img,header=hdr)
       hdulist = fits.HDUList(fsum)
       hdr0 = hdulist[0].header
-      hdu0['EXPOSURE']= (tot_exposure,'total exposure time')
-      hdu0['EXTNAME']='SPECTRUMSUM'
-      hdu0['EXPID']='989979969'
+      hdr0['EXPOSURE'] = (tot_exposure,'total exposure time')
+      hdr0['EXTNAME'] = 'SPECTRUMSUM'
+      hdr0['EXPID'] = ('989979969','completely bogus id')
       
       for head in headers:
-         hist = head.get_history()
+         hist = head['history']
          filetag = head['filetag']
          hdulist[0].header.add_history(" copy header[1] of filetag "+filetag)
          tstart = min([head['tstart'],tstart])
