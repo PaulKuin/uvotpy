@@ -7731,9 +7731,9 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
       hdr = headers[0]          
       fsum = pyfits.PrimaryHDU(data=img,header=hdr)
       hdulist = pyfits.HDUList(fsum)
-      hdulist[0].header.update('EXPOSURE',tot_exposure,comment='total exposure time')
-      hdulist[0].header.update('EXTNAME','SPECTRUMSUM')
-      hdulist[0].header.update('EXPID','989979969')
+      hdulist[0].header.update(['EXPOSURE',tot_exposure,comment='total exposure time'])
+      hdulist[0].header.update(['EXTNAME','SPECTRUMSUM'])
+      hdulist[0].header.update(['EXPID','989979969'])
       
       for head in headers:
          hist = head.get_history()
@@ -7745,14 +7745,14 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
             hdulist[0].header.add_history(h)
       for pha_file in pha_file_list:        
          hdulist[0].header.add_history('added file'+pha_file)
-      hdulist[0].header.update('TSTART',tstart)
-      hdulist[0].header.update('TSTOP',tstop)
+      hdulist[0].header.update(['TSTART',tstart])
+      hdulist[0].header.update(['TSTOP',tstop])
       exthdu = pyfits.ImageHDU(expmap) # add extension for the expmap 
       hdulist.append(exthdu)
-      hdulist[1].header.update('EXTNAME','EXPOSUREMAP')
+      hdulist[1].header.update(['EXTNAME','EXPOSUREMAP'])
       # quahdu = pyfits.ImageHDU( quahdu )
       # hdulist.append(quahdu)
-      #hdulist[2].header.update('EXTNAME','QUALITYMAP')
+      #hdulist[2].header.update(['EXTNAME','QUALITYMAP'])
       hdulist.writeto(sum_file_name,clobber=clobber)
       hdulist.close()
       print("total exposure of images = ",tot_exposure)
