@@ -469,7 +469,8 @@ def actual_line_flux(wavelength,flux, center=None,pass_it=True):
 ############################
 
     
-def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],spdata=spdata):
+def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],
+       fontsize=8,spdata=spdata):
    """add the line ids to the plot
    
    parameters
@@ -489,6 +490,8 @@ def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],spdata=spda
        try for a log scale.a scale_factor that is sized by the log scale 
        from ylower to ylower+scale_factor (so if ylower is 2x** and 
        scale_factor=0.1, the line will go from 2-3x**.  
+    fontsize : int
+       font size   
    """
    xlist = spdata[ion]
    xlim = ax.get_xlim()
@@ -499,7 +502,7 @@ def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],spdata=spda
    wave = []
    for line in xlist:
       if (line['wavevac'] > xlim[0]) & (line['wavevac'] < xlim[1]):
-          ax.text(line['wavevac'],ylower+dy1,line['label'],fontsize=8,color=color,
+          ax.text(line['wavevac'],ylower+dy1,line['label'],fontsize=fontsize,color=color,
               horizontalalignment='center',verticalalignment='bottom',
               rotation='vertical' )
           wave.append(line['wavevac'])
