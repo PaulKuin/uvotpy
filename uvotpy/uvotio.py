@@ -186,7 +186,7 @@ def rate2flux(wave, rate, wheelpos,
    hnu = h_c_ang/(wave)      
    
    # assume uv grism
-   if pixno == None:      
+   if pixno is None:      
       dis = np.arange(len(wave)) - 400  # see uvotgetspec.curved_extraction()
       if spectralorder == 2: dis -= 260
    else:
