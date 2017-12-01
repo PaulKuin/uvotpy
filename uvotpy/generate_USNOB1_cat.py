@@ -26,4 +26,4 @@ def get_usnob1_cat(ra, dec):
     
     searchcenter_ofile = open('searchcenter.ub1', 'w')
     searchcenter_ofile.write('{},{}'.format(ra, dec))
-    serachcenter_ofile.close()
+    searchcenter_ofile.close()
