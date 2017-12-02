@@ -72,6 +72,7 @@ try:
 except:
   pass  
 from .uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
+from .generate_USNOB1_cat import get_usnob1_cat
 
 import datetime
 import os
@@ -453,9 +454,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       print('WARNING: The HEADAS environment variable has not been set')
       print('That is needed for the calls to uvot Ftools ')
    
-   SCAT_PRESENT = os.system('which scat > /dev/null')
-   if SCAT_PRESENT != 0:
-      print('WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n')
+   #SCAT_PRESENT = os.system('which scat > /dev/null')
+   #if SCAT_PRESENT != 0:
+   #   print('WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n')
       
    SESAME_PRESENT = os.system('which sesame > /dev/null')
    #if SESAME_PRESENT != 0:
@@ -1173,7 +1174,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                     origin='lower',cmap=plt.cm.winter)
          plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],
                     extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]),
-                    origin='lower')
+                    origin='lower', cmap='spring')
          #plt.imshow( extimg,vmin= (bg1.mean())*0.1,vmax= (bg1.mean()+bg1.std())*2, extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
          #levels = np.array([5,10,20,40,70,90.])
          #levels = spnet[ank_c[2]:ank_c[3]].max()  * levels * 0.01                                  
@@ -1349,7 +1350,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
 
       if (plot_spec):
-         plt.winter()
+         #plt.winter()
       #  NEED the flux cal applied!
          nsubplots = 2
          if not fit_second: 
@@ -2765,13 +2766,18 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        if len(stab) < 3: use_previous_search = False
    # retrieve catalog data    
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
-      command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
-      if chatter > 1: print(command)
-      tt = os.system(command)   # writes the results to seach.ub1
-      tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
-      if tt != 0:
-         print(tt) 
-         print("find_zeroth_orders: could not get source list from USNO-B1; scat not present?")
+      #command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
+      #if chatter > 1: print(command)
+      #tt = os.system(command)   # writes the results to seach.ub1
+      #tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
+      #if tt != 0:
+      #   print(tt) 
+      #   print("find_zeroth_orders: could not get source list from USNO-B1; scat not present?")
+      status = get_usnob1_cat(ra, dec, blim)
+      if status is None:
+        print('ra={}, dec={}, blim={}'.format(ra, dec, blim))
+        print("find_zeroth_orders: could not get source list from USNO-B1")
+        sys.exit()
    else:
       if chatter > 1: 
            print("find_zeroth_orders: using the USNO-B1 source list from file search.ub1")
