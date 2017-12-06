@@ -2766,13 +2766,6 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        if len(stab) < 3: use_previous_search = False
    # retrieve catalog data    
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
-      #command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
-      #if chatter > 1: print(command)
-      #tt = os.system(command)   # writes the results to seach.ub1
-      #tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
-      #if tt != 0:
-      #   print(tt) 
-      #   print("find_zeroth_orders: could not get source list from USNO-B1; scat not present?")
       status = get_usnob1_cat(ra, dec, blim)
       if status is None:
         print('ra={}, dec={}, blim={}'.format(ra, dec, blim))
@@ -2802,11 +2795,6 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    ra = np.asarray(ra,dtype=np.float64)
    dec = np.asarray(dec,dtype=np.float64)
    b2mag = np.asarray(b2mag,dtype=np.float)
-   #tab = ascii.read('search.ub1',data_start=0,fill_values=99.99)
-   #M = len(tab)  
-   #ra    = tab['col2']
-   #dec   = tab['col3']
-   #b2mag = tab['col6']
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
