@@ -72,6 +72,7 @@ try:
 except:
   pass  
 from .uvotmisc import interpgrid, uvotrotvec, rdTab, rdList
+from .generate_USNOB1_cat import get_usnob1_cat
 
 import datetime
 import os
@@ -453,9 +454,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       print('WARNING: The HEADAS environment variable has not been set')
       print('That is needed for the calls to uvot Ftools ')
    
-   SCAT_PRESENT = os.system('which scat > /dev/null')
-   if SCAT_PRESENT != 0:
-      print('WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n')
+   #SCAT_PRESENT = os.system('which scat > /dev/null')
+   #if SCAT_PRESENT != 0:
+   #   print('WARNING: cannot locate the scat program \nDid you install WCSTOOLS ?\n')
       
    SESAME_PRESENT = os.system('which sesame > /dev/null')
    #if SESAME_PRESENT != 0:
@@ -2765,13 +2766,11 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        if len(stab) < 3: use_previous_search = False
    # retrieve catalog data    
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
-      command = "scat -c ub1 -d -m3 6,"+repr(blim)+" -n 5000 -r 900 -w -x -j "+repr(ra)+"  "+repr(dec)
-      if chatter > 1: print(command)
-      tt = os.system(command)   # writes the results to seach.ub1
-      tt1= os.system("echo '%f,%f' > searchcenter.ub1"%(ra,dec))
-      if tt != 0:
-         print(tt) 
-         print("find_zeroth_orders: could not get source list from USNO-B1; scat not present?")
+      status = get_usnob1_cat(ra, dec, blim)
+      if status is None:
+        print('ra={}, dec={}, blim={}'.format(ra, dec, blim))
+        print("find_zeroth_orders: could not get source list from USNO-B1")
+        sys.exit()
    else:
       if chatter > 1: 
            print("find_zeroth_orders: using the USNO-B1 source list from file search.ub1")
@@ -2796,11 +2795,6 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    ra = np.asarray(ra,dtype=np.float64)
    dec = np.asarray(dec,dtype=np.float64)
    b2mag = np.asarray(b2mag,dtype=np.float)
-   #tab = ascii.read('search.ub1',data_start=0,fill_values=99.99)
-   #M = len(tab)  
-   #ra    = tab['col2']
-   #dec   = tab['col3']
-   #b2mag = tab['col6']
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
