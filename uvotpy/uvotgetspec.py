@@ -1174,7 +1174,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                     origin='lower',cmap=plt.cm.winter)
          plt.contour(np.log10(net),levels=[1,1.3,1.7,2.0,3.0],
                     extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]),
-                    origin='lower', cmap='spring')
+                    origin='lower')
          #plt.imshow( extimg,vmin= (bg1.mean())*0.1,vmax= (bg1.mean()+bg1.std())*2, extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]) )
          #levels = np.array([5,10,20,40,70,90.])
          #levels = spnet[ank_c[2]:ank_c[3]].max()  * levels * 0.01                                  
@@ -1350,7 +1350,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
 
 
       if (plot_spec):
-         #plt.winter()
+         plt.winter()
       #  NEED the flux cal applied!
          nsubplots = 2
          if not fit_second: 
