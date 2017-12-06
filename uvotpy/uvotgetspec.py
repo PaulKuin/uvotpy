@@ -490,11 +490,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    lfilt1_aspcorr = "not initialized"
    lfilt2_aspcorr = "not initialized"
    qflag = quality_flags()
+   ZOpos = None
    
    # parameters getSpec()
    Yout.update({'indir':indir,'obsid':obsid,'ext':ext})
    Yout.update({'ra':RA,'dec':DEC,'wheelpos':wheelpos})
-   
    
    if type(sumimage) == typeNone:
    
@@ -655,7 +655,20 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          method = None   
       
       if not senscorr: msg += "WARNING: No correction for sensitivity degradation applied.\n"    
-      # retrieve the input angle relative to the boresight       
+      
+        # get the USNO-B1 catalog data for the field, & find the zeroth orders
+      if (not skip_field_src):
+         if chatter > 2: print("============== locate zeroth orders due to field sources =============")
+         if wheelpos > 500: zeroth_blim_offset = 2.5 
+         ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,
+             set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
+   
+      # use for the ftools the downloaded usnob1 catalog in file "search.ub1" using the 
+      # catspec parameter in the calls  
+      if os.access('catalog.spec',os.F_OK) & (catspec == None): 
+         catspec= 'catalog.spec'
+   
+         # retrieve the input angle relative to the boresight       
       Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext, msg="", \
            wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
            method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
@@ -771,7 +784,28 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       background_upper =  np.abs(background_upper)
       if np.sum(background_upper) >= 190.0: 
          background_upper = [None,None]
-         msg += "WARNING: background_upper set too close to edge image\n          Using default\n"       
+         msg += "WARNING: background_upper set too close to edge image\n          Using default\n"   
+             
+      # in case of summary file:
+   if (not skip_field_src) & (ZOpos == None):
+      if chatter > 2: print("================== locate zeroth orders due to field sources =============")
+      if wheelpos > 500: zeroth_blim_offset = 2.5 
+      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,
+          set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
+   
+   # use for the ftools the downloaded usnob1 catalog in file "search.ub1" using the 
+   # catspec parameter in the calls  
+   if os.access('catalog.spec',os.F_OK) & (catspec == None): 
+      catspec= 'catalog.spec'
+   
+   if (not skip_field_src):
+      Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
+      pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
+      Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,
+               "matched":matched,"ondetector":ondetector}
+      Yout.update({"ZOpos":Y_ZOpos})
+   else:
+      Yout.update({"ZOpos":None})       
 
    #  find background, extract straight slit spectrum
 
@@ -911,17 +945,6 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    msg += "Upper background from y = %i pix\nUpper background to y = %i pix\n" % (bg_limits_used[2],bg_limits_used[3])
    msg += "TRACKWID=%4.1f\n" % (trackwidth)
    
-   if (not skip_field_src) & (sumimage == None):
-      if chatter > 2: print("================== locate zeroth orders due to field sources =============")
-      if wheelpos > 500: zeroth_blim_offset = 2.5 
-      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
-      Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
-      pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
-      Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,"matched":matched,"ondetector":ondetector}
-      Yout.update({"ZOpos":Y_ZOpos})
-   else:
-      ZOpos = None 
-      Yout.update({"ZOpos":None})       
 
    #    collect some results:
    if sumimage == None:
@@ -2774,7 +2797,9 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    else:
       if chatter > 1: 
            print("find_zeroth_orders: using the USNO-B1 source list from file search.ub1")
-
+   # generate a new catspecfile
+   _write_catspecfile()
+   
    # remove reliance on astropy tables as it fails on debian linux
    searchf = open('search.ub1')
    stab = searchf.readlines()
@@ -5972,6 +5997,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
                             attfile,
                             wheelpos=wheelp1,
                             indir=indir,
+                            catspec=catspec,
                 chatter=chatter) 
        # note that the path rawfile  = indir+'/'+filestub+'ufk_sk.img'
        tempnames.append(filestub)
@@ -8924,5 +8950,23 @@ def plan_obs_using_mags(S2N=3.0,lentifilter=None,mag=None,bkgrate=0.16,coi=False
       for i in range(len(wave)):
          f.write("%10.3f  %12.5e\n"%(wave[i],flux[i]))
       X = uvotphot.uvotmag_from_spectrum(specfile='plan_obs_file.tmp',)  
+                 
+
+def _write_catspecfile(
+        catalogfile='search.ub1',   # this is the local catalog file
+        catspecfile='./catalog.spec'  # this is the output catspec
+        ):
+    f = open(catspecfile,'w')
+    f.write(
+        "type => StarID::UserCat\n"+
+        "fields => ID,RA_deg,DEC_deg,B1MAG,R1MAG,B2MAG,R2MAG,pmRA,pmDE,Imag,TYPE,radius\n"+
+        "data => User\n"+
+        "catalog/type => Indexed\n"+
+        "catalog/n => 4\n"+
+        "mag => B1MAG\n\n"+
+        "path => %s\n"%catalogfile)
+    f.close()
+
+
                  
 # end uvotgetspec.py  See Copyright notice in README file [when missing, copyright NPM Kuin, 2013, applies]. 
