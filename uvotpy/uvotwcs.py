@@ -111,8 +111,12 @@ def makewcshdr(filestub, ext, attfile,
    except:   
       import pyfits as fits
       import pywcs as wcs
-   from uvotgetspec import boresight   
-   
+   try:   
+      from uvotpy import uvotgetspec    
+   except:
+      pass
+      from . import uvotgetspec
+      
    msg = ""   
    if chatter > 0:
      print("makewcshdr(",filestub,',',ext,',',attfile,',indir=',indir,')')
@@ -172,6 +176,7 @@ def makewcshdr(filestub, ext, attfile,
        grismfile = indir+'/'+filestub+'ugv_dt.img'
    if catspec == None: 
        catspec=catspecdir+"/usnob1.spec"
+   if chatter > 2: print ("catspec = %s\n"%(catspec))    
    uvw1file = indir+'/'+filestub+'ufk_rw.img'
    uvw1filestub = indir+'/'+filestub+'ufk'
    wcsfile  = indir+'/'+filestub+'ufk_sk.img'
@@ -235,7 +240,7 @@ def makewcshdr(filestub, ext, attfile,
           newhead = fits.getheader(grismfile,ext)
           roll = newhead['PA_PNT']
           wS =wcs.WCS(header=newhead,key='S',relax=True,)
-          bore = boresight(filter=band,order=0,r2d=0,date=newhead['tstart'])
+          bore = uvotgetspec.boresight(filter=band,order=0,r2d=0,date=newhead['tstart'])
           world = wS.all_pix2world([bore],0)[0]
           
           if chatter>0:
@@ -517,6 +522,5 @@ def get_distortion_keywords(wheelpos):
    hdr.update(head['AP_?_?'])
    hdr.update(head['BP_?_?'])
    return hdr
-
 
 
