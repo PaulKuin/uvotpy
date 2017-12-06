@@ -7762,7 +7762,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          exposure = hdr['exposure']
          wheelpos = hdulist[0].header['wheelpos']
          sumimg   = hdulist[0].data
-         hist     = hdulist[0].header.get_history()
+         hist     = hdulist[0].header['history']
          if len(hdulist) > 1:
             expmap   = hdulist[1].data
          else: 
