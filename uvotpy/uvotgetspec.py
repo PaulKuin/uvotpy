@@ -43,7 +43,7 @@ from future.builtins import str
 from future.builtins import input
 from future.builtins import range
 
-__version__ = '2.8.0 20170608'
+__version__ = '2.9.0 20171209'
 
  
 import sys
