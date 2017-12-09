@@ -120,7 +120,8 @@ def makewcshdr(filestub, ext, attfile,
    msg = ""   
    if chatter > 0:
      print("makewcshdr(",filestub,',',ext,',',attfile,',indir=',indir,')')
-
+     print("uvotgraspcorr_on:%s "%(uvotgraspcorr_on))
+     print("update WVS from attitude file on?: %s"%(update_pnt))
    try:
       caldb = getenv('CALDB')
       distfiledir = caldb+'/data/swift/uvota/bcf/grism/'  
@@ -233,11 +234,19 @@ def makewcshdr(filestub, ext, attfile,
           #"  distfile="+distfiledir+"/swugrdist20041120v001.fits \
           if chatter > 0: print("command: ",command)
           system(command)
+      except:
+          print(":-( uvotwcs.makewcshdr: perhaps uvotgraspcorr failed")
+          if continue_when_graspcorr_fails: 
+              pass
+          else: 
+              raise RuntimeError ("uvotgraspcorr probably failed in call uvotwcs.makewcshdr")   
 
           # find the zero order boresight reference point on the detector
           # corresponding to the date of observation. Note that these 
           # are dirrerent from those in the CALDB as used by uvotimgrism
           newhead = fits.getheader(grismfile,ext)
+          ra_pnt = newhead['RA_PNT']
+          dec_pnt = newhead['DEC_PNT']
           roll = newhead['PA_PNT']
           wS =wcs.WCS(header=newhead,key='S',relax=True,)
           bore = uvotgetspec.boresight(filter=band,order=0,r2d=0,date=newhead['tstart'])
@@ -295,12 +304,12 @@ def makewcshdr(filestub, ext, attfile,
                       if system(command) == 0:
                           # replace the attitude file for the following
                           attfile=filestub+".gat.fits"
-      except:
-          print(":-( uvotwcs.makewcshdr: perhaps uvotgraspcorr failed")
-          if continue_when_graspcorr_fails: 
-              pass
-          else: 
-              raise RuntimeError ("uvotgraspcorr probably failed in call uvotwcs.makewcshdr")   
+      #except:
+      #    print(":-( uvotwcs.makewcshdr: perhaps uvotgraspcorr failed")
+      #    if continue_when_graspcorr_fails: 
+      #        pass
+      #    else: 
+      #        raise RuntimeError ("uvotgraspcorr probably failed in call uvotwcs.makewcshdr")   
    else:
        g_hdr   = fits.getheader(grismfile,ext)           
        ra_pnt  = g_hdr['RA_PNT']
