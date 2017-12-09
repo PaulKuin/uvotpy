@@ -136,6 +136,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       lfilt1=None, lfilt1_ext=None, lfilt2=None, lfilt2_ext=None,  
       wheelpos=None, interactive=interactive,  sumimage=None, set_maglimit=None,
       plot_img=True, plot_raw=True, plot_spec=True, zoom=True, highlight=False, 
+      uvotgraspcorr_on=True,
+      update_pnt=True,  
       clobber=False, chatter=1 ):
       
    '''Makes all the necessary calls to reduce the data. 
@@ -261,6 +263,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
         orders by hand.
         path: filename with coefficients of curvature
      
+      - **uvotgraspcorr_on** : bool
+        enable/disable rerun of uvotgraspcorr to update the WCS keywords 
+        
+      - **update_pnt** : bool
+        enable/disable update of the WCS keywords from the attitude file
+        (this is done prior to running uvotgraspcorr is that is enabled)
+
       - **fit_sigmas** : bool
         
         fit the sigma of trackwidths if True (not implemented, always on)
@@ -669,9 +678,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          catspec= 'catalog.spec'
    
          # retrieve the input angle relative to the boresight       
-      Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext, msg="", \
-           wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, \
-           method=method, attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
+      Xphi, Yphi, date1, msg3, lenticular_anchors = findInputAngle( RA, DEC, filestub, ext,
+           uvotgraspcorr_on=uvotgraspcorr_on, update_pnt=update_pnt,  msg="", \
+           wheelpos=wheelpos, lfilter=lfilt1, lfilter_ext=lfilt1_ext, \
+           lfilt2=lfilt2, lfilt2_ext=lfilt2_ext, method=method, \
+           attfile=attfile, catspec=catspec, indir=indir, chatter=chatter)
       Yout.update({"Xphi":Xphi,"Yphi":Yphi}) 
       Yout.update({'lenticular_anchors':lenticular_anchors})
 
@@ -5871,6 +5882,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        lfilter='uvw1', lfilter_ext=None, 
        lfilt2=None,    lfilt2_ext=None, 
        method=None, attfile=None, msg="",
+       uvotgraspcorr_on=True,
+       update_pnt=True,  
        catspec=None, indir='./', chatter=2):
    '''Find the angles along the X,Y axis for the target distance from the bore sight.
    
@@ -5909,6 +5922,12 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
       - **indir** : str, path
         data directory path
         
+      - **uvotgraspcorr_on** : bool
+           enable/disable update of the WCS keywords in the grism file using uvotgraspcorr
+           
+      - **update_pnt** : bool      
+           enable/disable and update to the WCS keywords in the grism file from the 
+           attitude file, prior to running uvotgraspcorr (if enabled)
       - **chatter** : int
         verbosity
 
@@ -5998,6 +6017,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
                             wheelpos=wheelp1,
                             indir=indir,
                             catspec=catspec,
+                            uvotgraspcorr_on=uvotgraspcorr_on,
+                            update_pnt=update_pnt,
                 chatter=chatter) 
        # note that the path rawfile  = indir+'/'+filestub+'ufk_sk.img'
        tempnames.append(filestub)
@@ -8959,12 +8980,12 @@ def _write_catspecfile(
     f = open(catspecfile,'w')
     f.write(
         "type => StarID::UserCat\n"+
-        "fields => ID,RA_deg,DEC_deg,B1MAG,R1MAG,B2MAG,R2MAG,pmRA,pmDE,Imag,TYPE,radius\n"+
+        "fields => ID,RA_deg,DEC_deg,MAG,R1MAG,B2MAG,R2MAG,pmRA,pmDE,Imag,TYPE,radius\n"+
         "data => User\n"+
         "catalog/type => Indexed\n"+
         "catalog/n => 4\n"+
-        "mag => B1MAG\n\n"+
         "path => %s\n"%catalogfile)
+    # default magnitude is now B1MAG, column 4
     f.close()
 
 
