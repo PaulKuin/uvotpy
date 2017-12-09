@@ -166,6 +166,20 @@ def makewcshdr(filestub, ext, attfile,
          teldef = '/data/swift/uvota/bcf/teldef/swuw120070911v001.teldef'
          bore = np.array([1506.8, 664.3]) # [1504.5,670.0] ) # 2009-09-29 from comparing w1-gr-w1 
          band='vg1000'
+   else:      
+      if wheelpos == 160:
+         bore = np.array([1501.4, 593.7]) # [1503.5,596.5]) # 2009-02-19
+         band='uc160'
+      if wheelpos == 200:
+         bore = np.array([1449.0, 703.5]) # [1446.0,710.0]) 
+         band='ug200'
+      if wheelpos == 955:
+         bore = np.array([1567.0, 534.7]) # [1560.0, 543.0] ) # 2009-09-28 comparing w1-gr-w1
+         band='vc955'  
+      if wheelpos == 1000:
+         bore = np.array([1506.8, 664.3]) # [1504.5,670.0] ) # 2009-09-29 from comparing w1-gr-w1 
+         band='vg1000'
+
    if chatter > 2:
        print("teldef: "+teldef)
        print("bore=",bore)
@@ -241,7 +255,8 @@ def makewcshdr(filestub, ext, attfile,
           else: 
               raise RuntimeError ("uvotgraspcorr probably failed in call uvotwcs.makewcshdr")   
 
-          # find the zero order boresight reference point on the detector
+      try:
+          # find the zeroth order boresight reference point on the detector
           # corresponding to the date of observation. Note that these 
           # are dirrerent from those in the CALDB as used by uvotimgrism
           newhead = fits.getheader(grismfile,ext)
@@ -256,7 +271,11 @@ def makewcshdr(filestub, ext, attfile,
               print("WCS pointing  ")
               print("filter band = "+band)
               print("boresight = ", bore)
-              print("sky world coordinate pointing = ",world)             
+              print("sky world coordinate pointing = ",world)       
+      except:
+          print("uvotwcs: try 2 error ")
+          print (band, grismfile, ext)
+      try:                  
           if newhead["ASPCORR"].upper() != "GRASPCORR": 
               print("UVOTGRASPCORR did not find a valid solution ***********************************")
               print("UVOTGRASPCORR did not find a valid solution * wavelength scale offset warning *")
@@ -304,6 +323,8 @@ def makewcshdr(filestub, ext, attfile,
                       if system(command) == 0:
                           # replace the attitude file for the following
                           attfile=filestub+".gat.fits"
+      except:
+         print("uvotwcs: error in try 3 ")
       #except:
       #    print(":-( uvotwcs.makewcshdr: perhaps uvotgraspcorr failed")
       #    if continue_when_graspcorr_fails: 
