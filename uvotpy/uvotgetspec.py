@@ -2471,8 +2471,8 @@ def boresight(filter='uvw1',order=1,wave=260,
    # time extrapolation is different from the nearly constant
    # boresight in the teldef but within about a pixel.
    # I think the extrapolation is more accurate.
-   fx = interp1d(swtime,boredx,)
-   fy = interp1d(swtime,boredy,)
+   fx = interp1d(swtime,boredx,bounds_error=False,fill_value="extrapolate")
+   fy = interp1d(swtime,boredy,bounds_error=False,fill_value="extrapolate")
    
    # reference anchor positions          
    reference0 = {'ug200': [1449.22, 707.7],
