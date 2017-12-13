@@ -210,7 +210,7 @@ import optparse
 import numpy as np
 import pylab as plt
 try: 
-   from astropy import fits as pyfits
+   from astropy.io import fits as pyfits
 except:   
    import pyfits
 try:
