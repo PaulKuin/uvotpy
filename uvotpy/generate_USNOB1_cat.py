@@ -1,3 +1,4 @@
+import numpy as np
 from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 import astropy.units as u
