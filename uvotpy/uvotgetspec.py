@@ -1800,7 +1800,8 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
            if (offsetlimit[0] > 50) & (offsetlimit[0] < 150):
                y_default=int(offsetlimit[0]+0.5)  # round to nearest pixel
            else: 
-               raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."%(offsetlimit[0]))        
+               raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."+
+               "\nIs the aspect correction right (in reference images)?"%(offsetlimit[0]))        
            if offsetlimit[1] < 1:
                fixoffset = offsetlimit[0]-100
            else:  
