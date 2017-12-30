@@ -19,7 +19,8 @@ doi: 10.1093/mnras/stv408
 
 Recent calibration observations show additional loss of sensitivity below 1800A 
 (that is 12 years into the mission.) Currently, 1%/year is assumed and consistent
-with the red part of the spectrum. 
+with the red part of the spectrum. A preliminary correction for the 
+UV clocked mode in the range 1700-3000A has been implemented (2017/12/30).
 
 A (pr)eprint is also available: http://arxiv.org/abs/1501.02433
 
