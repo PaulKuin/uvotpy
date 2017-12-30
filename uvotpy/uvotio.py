@@ -38,7 +38,7 @@ from __future__ import absolute_import
 from future.builtins import input
 from future.builtins import str
 from future.builtins import range
-__version__ = "1.6.0"
+__version__ = "1.7.0"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -65,6 +65,7 @@ __version__ = "1.6.0"
 #               for the old pyfits and older astropy versions, but "new_table" will be discontinued soon.
 #               Jan 2015 fixed a typo (bracket) in write_rmf_file
 # version 1.6.0 March 11 2016, update all the fits header.update statements to revised standard astropy
+# version 1.7.0 December 30, 2017, update to the sensitivity correction (provisional) affecting the 1700-3000A  
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
@@ -280,7 +281,7 @@ def rate2flux(wave, rate, wheelpos,
    if respfunc: return specrespfunc  # feed for writeSpectrum()          
 
    if swifttime != None: 
-      senscorr = sensitivityCorrection(swifttime)
+      senscorr = sensitivityCorrection(swifttime,wave=wave,wheelpos=wheelpos)
       print("Sensitivity correction factor for degradation over time = ", senscorr)
       msg += "Sensitivity correction factor for degradation over time = %s\n"%( senscorr)
    else: 
@@ -321,7 +322,7 @@ def rate2flux(wave, rate, wheelpos,
    return (flux, wave, coi_valid)
    
    
-def sensitivityCorrection(swifttime,wave=None,sens_rate=0.01):
+def sensitivityCorrection(swifttime,wave=None,sens_rate=0.01,wheelpos=0):
    '''
    give the sensitivity correction factor 
    Actual flux = observed flux(date-obs) times the sensitivity correction  
@@ -343,9 +344,42 @@ def sensitivityCorrection(swifttime,wave=None,sens_rate=0.01):
    the length of the mean Gregorian year was used
    
    '''
+   from scipy.interpolate import interp1d
+   import numpy as np
    # added boolean switch for sensitivity calibration activities 2015-06-30
    if uvotgetspec.senscorr:
-       sens_corr = 1.0/(1.0 - sens_rate*(swifttime-126230400.000)/31556952.0 )  
+       sens_corr = 1.0/(1.0 - sens_rate*(swifttime-126230400.000)/31556952.0 ) 
+       if wave is not None and (wheelpos == 160):
+          fscale = (swifttime-126230400.000) / (12.6*365.26*86400)
+          extracorr = np.array(
+      [[1.650, 0.19],
+       [  1.68810484e+03,   1.93506494e-01],
+       [  1.70579637e+03,   3.42857143e-01],
+       [  1.72757056e+03,   5.52813853e-01],
+       [  1.75206653e+03,   6.93506494e-01],
+       [  1.79153226e+03,   7.93073593e-01],
+       [  1.82419355e+03,   8.58008658e-01],
+       [  1.89223790e+03,   9.05627706e-01],
+       [  1.96436492e+03,   9.55411255e-01],
+       [  2.04465726e+03,   9.98701299e-01],
+       [  2.10317540e+03,   1.00735931e+00],
+       [  2.17121976e+03,   1.02900433e+00],
+       [  2.25423387e+03,   1.04415584e+00],
+       [  2.32227823e+03,   1.05281385e+00],
+       [  2.42026210e+03,   1.08961039e+00],
+       [  2.52096774e+03,   1.09177489e+00],
+       [  2.60398185e+03,   1.09177489e+00],
+       [  2.72101815e+03,   1.09610390e+00],
+       [  2.77953629e+03,   1.07445887e+00],
+       [  2.83805444e+03,   1.07229437e+00],
+       [  2.90745968e+03,   1.05714286e+00],
+       [  2.96597782e+03,   1.05281385e+00],
+       [  2.99863911e+03,   1.02900433e+00], 
+       [3000,1.],[8000,1.]]) 
+          f_extrasenscorr=interp1d(extracorr[:,0],extracorr[:,1],
+          bounds_error=False,fill_value=1.0)
+          sens_corr=sens_corr/(f_extrasenscorr(wave) * fscale)
+          print ("\nsensitivityCorrection: applied additional changes in UV 1700-3000\n")
        return sens_corr
    else: 
        return 1.0
@@ -1932,7 +1966,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    exposure=hdr['exposure']
    expospec1 = expospec[1,q1[0]].flatten()
    wave =  polyval(C_1, x[q1[0]])
-   senscorr = sensitivityCorrection(hdr['tstart'])
+   senscorr = sensitivityCorrection(hdr['tstart'],wave=wave,wheelpos=wheelpos)
    background_strip1 = background_strip1[q1[0]]
    background_strip2 = background_strip2[q1[0]]
      
@@ -1948,6 +1982,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    aper1corr = aper1corr[qwave]
    expospec1 = expospec1[qwave]
    wave = wave[qwave]
+   if type(senscorr) == np.ndarray: senscorr = senscorr[qwave]
    quality = quality[qwave]
    background_strip1 = background_strip1[qwave]
    background_strip2 = background_strip2[qwave]
@@ -2099,6 +2134,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    if present2 & fit_second: 
    
          wave2 = polyval(C_2, x[q2[0]]-dist12) # 2nd order wavelengths
+         senscorr2 = sensitivityCorrection(hdr['tstart'],wave=wave2,wheelpos=0)# just basic 1%/yr
          channel2 = np.arange(len(wave2)) +1
          rc2 = list(range(len(wave2)))
          rc2.reverse()     
@@ -2112,7 +2148,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          sp2rate_err = np.sqrt(
             np.abs(
             (bg_2cnt*2.5/trackwidth+sp2netcnt*aper2corr)*
-            senscorr*(1+
+            senscorr2*(1+
             apcorr_errf(trackwidth,wheelpos) )))/expospec2   # fully corrected error in net count rate
          bg_2rate = bg_2cnt /expospec2 * 2.5/trackwidth      # aperture corrected background rate 
 
@@ -2146,8 +2182,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
          else:
           raise RuntimeError("the qual2 and coi_valid2 arrays are of different length")
 
-         sp2rate = sp2rate * senscorr    # perform sensitivity loss correction
-         bg_2rate = bg_2rate * senscorr
+         sp2rate = sp2rate * senscorr2    # perform sensitivity loss correction
+         bg_2rate = bg_2rate * senscorr2
 
          #specresp1func = SpecResp(hdr['wheelpos'], 1, arf1=arf1, arf2=arf2 )
          if arf2 != None: 
