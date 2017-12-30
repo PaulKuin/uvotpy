@@ -2,7 +2,7 @@ UVOTPY License
 
 This Swift UVOT grism software is licensed under a 3-clause BSD style license:
 
-Copyright (c) 2008-2013, N.P.M. Kuin. 
+Copyright (c) 2008-2018, N.P.M. Kuin and co-authors of the code. 
 
 All rights reserved.
 
