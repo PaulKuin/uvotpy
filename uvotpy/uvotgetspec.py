@@ -507,7 +507,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    
    if type(sumimage) == typeNone:
    
-      if background_template != None:
+      if background_template is not None:
          # convert background_template to a dictionary
          background_template = {'template':np.asarray(background_template),
                                 'sumimg':False}
