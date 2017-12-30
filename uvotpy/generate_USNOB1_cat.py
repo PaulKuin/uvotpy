@@ -3,6 +3,7 @@ from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy import table
+import numpy as np
 
 usnob_cat = Vizier.find_catalogs('USNO-B1.0')
 
