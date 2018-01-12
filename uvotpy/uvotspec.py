@@ -35,6 +35,7 @@
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
 # (c) 2009-2014, see Licence  
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -63,6 +64,7 @@ from matplotlib.lines import Line2D
       - given N dimensional parameter solution space of a model, 
         find the best fit solution       
 '''
+
 __version__ = '20160115-0.0.5'
 
 
@@ -157,8 +159,11 @@ spdata = {
 #{'transition':'','wavevac':.0, 'label':u''}
 #{'transition':'','wavevac':.0, 'label':u''}
   ],
+}
   
 ############################ 
+
+spdata2 = {
 
 'V339_Del':[ # add also H, HeI, HeII 
 # 
@@ -170,9 +175,8 @@ spdata = {
 {'transition':'3 - 4','wavevac':4687.1, 'label':u'He II'},
 {'transition':'3 - 5','wavevac':3203.95,'label':u'He II'},
 {'transition':'3 - 6','wavevac':2734.13,'label':u'He II+O II*'},
-{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':''},
 # unclutter {'transition':'3 - 6','wavevac':2734.13,'label':u'HeII'},
-# unclutter {'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':u'OII*'},
+{'transition':'2s2.2p2(3P)4s-2s2.2p2(3P)3p','wavevac':2747.4, 'label':u'OII*'},
 {'transition':'3 - 7','wavevac':2511.2, 'label':u'He II'},
 {'transition':'3 - 8','wavevac':2385.4, 'label':u'He II'},
 {'transition':'','wavevac':1750  , 'label':u'N III]'},
@@ -220,7 +224,6 @@ spdata = {
 #{'transition':'','wavevac':.0, 'label':u''}
 #{'transition':'','wavevac':.0, 'label':u''}
   ],
-
 
 'V5668Sgr':[ # add also H, HeI, HeII 
 # 
@@ -335,7 +338,6 @@ spdata = {
 {'transition':'','wavevac':4630.0, 'label':u'N III 4639.8'}, # blend HeII 4686
 {'transition':'','wavevac':5520.0, 'label':u'[O V] 5523.9'},
   ],
-
 }  
   
 def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
@@ -369,7 +371,7 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
     #   linear fits don't work : use log time
     coef2 = np.polyfit(log10(time[q][q1]),spmean,2)
     coef1 = np.polyfit(log10(time[q][q1]),spmean,1)
-    normmean = norm.mean()  # use for scaling norm to mean flux spmean
+    normmean = norm.mean()  #use for scaling norm to mean flux spmean
     return (wave,time,sp, norm), coef, coef2, spmean,normmean    
     
 def continuum_nova_del_byobs(obsday,wave,time,sp,norm):
@@ -468,9 +470,9 @@ def actual_line_flux(wavelength,flux, center=None,pass_it=True):
       
 ############################
 
-    
 def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],
        fontsize=8,spdata=spdata):
+       
    """add the line ids to the plot
    
    parameters
@@ -492,7 +494,9 @@ def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],
        scale_factor=0.1, the line will go from 2-3x**.  
     fontsize : int
        font size   
+       
    """
+   
    xlist = spdata[ion]
    xlim = ax.get_xlim()
    ylim = ax.get_ylim()
@@ -507,7 +511,7 @@ def plot_line_ids(ax,ylower=None,ion='HI',color='k',dash=[0.07,0.10],
               rotation='vertical' )
           wave.append(line['wavevac'])
    ax.vlines(wave,ylower,ylower+dy,color='k')     
-      
+
 
 ############################
 
@@ -610,9 +614,9 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     
     """
     import sys
-    import uvotmisc
+    from uvotpy import uvotmisc
     from matplotlib.pyplot import fignum_exists
-    # data
+    # data
     if openfile != None:
        f = openfile 
        filename = openfile.filename()
@@ -1077,7 +1081,7 @@ def plotquality(ax,
        -----
        Should add an option to plot quality in a different way. 
        """
-       from uvotgetspec import quality_flags
+       from .uvotgetspec import quality_flags
        
        typeNone = type(None)
        
@@ -1123,7 +1127,7 @@ def plotquality(ax,
                    else:
                        qp = (w >= w[v1[0]]) & (w <= w[v1[1]])
                        ax.plot(w[qp],flux[qp], marker=marker, mfc=colors[k],ms=3,label=flab)  
-       # the algorithm skips two adjacent points which will be ignored.                    
+       # the algorithm skips two adjacent points which will be ignored.                    
                                       
 def check_flag(quality,flag,chatter=0):
    """ return a logical array where the elements are 
@@ -1202,7 +1206,7 @@ def _write_xspec_xcm_script(scriptfilename,
     # add BB parameters
     body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(0.025,0.01,0,0,100,200))
     body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(0.5,0.01,0,0,1e+20,1e+24))
-    # add Powerlaw parameters
+    # add Powerlaw parameters
     body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(1.5,0.01,-3,-2,9,10))
     body.append("%15.3f%11.3f%11.3e%11.3e%11.3e%11.3e\n"%(4.5,0.01,0,0,1e+20,1e+24))
     # add redge parameters
@@ -1475,7 +1479,10 @@ def quality_flags_to_ranges(quality,chatter=0):
           a dictionary of ranges for each flag except 'good'  
        
        """
-       from uvotgetspec import quality_flags
+       try:
+          from uvotpy.uvotgetspec import quality_flags
+       except:
+          from .uvotgetspec import quality_flags   
        
        flagdefs = quality_flags()
        flags=list(flagdefs.keys())
@@ -1585,271 +1592,6 @@ class gaussian(object):
                p["value"]=sig
        self.parameters["parinfo"]=par
 
-
-class poly_background(object):
-    import numpy as np
-    def __init__(self,coef=[0]):
-        self.poly_coef = coef
-    
-    def value(self,x):
-        return np.polyval(self.poly_coef,x)
-        
-    def update(self,coef):
-        self.poly_coef=coef
-                        
-
-    
-class fit_spectrum(object):
-    """
-    Fit the spectrum in a way similar to Xspec. 
-    
-    Parameters
-    ==========
-    ax : matplotlib.axes.AxesSubplot instance
-    spectrum : spectrum 
-       spectrum [currently second extension of spectrum file uvot grism]
-    fitparameters :  
-       for each model to fit, a list of fit parameters    
-         
-       
-    Notes
-    =====
-    The method of fitting is similar to that used in XSpec because
-    non-linear fitting is better done while freezing some parameters
-    at a time, depending on need, and iterating. This is superior to 
-    automated fitting methods. 
-    
-    Initial set up:
-       Though the plan is to introduce models to fit to at some point, 
-       the initial fitting will be for a continuum with gaussians. 
-    
-    """
-    import sys
-    import numpy as np
-    import mpfit
-
-    def __init__(self, ax, spectrum, fit_parameters=[], ):
-        self.spectrum = spectrum
-        self.fit_parameters = fit_parameters
-        self.ax = ax
-        self.funargs = []
-        self.models = []  # active models
-        self.valid_model_names=['gaussian','poly_background']  # implemented models
-        self.maskx = np.ones(len(spectrum.x),dtype=bool) 
-
-    
-    def add_model(self,modelname):
-        """
-        Add a model to the fit_parameters
-        
-        Notes
-        =====
-        open a new item and add the parameters and argument names of the 
-        specific model
-        
-        Build the parinfo list, e.g., we need a list with for each parameter: 
-        parinfo = [
-        {'limited': [1,0], 'limits': [0.1,0.0],     'value':    bg, 'parname': 'bg0'},
-        {'limited': [0,0], 'limits': [0.0,0.0],     'value':   0.0, 'parname': 'bg1' },
-        {'limited': [1,0], 'limits': [0.0,0.0],     'value':  amp1, 'parname': 'amp1'},
-        {'limited': [1,1], 'limits': [pos1a,pos1b], 'value':  pos1, 'parname': 'pos1'},
-        ...
-        ]  
-        where 
-        limited indicated if the limits are applied (1=True,0=False)
-        limits gives the parameter range
-        value gives the starting(or fixed) value
-        parname gives the parameter name
-        if the value needs to be fixed, the limits must be set to a very small range 
-          for running mpfit (1e-5 * value?) 
-        
-        
-        """
-        # verify valid model name ?
-        #  ...
-        if not (modelname in self.valid_model_names):
-           print("illegal model name")
-           print("valid names are :",self.valid_model_names)
-           return
-        self.models.append(modelname)
-        fitparms, funargs = eval("self.model_"+modelname+"(0,init_parameters=True)")
-        self.fit_parameters.append( fitparms )
-        self.funargs.append( funargs )
-
-    
-    def show_parameters(self,):
-        """
-        print out the parameters and values
-        """
-        #use write( sys.stdout, ) ??? 
-        print("comp  model       param   value       lower          upper \n")
-        for k in range(len(self.models)):
-            modelno = k
-            name = self.fit_parameters[k]["model"]
-            params = self.fit_parameters[k]["parinfo"]
-            for p in params:
-                print("%2i %16s %8s %12.5e %12.5e %12.5e"%(k,name,p["parname"][:-2],
-                      p["value"],p["limits"][0],p["limits"][1]))
-        
-    
-    def update_parameters(self,component=None,name=None,value=None,lower=None,upper=None):
-        """ 
-        Change the limits, start value, etc. for a model parameter
-        """
-        fitparms = self.fit_parameters
-        print(" not yet implemented -- need a widget ")    
-        if component == None:   # do all components
-           for k in range(len(self.models)): 
-               self.update_parameters(k,name=name,value=value,lower=lower,upper=upper) 
-        else:
-           if component in range(len(self.models)): 
-               parms = fitparms[component]
-               parnames = []
-               for z in parms['parinfo']:
-                  parnames.append(z['parname'][:-2])
-           else:
-               print("illegal component number")           
-           if name == None:  # do all variables in parms
-               for m in range(len(parms['parinfo'])):
-                   if value != None: parms['parinfo'][m]['value'] = value
-                   if lower != None: 
-                       parms['parinfo'][m]['limits'][0] = lower
-                       parms['parinfo'][m]['limited'][0] = 1
-                   if upper != None: 
-                       parms['parinfo'][m]['limits'][1] = upper
-                       parms['parinfo'][m]['limited'][1] = 1
-           else:
-               if name in parnames:
-                   for i in range(len(parnames)):
-                       if name == parnames[i]: 
-                           m=i
-                           continue
-                   if value != None: parms['parinfo'][m]['value'] = value
-                   if lower != None: 
-                       parms['parinfo'][m]['limits'][0] = lower
-                       parms['parinfo'][m]['limited'][0] = 1
-                   if upper != None: 
-                       parms['parinfo'][m]['limits'][1] = upper
-                       parms['parinfo'][m]['limited'][1] = 1
-               else:
-                   print("illegal parameter name, valid names are :",parnames)                         
-
-        
-    def model_poly_background(self,p, fjac=None, x=None, y=None, 
-            err=None,init_parameters=False):
-        # up to sixth order polynomial 
-        if init_parameters:
-            component_number=len(self.models)
-            cn = "%02s"%(component_number)
-            return {"model":"poly_background", "parinfo":[
-              {"limited":[1,1],"limits":[1,1],"value":1,  "parname":'order'+cn}, # fixed! limits=value
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef0'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef1'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef2'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef3'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef4'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef5'+cn},
-              {"limited":[0,0],"limits":[0,0],"value":0.0,"parname":'coef6'+cn},
-              ]},['x','y','err']
-        order = p[0]
-        if type(order) != int:
-           print("problem model_poly_background order not an int:", order)      
-        model = np.polyval(p[1:order+2],x)      
-        status = 0
-        return [status, (y-model)/err]
-    
-    
-    def model_gaussian(self,p, fjac=None, x=None, y=None, err=None,init_parameters=False):    
-        if init_parameters:
-            component_number=len(self.models)
-            cn = "%02s"%(component_number)
-            return {"model":"gauss","parinfo":[
-            {"limited":[0,0],"limits":[0,0],"value":1.0,"parname":'amp'+cn},
-            {"limited":[0,0],"limits":[0,0],"value":9.0,"parname":'pos'+cn},
-            {"limited":[0,0],"limits":[0,0],"value":0.5,"parname":'sig'+cn},
-            ]}, ['x', 'y', 'err']
-        amp1,pos1,sig1 = p          
-        model = amp1 * np.exp( - ((x-pos1)/sig1)**2 ) 
-        status = 0
-        return [status, (y-model)/err]
-
-    
-    def fit(self,):
-        """ 
-        call the fitter
-        
-        """
-        x = self.spectrum.wavelength
-        y = self.spectrum.flux
-        err = self.spectrum.fluxerr
-        # build initial parameter value list 
-        p0 = []
-        pinfo = []
-        for x in self.fit_parameters:
-           par = x["parinfo"]
-           for pv in par:
-               p0.append(pv['value'])
-               pinfo.append(pv)
-           
-        # build argument list
-        fkw={'x':x,'y':y,'err':err}
-           
-        # call L-M fitter   
-        Z = mpfit.mpfit(fit_function,p0,functkw=fkw,parinfo=pinfo,quiet=True)
-        if (Z.status <= 0): print('fit_spectrum.mpfit error message = ', Z.errmsg)
-        
-        # update the fit (parinfo...?), return results
-        self.result = Z  
-        return Z            
-
-    
-    def fit_function(self, p, fjac=None, x=None, y=None, err=None):
-        """
-        Define the 1D spectrum function to fit
-         
-        parameters
-        ----------
-        x : array 
-           the wavelengths
-        y : array
-           the estimated flux   
-        err : array
-           the error 
-           
-        p : list 
-           a list of parameters to fit        
-        """
-        
-        F = 0.
-        i = 0
-        nmod = len(self.models)
-        for k in range(nmod):       
-            npar = len(self.fitparms[k]["parinfo"])
-            arg = "("
-            p0 = []
-            for w in range(npar):
-                p[0].append( p[i]) 
-                i += 1
-            fjac_mod = fjac[i:i+npar,i:i+npar]  
-            # fjac is a dummy parameter in gauss and poly_background 
-            # any other use needs testing that the correct slice has 
-            # been made ...     
-            arg += ", fjac=fjac_mod, x=x, y=y, err=err)"                
-            F = F + eval("model_"+self.models[k]+arg)       
-        status = 0
-        if err != None:
-           return [status, (y-F)/err]
-        else:
-           return [status, (y-F)]   
-           
-    def ignore(self,range):
-       """ignore points which lie in in specified range """
-       sp = self.spectrum
-       self.maskx[(sp > range[0]) & (sp < range[1])] = False
-       
-    # inverse of ignore function 
-                      
-    
     
 def fit2g_bg(x,f,err,bg,amp1,pos1,sig1,amp2,pos2,sig2,
     amp2lim=None,fixsig=False,
@@ -2561,7 +2303,7 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
             if chatter > 1: 
                 sys.stderr.write( "selected shifts = %s\n"%(wave_shifts))
                 #sys.stderr.write("computing weighted average of spectrum\n")
-    else:  # adjust_wavelengths = False
+    else:  #adjust_wavelengths = False
              for i in range(nfiles):
                  wave_shifts.append(0)  
     return wave_shifts             
@@ -2572,7 +2314,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
    import os
    import sys
    from astropy.io import fits
-   from uvotmisc import swtime2JD, get_keyword_from_history
+   from uvotpy.uvotmisc import swtime2JD, get_keyword_from_history
    import datetime
    
    now = datetime.date.today().isoformat()
