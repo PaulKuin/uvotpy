@@ -347,15 +347,16 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
     import numpy as np
     #phafiles = rdTab('list_phafiles_g.txt')
 
-    z = uvotspec.get_continuum(phafiles,regions=regions, tstart=398093612.4,)
+    z = get_continuum(phafiles,regions=regions, tstart=398093612.4,)
     wave=z[0]
-    time = z[1]
-    sp = array(z[2]) 
+    time = np.asarray(z[1])
+    sp = np.array(z[2]) 
     # byindex: (spectral bands, observations, [0=mean wave,1=flux,2=err])
     # find a normalisation of the lc using t~110 days
-    q = (time > 90.) & (time < 120.) & np.isfinite(sp[0,:,1])
+    q = (time > 60.) & (time < 120.) & np.isfinite(sp[0,:,1])
     norm=[]
-    for k in range(9):
+    M = len(regions)
+    for k in range(M):
         norm.append(sp[k,q,1].mean()*1e13)
     norm = np.array(norm)
     norm = norm/norm[1]           
@@ -365,12 +366,12 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
        & np.isfinite(sp[3,q,1]) & np.isfinite(sp[4,q,1]) & np.isfinite(sp[5,q,1])\
        & np.isfinite(sp[6,q,1]) & np.isfinite(sp[7,q,1]) & np.isfinite(sp[8,q,1])
     sptot = sp[0,q,1][q1]
-    for k in range(1,9):
+    for k in range(1,M):
         sptot += sp[k,q,1][q1]
-    spmean = sptot/9. # (this the unnormalised bg lc-s)
+    spmean = sptot/M # (this the unnormalised bg lc-s)
     #   linear fits don't work : use log time
-    coef2 = np.polyfit(log10(time[q][q1]),spmean,2)
-    coef1 = np.polyfit(log10(time[q][q1]),spmean,1)
+    coef2 = np.polyfit(np.log10(time[q][q1]),spmean,2)
+    coef1 = np.polyfit(np.log10(time[q][q1]),spmean,1)
     normmean = norm.mean()  #use for scaling norm to mean flux spmean
     return (wave,time,sp, norm), coef, coef2, spmean,normmean    
     
@@ -2040,8 +2041,21 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
         excl = exclude_wave[i]  # per file 
         if not ignore_flags:
             fx = f[i]
-            W  = fx[2].data['lambda']
-            FL = fx[2].data['quality']
+            extnames = [""]
+            for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
+            extnames.append("")
+            if extname[2] == "CALSPEC":
+               W  = fx[2].data['lambda']
+               FL = fx[2].data['quality']
+            elif extname[1] == "SUMMED_SPECTRUM":   
+               # fix the missing sections (assume that the wavelengths are all whole numbers)
+               Wtmp  = fx[1].data['wave']
+               W = np.arange(Wtmp[0],Wtmp[-1])
+               FL = np.ones(len(W)) # fx[1].data['quality'] is bad
+               for x in Wtmp: 
+                   FL[x == W] = 0  # quality is good
+            else: 
+               raise IOError("input file %s has no valid extension name"%(fx))   
             ex = []
             if len(use_flags) == 0: # exclude ALL flags 
                 if chatter > 1: 
@@ -2067,7 +2081,7 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
                     if flg in quality_range:
                         pixranges = quality_range[flg]  
                         for pixes in pixranges:
-                            waverange=fx[2].data['lambda'][pixes]
+                            waverange=W[pixes]
                             ex.append(list(waverange))
                     excl.append(ex) 
         if len(excl) == 0: excl.append([])                                                     
@@ -2095,10 +2109,29 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
               % (i,phafiles[i]))
                          
         f = fits.open(phafiles[i])
-        W = f[2].data['lambda']
-        F = f[2].data['flux']
-        E = f[2].data['fluxerr']
-        FL = quality = f[2].data['quality']
+        extnames = [""]
+        for k in range(1,len(f)): extnames.append(f[k].header['extname'])
+        extnames.append("")
+        if extnames[2] == "CALSPEC":
+            W = f[2].data['lambda']
+            F = f[2].data['flux']
+            E = f[2].data['fluxerr']
+            FL = quality = f[2].data['quality']
+        elif extnames[1] == "SUMMED_SPECTRUM":
+            # fix the missing sections (assume that the wavelengths are all whole numbers)
+            Wtmp  = f[1].data['wave']
+            Ftmp = f[1].data['flux']
+            Etmp = f[1].data['fluxerr']
+            W = np.arange(Wtmp[0],Wtmp[-1])
+            FL = np.ones(len(W)) # fx[1].data['quality'] is bad
+            F = np.zeros(len(W))
+            E = np.zeros(len(W))
+            for x,y,z in zip(Wtmp,Ftmp,Etmp): 
+                F[x == W] = y
+                E[x == W] = z
+                FL[x == W] = 0  # quality is good
+        else: 
+            raise IOError("input file %s has no valid extension name"%(fx))   
         try:
             COI = f[2].data['sp1_coif']
             do_COI = True
@@ -2224,14 +2257,34 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
     except: 
         fselect = 0
         ref = fits.open(phafiles[0])
-    refW = ref['CALSPEC'].data['lambda']
-    refF = ref['CALSPEC'].data['flux']
-    refE = ref['CALSPEC'].data['fluxerr']
-    refexcl = exclude_wave[fselect]   
+    extnames = [""]
+    for k in range(1,len(ref)): extnames.append(ref[k].header['extname'])
+    extnames.append("")
+    if extnames[2] == 'CALSPEC':
+        refW = ref['CALSPEC'].data['lambda']
+        refF = ref['CALSPEC'].data['flux']
+        refE = ref['CALSPEC'].data['fluxerr']
+        refexcl = exclude_wave[fselect]  
+    elif extnames[1] == "SUMMED_SPECTRUM":
+            # fix the missing sections (assume that the wavelengths are all whole numbers)
+            Wtmp  = ref[1].data['wave']
+            Ftmp  = ref[1].data['flux']
+            Etmp  = ref[1].data['fluxerr']
+            refexcl = exclude_wave[fselect]  
+            refW = np.arange(Wtmp[0],Wtmp[-1])
+            refF = np.zeros(len(refW))
+            refE = np.zeros(len(refW))
+            for x,y,z in zip(Wtmp,Ftmp,Etmp): 
+                refF[x == refW] = y
+                refE[x == refW] = z
+    else:    
+        raise IOError("input file %s has no valid extension name"%(fx))   
 
-    wheelpos = ref['SPECTRUM'].header['wheelpos']
+    if 'wheelpos' in ref[1].header:
+        wheelpos = ref['SPECTRUM'].header['wheelpos']
+    else: wheelpos = 160    
     if wheelpos < 500:
-            q = np.isfinite(refF) & (refW > 1700.) & (refW < 5400)
+            q = np.isfinite(refF) & (refW > 1700.) & (refW < 5800)
     else:   
             q = np.isfinite(refF) & (refW > 2850.) & (refW < 6600)
     if len(refexcl) > 0:   
@@ -2249,9 +2302,27 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
                    wave_shifts.append( 0 )
                else:
                   f = fits.open(phafiles[i])
-                  W = f[2].data['lambda']
-                  F = f[2].data['flux']
-                  E = f[2].data['fluxerr']
+                  extnames = [""]
+                  for k in range(1,len(f)): extnames.append(f[k].header['extname'])
+                  extnames.append("")
+                  if extnames[2] == 'CALSPEC':
+                      W = f[2].data['lambda']
+                      F = f[2].data['flux']
+                      E = f[2].data['fluxerr']
+                  elif extnames[1] == "SUMMED_SPECTRUM":
+                      # fix the missing sections (assume that the wavelengths are all whole numbers)
+                      Wtmp = f[1].data['wave']
+                      Ftmp = f[1].data['flux']
+                      Etmp = f[1].data['fluxerr']
+                      refW = np.arange(Wtmp[0],Wtmp[-1])
+                      refF = np.zeros(len(refW))
+                      refE = np.zeros(len(refW))
+                      for x,y,z in zip(Wtmp,Ftmp,Etmp): 
+                          refF[x == refW] = y
+                          refE[x == refW] = z
+                  else:    
+                    raise IOError("input file %s has no valid extension name"%(fx))   
+                      
                   excl = exclude_wave[i]
                   print("lengths W,F:",len(W),len(F))
                   if wheelpos < 500:
@@ -2348,7 +2419,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
          hdu1.header['EXTNAME']=('SUMMED_SPECTRUM','Name of this binary table extension')
          hdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
          hdu1.header['INSTRUME']=('UVOTA','Instrument name')
-         hdu1.header['FILTER'] =(f[0][2].header['FILTER'],'filter identification')
+         hdu1.header['FILTER'] =(f[0][1].header['FILTER'],'filter identification')
          hdu1.header['ORIGIN'] ='UCL/MSSL','source of FITS file'
          hdu1.header['CREATOR']=('uvotspec.py','uvotpy python library')
          hdu1.header['COMMENT']='uvotpy sources at www.github.com/PaulKuin/uvotpy'
@@ -2361,14 +2432,22 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
             exposure += fk[1].header['exposure']
          RA = -999.9
          DEC = -999.9
-         if chatter > 4: print(hi)
+         if chatter > 4: 
+            print (50*"=")
+            print(hi)
+            print (50*"=")
+            #return hi
          if len(hi) > 0:
+            #if (hi[0].split()[0] != 'merged'):
             for hiline in hi:
-                if len(hiline.split()) > 0:
-                    if hiline.split()[1] == 'RA,DEC':
-                        RA = hiline.split()[3]
-                        DEC = hiline.split()[4]
+                if len(hiline) > 0:
+                    if (hiline.split()[0] == 'merged'):
                         break
+                    elif (len(hiline.split()) > 0):
+                        if hiline.split()[1] == 'RA,DEC':
+                            RA = hiline.split()[3]
+                            DEC = hiline.split()[4]
+                            break
          hdu1.header['RA_OBJ'] = (RA ,'Right Ascension')
          hdu1.header['DEC_OBJ'] = (DEC,'Declination')
          hdu1.header['EQUINOX'] = 2000.0
@@ -2445,13 +2524,26 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
     tstop  = 0.0
     exposure=0
     nfiles=len(f)
-    for fx in f:         
-        q = np.isfinite(fx[2].data['flux'])
-        wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
-        wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
-        tstart = np.min([tstart,fx[2].header['tstart']])
-        tstop  = np.max([tstop ,fx[2].header['tstop' ]])
-        exposure += fx[2].header['exposure']
+    for fx in f:    
+        extnames = [""]
+        for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
+        extnames.append("")
+        if extnames[2] == 'CALSPEC':
+           q = np.isfinite(fx[2].data['flux'])
+           wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
+           wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
+           tstart = np.min([tstart,fx[2].header['tstart']])
+           tstop  = np.max([tstop ,fx[2].header['tstop' ]])
+           exposure += fx[2].header['exposure']
+        elif extnames[1] == 'SUMMED_SPECTRUM':
+           q = np.isfinite(fx[1].data['flux'])
+           wmin = np.min([wmin, np.min(fx[1].data['wave'][q]) ])
+           wmax = np.max([wmax, np.max(fx[1].data['wave'][q]) ])           
+           tstart = np.min([tstart,fx[1].header['tstart']])
+           tstop  = np.max([tstop ,fx[1].header['tstop' ]])
+           exposure += fx[1].header['exposure']
+        else:
+           raise IOError("_sum_weightedsum 2537: input file error %s"%(fx.filename()))   
     if chatter > 1: 
         sys.stderr.write( '_sum_weightedsum: wav min %6.1f\n'%wmin)
         sys.stderr.write( '_sum_weightedsum: wav max %6.1f\n'%wmax)
@@ -2478,16 +2570,26 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
     D = []
     for i in range(nfiles):
         if chatter > 3 : 
-            sys.stderr.write("working on %s:\n"%(f[i][2].header['filetag']))
+            sys.stderr.write("working on %s:\n"%(f[i][len(f[i])-1].header['filetag']))
         fx = f[i]
         excl = exclude_wave[i]
         if chatter > 3: 
             sys.stderr.write( "_sum_weightedsum excl=%s\n"%excl)
             if type(excl) != list: 
                 sys.stderr.write("WARNING: type excl is not list but %s\n"% type(excl))
-        W = fx['CALSPEC'].data['lambda']+wave_shifts[i]
-        F = fx['CALSPEC'].data['flux']   
-        E = np.abs(fx['CALSPEC'].data['fluxerr'])
+        extnames = [""]
+        for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
+        extnames.append("")
+        if extnames[2] == 'CALSPEC' :
+           W = fx['CALSPEC'].data['lambda']+wave_shifts[i]
+           F = fx['CALSPEC'].data['flux']   
+           E = np.abs(fx['CALSPEC'].data['fluxerr'])
+        elif extnames[1] == 'SUMMED_SPECTRUM' :   
+           W = fx['SUMMED_SPECTRUM'].data['wave']+wave_shifts[i]
+           F = fx['SUMMED_SPECTRUM'].data['flux']   
+           E = np.abs(fx['SUMMED_SPECTRUM'].data['fluxerr'])
+        else:
+           raise IOError("_sum_weightedsum 2583: input file error %s"%(fx.filename()))   
         p = np.isfinite(F) & (W > 1600.)
         fF = interpolate.interp1d( W[p], F[p], )
         fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
