@@ -779,7 +779,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
 
 def apply_shift(file,delwav,recalculate=False):
     """apply a given wavelength shift in A"""
-    import uvotmisc
+    from uvotpy import uvotmisc
     f = fits.open(file,mode='update')
     delwav0 = 0
     if 'WAVSHFT' in f['CALSPEC'].header:
