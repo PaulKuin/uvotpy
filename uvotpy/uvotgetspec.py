@@ -2849,19 +2849,23 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    if wheelpos ==  200: 
        q1 = (rate > 2.5*rate_bkg) & (rate < 125*rate_bkg)
        defaulttheta = 151.4-180.
-       bins = np.arange(-29.5,29.5,1)    
+       bins = np.arange(-29.5,29.5,1) 
+       midbin = np.arange(-29,29,1)   
    elif wheelpos ==  160: 
        q1 = (rate > 2.5*rate_bkg) & (rate < 125*rate_bkg) & (x_img > 850)
        defaulttheta = 144.4-180.
        bins = np.arange(-29.5,29.5,1)    
+       midbin = np.arange(-29,29,1)   
    elif wheelpos ==  955: 
        q1 = (rate > 2.5*rate_bkg) & (rate < 175*rate_bkg) & (x_img > 850)
        defaulttheta = 140.5-180
        bins = np.arange(-49.5,49.5,1)    
+       midbin = np.arange(-49,49,1)   
    elif wheelpos == 1000: 
        q1 = (rate > 2.5*rate_bkg) & (rate < 175*rate_bkg)
        defaulttheta = 148.1-180.
        bins = np.arange(-49.5,49.5,1)    
+       midbin = np.arange(-49,49,1)   
 
    Thet -= defaulttheta
    Xa += 17.0
@@ -2920,9 +2924,11 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
            
    if len(distx) > 0 :        
        hisx = np.histogram(distx,bins=bins)    
-       xoff = hisx[1][:-1][hisx[0] == hisx[0].max()].mean()    
+       #xoff = hisx[1][:-1][hisx[0] == hisx[0].max()].mean()    
+       xoff = midbin[hisx[0] == hisx[0].max()].mean()    
        hisy = np.histogram(disty,bins=bins)    
-       yoff = hisy[1][:-1][hisy[0] == hisy[0].max()].mean()   
+       #yoff = hisy[1][:-1][hisy[0] == hisy[0].max()].mean()   
+       yoff = midbin[hisy[0] == hisy[0].max()].mean()   
        # subtract xoff, yoff from Xim, Yim or add to origin ( hh[CRPIX1S],hh[CRPIX2S] ) if offset 
        # is larger than 1 pix
        if (np.sqrt(xoff**2+yoff**2) > 1.0):
@@ -2963,9 +2969,11 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
                distx.append( Xim[kx]  - xim[i ] )
                disty.append( Yim[kx]  - yim[i ] )
       hisx = np.histogram(distx,bins=bins)    
-      xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
+      #xoff = hisx[1][hisx[0] == hisx[0].max()].mean()    
+      xoff = midbin[hisx[0] == hisx[0].max()].mean()    
       hisy = np.histogram(disty,bins=bins)    
-      yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
+      #yoff = hisy[1][hisy[0] == hisy[0].max()].mean()   
+      yoff = midbin[hisy[0] == hisy[0].max()].mean()   
       if (np.sqrt(xoff**2+yoff**2) > 1.0):
            if ("forceshi" not in hh):
                hh['crpix1s'] += xoff
