@@ -1794,6 +1794,7 @@ def sum_PHAspectra(phafiles, outfile=None,
       adjust_wavelengths=False, wave_shifts=[], 
       objectname='unknown', object_position=None,
       wave_adjust_method=1, exclude_method=1,
+      scale=None,
       chatter=1, clobber=True,
       ):
    '''
@@ -1830,7 +1831,10 @@ def sum_PHAspectra(phafiles, outfile=None,
       Valid keyword values for the flags are defined in quality_flags(),
    objectname : str [optional]
       name of the object. This will be entered as a keyword in the summed_spectrum fits file.
-   object_position: astropy.coordinates [optional]          
+   object_position: astropy.coordinates [optional]    
+   scale: list, default np.ones()
+      if given, the flux and fluxerr read from file n will be multiplied by scale[n]
+      this is useful for summing spectra of a time-varying source      
    
    Returns
    -------
@@ -2009,7 +2013,7 @@ def sum_PHAspectra(phafiles, outfile=None,
       sys.stderr.write("====================================================================================\n")
                                                    
    (wave, wf, wvar, mf, svar, serr, nsummed, q, sector), D, result = _sum_weightedsum(
-                                     f,copy.deepcopy(exclude_wave), wave_shifts, chatter)
+                                     f,copy.deepcopy(exclude_wave), wave_shifts, scalefactor=scale, chatter=chatter)
 
       # write output
    _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
@@ -2043,11 +2047,11 @@ def _sum_exclude_sub1(f, nfiles, wave_shifts, exclude_wave_copy, exclude_wave,
             fx = f[i]
             extnames = [""]
             for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
-            extnames.append("")
-            if extname[2] == "CALSPEC":
+            extnames.append("") # so it has one more element
+            if extnames[2] == "CALSPEC":
                W  = fx[2].data['lambda']
                FL = fx[2].data['quality']
-            elif extname[1] == "SUMMED_SPECTRUM":   
+            elif extnames[1] == "SUMMED_SPECTRUM":   
                # fix the missing sections (assume that the wavelengths are all whole numbers)
                Wtmp  = fx[1].data['wave']
                W = np.arange(Wtmp[0],Wtmp[-1])
@@ -2509,7 +2513,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
                      nsummed[q][i],sector[q][i]))
           fout.close()                 
       
-def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
+def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
 
     import numpy as np
     import copy
@@ -2524,6 +2528,8 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
     tstop  = 0.0
     exposure=0
     nfiles=len(f)
+    if type(scalefactor) == type(None):
+        scalefactor=np.ones(nfiles) 
     for fx in f:    
         extnames = [""]
         for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
@@ -2569,6 +2575,7 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
          
     D = []
     for i in range(nfiles):
+        sc = scalefactor[i]
         if chatter > 3 : 
             sys.stderr.write("working on %s:\n"%(f[i][len(f[i])-1].header['filetag']))
         fx = f[i]
@@ -2582,19 +2589,19 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
         extnames.append("")
         if extnames[2] == 'CALSPEC' :
            W = fx['CALSPEC'].data['lambda']+wave_shifts[i]
-           F = fx['CALSPEC'].data['flux']   
-           E = np.abs(fx['CALSPEC'].data['fluxerr'])
+           F = sc * fx['CALSPEC'].data['flux']   
+           E = sc * np.abs(fx['CALSPEC'].data['fluxerr'])
         elif extnames[1] == 'SUMMED_SPECTRUM' :   
            W = fx['SUMMED_SPECTRUM'].data['wave']+wave_shifts[i]
-           F = fx['SUMMED_SPECTRUM'].data['flux']   
-           E = np.abs(fx['SUMMED_SPECTRUM'].data['fluxerr'])
+           F = sc * fx['SUMMED_SPECTRUM'].data['flux']   
+           E = sc * np.abs(fx['SUMMED_SPECTRUM'].data['fluxerr'])
         else:
            raise IOError("_sum_weightedsum 2583: input file error %s"%(fx.filename()))   
         p = np.isfinite(F) & (W > 1600.)
         fF = interpolate.interp1d( W[p], F[p], )
         fE = interpolate.interp1d( W[p], E[p]+0.01*F[p], ) 
          
-        M = np.ones(len(wave),dtype=bool)     # mask set to True
+        M = np.ones(len(wave),dtype=bool)     # mask for valid 'wave' set to True
         M[wave < W[p][0]] = False
         M[wave > W[p][-1]] = False
         while len(excl) > 0:
@@ -2627,7 +2634,7 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, chatter):
     # make sectors based on continuous parts spectrum
     if chatter > 3 : 
         sys.stderr.write( "_sum_weightedsum: making sectors /n")
-    sect = 1
+    sect = 0
     for i in range(1,len(nsummed),1):
           if (nsummed[i] != 0) & (nsummed[i-1] != 0): sector[i] = sect
           elif (nsummed[i] != 0) & (nsummed[i-1] == 0): 
