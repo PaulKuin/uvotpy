@@ -941,7 +941,7 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
     The header will be updated with the value of the wavelength shift 
     
     """
-    from uvotgetspec import quality_flags
+    from uvotpy.uvotgetspec import quality_flags
     if openfile != None:
        f = openfile
        if f.fileinfo(1)['filemode'] != 'update' :
@@ -967,12 +967,18 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
     ax = fig.add_axes([0.08,0.13,0.87,0.7]) 
     canvas = ax.figure.canvas 
     ax.set_title("")   
+    # determine if summed spectrum
+    ext = 2
+    wave = 'lambda'
+    if f[1].header['extname'] == 'SUMMED_SPECTRUM':
+       ext = 1
+       wave = 'wave'
     # initial plot to get started
-    w = f[2].data['lambda']
-    flx = f[2].data['flux']
+    w = f[ext].data[wave]
+    flx = f[ext].data['flux']
     spectrum, = ax.plot(w, flx, )
     # highlight bad quality 
-    q = f[2].data['quality']
+    q = f[ext].data['quality']
     plotquality(ax,w,q,flux=flx,flag=['bad','zeroth','weakzeroth','overlap','too_bright']) 
     # add annotation
     if ylim[0] == None: 
@@ -1019,19 +1025,20 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
         print("The selected bad regions are ")
         for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
         print(" and will be applied to the FITS file.\n ") 
-        f[2].header['comment'] = "added bad regions manually (qual=bad)"
+        f[ext].header['comment'] = "added bad regions manually (qual=bad)"
         for br in lines:
           #try:
             # find points that are not flagged, but should be flagged
             if br[1] < br[0]:
                br3 = br[0]; br[0]=br[1]; br[1]=br3
-            q1 = (check_flag(f[2].data['quality'],'bad')  == False)
-            q = ((f[2].data['lambda'] > br[0]) & 
-                     (f[2].data['lambda'] < br[1]) & 
+            q1 = (check_flag(f[ext].data['quality'],'bad')  == False)
+            q = ((f[ext].data['lambda'] > br[0]) & 
+                     (f[ext].data['lambda'] < br[1]) & 
                      q1 & 
-                     np.isfinite(f[2].data['quality']) )
-            f[1].data['QUALITY'][q] = f[1].data['QUALITY'][q] + flag['bad'] 
-            f[2].data['QUALITY'][q] = f[2].data['QUALITY'][q] + flag['bad']    
+                     np.isfinite(f[ext].data['quality']) )
+            if ext == 2: 
+               f[1].data['QUALITY'][q] = f[1].data['QUALITY'][q] + flag['bad'] 
+            f[ext].data['QUALITY'][q] = f[ext].data['QUALITY'][q] + flag['bad']    
           #except:
             #    raise RuntimeError("Some error occurred during writing to file of the bad regions. No changes were applied.")
             #    s.disconnect()
@@ -1052,7 +1059,9 @@ def plotquality(ax,
        flag=['bad','weakzeroth','zeroth','too_bright'],
        colors=['c','y','m','b','r','g','k'],alpha=0.2,
        quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
-       marker='x', 
+       marker='x',
+       speccolor='b', 
+       label=None,
        chatter=0):
        """ mark up plot with data quality
        either add vertical greyscale regions in plot for each 
@@ -1127,7 +1136,9 @@ def plotquality(ax,
                        ax.axvspan(w[v1[0]],w[v1[1]],facecolor=colors[k],alpha=alpha,label=flab)
                    else:
                        qp = (w >= w[v1[0]]) & (w <= w[v1[1]])
-                       ax.plot(w[qp],flux[qp], marker=marker, mfc=colors[k],ms=3,label=flab)  
+                       # mfc marker face colors
+                       ax.plot(w[qp],flux[qp], marker=marker, mfc=colors[k],ms=3,
+                          label=flab,color=speccolor)  
        # the algorithm skips two adjacent points which will be ignored.                    
                                       
 def check_flag(quality,flag,chatter=0):
@@ -1342,6 +1353,11 @@ def plot_spectrum(ax,spectrumfile,
         qualcolors=['c', 'g', 'y', 'm', 'b', 'r', 'k'], 
         qualalpha=0.2,
         quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
+        smooth=1, 
+        label=None,
+        offset=0,offsetfactor=1,
+        ebmv=0.00, Rv=3.1,
+        redshift=0.,
         chatter=0):
     """
     make a quick plot of a PHA/summed spectrum 
@@ -1375,6 +1391,16 @@ def plot_spectrum(ax,spectrumfile,
        - qualcolors is a list of colors for the shading of the regions by quality
        - qualalpha is the alpha factor for the shading   
        - quallegend (for each flag, add to legend)
+    smooth: int
+       if not empty, apply a boxcar smooth over N points   
+    label: str
+       force this label    
+    ebmv, Rv: float
+       the value of E(B-V), and Rv to correct for reddening 
+       (requires the photometry2 module)
+       default: no reddening
+    redshift: float
+       z value   
     chatter: int (0...5)
        verbosity  
        
@@ -1383,7 +1409,11 @@ def plot_spectrum(ax,spectrumfile,
     
     """
     import numpy as np
-    
+    from stsci.convolve import boxcar
+    try:
+       from photometry2 import Cardelli
+    except: pass
+     
     if type(ax) != 'matplotlib.axes.AxesSubplot' :
        if chatter > 2: print("ax type ?",type( ax ))
     first = True   
@@ -1395,9 +1425,14 @@ def plot_spectrum(ax,spectrumfile,
         r = complement_of_ranges(rx,rangestart=0,rangeend=len(q))
         if chatter > 1: 
            print("ranges",r)
-        label = f[1].header['date-obs']
-        w = f[2].data['lambda']
-        flx = f[2].data['flux']
+        if type(label) == type(None):   # default label
+           label = f[1].header['date-obs']
+        w = f[2].data['lambda']/(1.+redshift)
+        if ebmv != 0.:
+           X = Cardelli(wave=w*1e-4,Rv=Rv)
+        else: 
+           X = 0. 
+        flx = (f[2].data['flux']+offset)*offsetfactor*10**(0.4*X*ebmv)
         err = f[2].data['fluxerr']
         if len(r) == 0:
            r = [[0,len(w)]]
@@ -1405,33 +1440,49 @@ def plot_spectrum(ax,spectrumfile,
             if chatter > 2: print("errbars False")
             for rr in r:
                 if first:
-                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],color=speccolor,label=label)
+                    ax.plot(w[rr[0]:rr[1]],
+                        boxcar( flx[rr[0]:rr[1]],(smooth,)),
+                        color=speccolor,
+                        label=label)
                     first = False
                 else:
-                    ax.plot(w[rr[0]:rr[1]],flx[rr[0]:rr[1]],color=speccolor)
+                    ax.plot(w[rr[0]:rr[1]],
+                         boxcar(flx[rr[0]:rr[1]],(smooth,)),
+                         color=speccolor)
                 if errhaze:
                     ax.fill_between(w[rr[0]:rr[1]],
-                    flx[rr[0]:rr[1]]-err[rr[0]:rr[1]], 
-                    flx[rr[0]:rr[1]]+err[rr[0]:rr[1]],
+                    boxcar(flx[rr[0]:rr[1]]-err[rr[0]:rr[1]],(2*smooth,))/np.sqrt(smooth), 
+                    boxcar(flx[rr[0]:rr[1]]+err[rr[0]:rr[1]],(2*smooth))/np.sqrt(smooth),
+                    where=boxcar(flx[rr[0]:rr[1]]-err[rr[0]:rr[1]],(2*smooth)) > 0,
                     color=hazecolor,alpha=hazealpha)
         else:
             if chatter > 2: print("errbars True")
             for rr in r:
                 if first:
-                   ax.errorbar( w[rr[0]:rr[1]],flx[rr[0]:rr[1]],
-                   yerr=err[rr[0]:rr[1]],label=label)  
+                   ax.errorbar( w[rr[0]:rr[1]],
+                      boxcar(flx[rr[0]:rr[1]],(smooth,)),
+                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth),
+                      label=label,color=speccolor,fmt='x')  
                    first = False
                 else:
-                   ax.errorbar( w[rr[0]:rr[1]],flx[rr[0]:rr[1]],
-                   yerr=err[rr[0]:rr[1]],)  
+                   ax.errorbar( w[rr[0]:rr[1]],
+                      boxcar(flx[rr[0]:rr[1]],(smooth,)),
+                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth),
+                      color=speccolor,fmt='x')  
         if plot_quality:
-            plotquality(ax,w,q,flux=flx,flag=qual_flags,colors=qualcolors,alpha=qualalpha,marker=quality_marker)                                           
+            plotquality(ax,w,q,flux=flx,flag=qual_flags,colors=qualcolors,
+                alpha=qualalpha,marker=quality_marker,speccolor=speccolor)                                           
                    
     elif f[1].header['extname'].upper() == 'SUMMED_SPECTRUM':
-        w = f['SUMMED_SPECTRUM'].data['wave']
-        flx = f['SUMMED_SPECTRUM'].data['flux']
-        err = f['SUMMED_SPECTRUM'].data['fluxerr']
-        label = f[1].header['date-obs']
+        w = f['SUMMED_SPECTRUM'].data['wave']/(1+redshift)
+        if ebmv != 0.:
+           X = Cardelli(wave=w*1e-4,Rv=Rv)
+        else: 
+           X = 0. 
+        flx = (boxcar(f['SUMMED_SPECTRUM'].data['flux'],(smooth,))+offset)*offsetfactor*10**(0.4*X*ebmv)
+        err = boxcar(f['SUMMED_SPECTRUM'].data['fluxerr'],(2*smooth,))/np.sqrt(smooth)
+        if type(label) == type(None):
+           label = f[1].header['date-obs']
         #n_spec = f['SUMMED_SPECTRUM'].data['n_spec']
         sector = f['SUMMED_SPECTRUM'].data['sector']
         sect = np.min(sector)
@@ -1443,11 +1494,12 @@ def plot_spectrum(ax,spectrumfile,
                     ax.plot(w[q],flx[q],label=label,color=speccolor)
                     first = False
                 else:
-                    ax.plot(w[q],flx[q],)       
+                    ax.plot(w[q],flx[q],color=speccolor)       
                 if errhaze:
                     ax.fill_between(w[q],
                     flx[q]-err[q], 
                     flx[q]+err[q],
+                    where=flx[q]-err[q] > 0.,
                     color=hazecolor,alpha=hazealpha)
             else:
                 if first:
