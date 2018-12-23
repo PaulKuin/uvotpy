@@ -796,13 +796,18 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       if np.sum(background_upper) >= 190.0: 
          background_upper = [None,None]
          msg += "WARNING: background_upper set too close to edge image\n          Using default\n"   
-             
+   
       # in case of summary file:
    if (not skip_field_src) & (ZOpos == None):
       if chatter > 2: print("================== locate zeroth orders due to field sources =============")
       if wheelpos > 500: zeroth_blim_offset = 2.5 
-      ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,
+      try:  
+          ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,
           set_maglimit=set_maglimit,clobber="yes", chatter=chatter, )
+      except:     
+         if type(sumimage) == typeNone:
+             print ("exception to call find_zeroth_orders : skip_field_src = ",skip_field_src)
+             pass
    
    # use for the ftools the downloaded usnob1 catalog in file "search.ub1" using the 
    # catspec parameter in the calls  
@@ -7645,7 +7650,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
    
    from astropy.io import fits 
    import numpy as np
-   import uvotmisc
+   from uvotpy import uvotmisc
    import pylab as plt
    
    if plotimage & (mode == 'create'):

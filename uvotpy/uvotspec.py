@@ -919,7 +919,7 @@ class SelectBadRegions(object):
         
 
 def flag_bad_manually(file=None,openfile=None,openplot=None,
-        ylim=[None,None], ):
+        ylim=[None,None],apply=[] ):
     """manually flag bad parts of the spectrum
     
     Parameters
@@ -931,6 +931,9 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        figure handle
     ylim : list
        limits y-axis   
+    apply : list
+       list of [a,b] lists where the wavelengths a-b must be flagged 'bad'   
+       disables the interactive way
        
     Notes
     -----
@@ -956,71 +959,84 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        f = fits.open(file,mode='update')
     else:
        raise IOError("what ? nothing to adjust?")
-    # axis instance to use   
-    if openplot != None:
-       fig = openplot
-       fig.clf()
-    else:
-       fig = plt.figure()
+       
+    interactive = True   
+    if apply != []: interactive=False  
+    
     lines = []   
-    fig.set_facecolor('white')
-    ax = fig.add_axes([0.08,0.13,0.87,0.7]) 
-    canvas = ax.figure.canvas 
-    ax.set_title("")   
+    if interactive:
+       # axis instance to use   
+       if openplot != None:
+          fig = openplot
+          fig.clf()
+       else:
+          fig = plt.figure()
+       fig.set_facecolor('white')
+       ax = fig.add_axes([0.08,0.13,0.87,0.7]) 
+       canvas = ax.figure.canvas 
+       ax.set_title("")   
+       
     # determine if summed spectrum
     ext = 2
     wave = 'lambda'
     if f[1].header['extname'] == 'SUMMED_SPECTRUM':
        ext = 1
        wave = 'wave'
-    # initial plot to get started
-    w = f[ext].data[wave]
-    flx = f[ext].data['flux']
-    spectrum, = ax.plot(w, flx, )
+       
+    if interactive:   
+       # initial plot to get started
+       w = f[ext].data[wave]
+       flx = f[ext].data['flux']
+       spectrum, = ax.plot(w, flx, )
+       
     # highlight bad quality 
     q = f[ext].data['quality']
-    plotquality(ax,w,q,flux=flx,flag=['bad','zeroth','weakzeroth','overlap','too_bright']) 
-    # add annotation
-    if ylim[0] == None: 
-       ylim = ax.get_ylim()
-    else:
-       ax.set_ylim(ylim)  
-    #for io in ions:    
-    #    plot_line_ids(ax,ylower=0.8*(ylim[1]-ylim[0])+ylim[0], ion=io) 
-    ax.set_xlabel(u'wavelength($\AA$)')
-    ax.set_ylabel(u'flux')
-    fig.show()
-    print("Select bad regions: Zoom in before starting. Rerun for more regions.")
-    #  when animating / blitting figure
-    #background = canvas.copy_from_bbox(ax.bbox)
-    s = SelectBadRegions(ax,spectrum)
-    s.set_badregions([])
     flag = quality_flags()
-    done = False
-    try:
-        while not done:
-            ans = raw_input("Do you want to mark bad regions ? (Y) ").upper()
-            if len(ans) > 0:
-                if ans[0] == 'Y':
-                    print('Select bad wavelengths in the spectrum until happy')
-                    ax.set_title("when done press key")   
-                    s.connect()
-                    # register the shift from the last run              
-                    ans = raw_input("When done hit the d key, then return, or just return to abort")
-                    badregions, lines = s.get_badlines()
-                    print("got so far: ")
-                    for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
-                    print(badregions)
-                    ax.set_title("")
-                    s.disconnect()
-                else:
-                    print("Done for now...")            
-                    done = True
-    except:
-        raise RuntimeError("Some error occurred during the selection of the bad regions. No changes were applied.")
-        s.disconnect()
-        lines = []
-        #
+    if interactive:
+       plotquality(ax,w,q,flux=flx,flag=['bad','zeroth','weakzeroth','overlap','too_bright']) 
+       # add annotation
+       if ylim[0] == None: 
+          ylim = ax.get_ylim()
+       else:
+          ax.set_ylim(ylim)  
+          
+       #for io in ions:    
+       #    plot_line_ids(ax,ylower=0.8*(ylim[1]-ylim[0])+ylim[0], ion=io) 
+       ax.set_xlabel(u'wavelength($\AA$)')
+       ax.set_ylabel(u'flux')
+       fig.show()
+       print("Select bad regions: Zoom in before starting. Rerun for more regions.")
+       #  when animating / blitting figure
+       #background = canvas.copy_from_bbox(ax.bbox)
+       s = SelectBadRegions(ax,spectrum)
+       s.set_badregions([])
+    #flag = quality_flags()
+       done = False
+       try:
+           while not done:
+               ans = raw_input("Do you want to mark bad regions ? (Y) ").upper()
+               if len(ans) > 0:
+                   if ans[0] == 'Y':
+                       print('Select bad wavelengths in the spectrum until happy')
+                       ax.set_title("when done press key")   
+                       s.connect()
+                       # register the shift from the last run              
+                       ans = raw_input("When done hit the d key, then return, or just return to abort")
+                       badregions, lines = s.get_badlines()
+                       print("got so far: ")
+                       for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
+                       print(badregions)
+                       ax.set_title("")
+                       s.disconnect()
+                   else:
+                       print("Done for now...")            
+                       done = True
+       except:
+           raise RuntimeError("Some error occurred during the selection of the bad regions. No changes were applied.")
+           s.disconnect()
+           lines = []
+           #
+    if not interactive: lines=apply       
     if len(lines) > 0:
         print("The selected bad regions are ")
         for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
@@ -1050,7 +1066,8 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        return fig, ax, f
     else:
        f.close() 
-       return fig,ax   
+       if interactive:
+          return fig,ax   
 
 
 def plotquality(ax,
@@ -1144,7 +1161,7 @@ def plotquality(ax,
 def check_flag(quality,flag,chatter=0):
    """ return a logical array where the elements are 
        True if flag is set """
-   from uvotgetspec import quality_flags
+   from uvotpy.uvotgetspec import quality_flags
    loc = np.zeros(len(quality),dtype=bool) 
    if flag == 'good': return loc
    qf = quality_flags()[flag]
@@ -1358,6 +1375,7 @@ def plot_spectrum(ax,spectrumfile,
         offset=0,offsetfactor=1,
         ebmv=0.00, Rv=3.1,
         redshift=0.,
+        wrange=[1680,6800],
         chatter=0):
     """
     make a quick plot of a PHA/summed spectrum 
@@ -1368,6 +1386,8 @@ def plot_spectrum(ax,spectrumfile,
        The spectrum will be drawn in 'ax'
     spectrumfile: path
        the full filename of the spectrum
+    wrange: list
+       limits of the wavelength range to plot [wmin,wmax]  
     ylim : list 
        y-axis limits
     speccolor : color   
@@ -1401,6 +1421,10 @@ def plot_spectrum(ax,spectrumfile,
        default: no reddening
     redshift: float
        z value   
+    offset: float
+       additive offset
+    offsetfactor: float 
+       multiplicative offset  
     chatter: int (0...5)
        verbosity  
        
@@ -1416,65 +1440,93 @@ def plot_spectrum(ax,spectrumfile,
      
     if type(ax) != 'matplotlib.axes.AxesSubplot' :
        if chatter > 2: print("ax type ?",type( ax ))
+    if smooth < 1: smooth = 1   
     first = True   
     f = fits.open(spectrumfile)
     if f[1].header['extname'].upper() == 'SPECTRUM': 
-        q = f[2].data['quality'] 
+        w = f[2].data['lambda']/(1.+redshift)
+        flx = (f[2].data['flux']+offset)*offsetfactor
+        err = f[2].data['fluxerr']
+        q = f[2].data['quality']
+        filterin = np.isfinite(flx) 
+        w = w[filterin]
+        flx = flx[filterin]
+        err = err[filterin]
+        q = q[filterin]
         rx = quality_flags_to_ranges(q)
         rx = rx[flag] 
-        r = complement_of_ranges(rx,rangestart=0,rangeend=len(q))
+        r = complement_of_ranges(rx,rangestart=0,rangeend=len(q)-1)
         if chatter > 1: 
            print("ranges",r)
         if type(label) == type(None):   # default label
            label = f[1].header['date-obs']
-        w = f[2].data['lambda']/(1.+redshift)
         if ebmv != 0.:
            X = Cardelli(wave=w*1e-4,Rv=Rv)
         else: 
            X = 0. 
-        flx = (f[2].data['flux']+offset)*offsetfactor*10**(0.4*X*ebmv)
-        err = f[2].data['fluxerr']
+        flx = flx*10**(0.4*X*ebmv)
+        qw_ = (w > wrange[0]) & (w < wrange[1])
+        if chatter > 4: 
+           print ("wavelengths: ",w)
+           print ("flux: ",flx)
+           print ("err: ",err)
+           print ("q: ",q)
+           print ("r: ",r)
         if len(r) == 0:
            r = [[0,len(w)]]
         if not errbars:
             if chatter > 2: print("errbars False")
             for rr in r:
+                if chatter > 4:
+                    print ("segment indices rr: ",rr)
+                    print ("len w[]:",len(w))
                 if first:
-                    ax.plot(w[rr[0]:rr[1]],
-                        boxcar( flx[rr[0]:rr[1]],(smooth,)),
+                    qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
+                    ax.plot(w[rr[0]:rr[1]][qw],
+                        boxcar( flx[rr[0]:rr[1]],(smooth,))[qw],
                         color=speccolor,
                         label=label)
                     first = False
                 else:
-                    ax.plot(w[rr[0]:rr[1]],
-                         boxcar(flx[rr[0]:rr[1]],(smooth,)),
+                    qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
+                    ax.plot(w[rr[0]:rr[1]][qw],
+                         boxcar(flx[rr[0]:rr[1]],(smooth,))[qw],
                          color=speccolor)
                 if errhaze:
-                    ax.fill_between(w[rr[0]:rr[1]],
-                    boxcar(flx[rr[0]:rr[1]]-err[rr[0]:rr[1]],(2*smooth,))/np.sqrt(smooth), 
-                    boxcar(flx[rr[0]:rr[1]]+err[rr[0]:rr[1]],(2*smooth))/np.sqrt(smooth),
-                    where=boxcar(flx[rr[0]:rr[1]]-err[rr[0]:rr[1]],(2*smooth)) > 0,
+                    smi = np.int( 5*smooth )
+                    qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
+                    flxlower=flx[rr[0]:rr[1]]-boxcar(err[rr[0]:rr[1]],(smi,))[qw]/np.sqrt(smooth)
+                    flxupper=flx[rr[0]:rr[1]]+boxcar(err[rr[0]:rr[1]],(smi,))[qw]/np.sqrt(smooth)
+                    flxlower[flxlower <= 0] = 1e-27
+                    flxupper[flxupper < 0] = 1e-27
+                    ax.fill_between(w[rr[0]:rr[1]][qw],
+                    flxlower, 
+                    flxupper,
+                    where=flxlower > 0,
                     color=hazecolor,alpha=hazealpha)
         else:
             if chatter > 2: print("errbars True")
             for rr in r:
                 if first:
-                   ax.errorbar( w[rr[0]:rr[1]],
-                      boxcar(flx[rr[0]:rr[1]],(smooth,)),
-                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth),
+                   qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
+                   ax.errorbar( w[rr[0]:rr[1]][qw],
+                      boxcar(flx[rr[0]:rr[1]],(smooth,))[qw],
+                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth)[qw],
                       label=label,color=speccolor,fmt='x')  
                    first = False
                 else:
-                   ax.errorbar( w[rr[0]:rr[1]],
-                      boxcar(flx[rr[0]:rr[1]],(smooth,)),
-                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth),
+                   qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
+                   ax.errorbar( w[rr[0]:rr[1]][qw],
+                      boxcar(flx[rr[0]:rr[1]],(smooth,))[qw],
+                      yerr=err[rr[0]:rr[1]]/np.sqrt(smooth)[qw],
                       color=speccolor,fmt='x')  
         if plot_quality:
-            plotquality(ax,w,q,flux=flx,flag=qual_flags,colors=qualcolors,
+            plotquality(ax,w[qw_],q[qw_],flux=flx[qw_],flag=qual_flags,colors=qualcolors,
                 alpha=qualalpha,marker=quality_marker,speccolor=speccolor)                                           
                    
     elif f[1].header['extname'].upper() == 'SUMMED_SPECTRUM':
         w = f['SUMMED_SPECTRUM'].data['wave']/(1+redshift)
+        qw = (w > wrange[0]) & (w < wrange[1])
         if ebmv != 0.:
            X = Cardelli(wave=w*1e-4,Rv=Rv)
         else: 
@@ -1488,25 +1540,28 @@ def plot_spectrum(ax,spectrumfile,
         sect = np.min(sector)
         last = np.max(sector)
         for s in range(sect,last+1):
-            q = sector == s
+            q = sector[qw] == s
             if not errbars:
                 if first:
-                    ax.plot(w[q],flx[q],label=label,color=speccolor)
+                    ax.plot(w[qw][q],flx[qw][q],label=label,color=speccolor)
                     first = False
                 else:
-                    ax.plot(w[q],flx[q],color=speccolor)       
+                    ax.plot(w[qw][q],flx[qw][q],color=speccolor)       
                 if errhaze:
-                    ax.fill_between(w[q],
-                    flx[q]-err[q], 
-                    flx[q]+err[q],
-                    where=flx[q]-err[q] > 0.,
+                    flxlower=flx[qw][q]-err[qw][q]
+                    flxlower[flxlower <= 0] = 1e-27
+                    flxupper=flx[qw][q]+err[qw][q]
+                    ax.fill_between(w[qw][q],
+                    flxlower, 
+                    flxupper,
+                    where=flxlower > 0.,
                     color=hazecolor,alpha=hazealpha)
             else:
                 if first:
-                    ax.errorbar(w[q],flx[q],yerr=err[q],label=label,color=speccolor)
+                    ax.errorbar(w[qw][q],flx[qw][q],yerr=err[qw][q],label=label,color=speccolor)
                     first = False
                 else:     
-                    ax.errorbar(w[q],flx[q],yerr=err[q],color=speccolor)
+                    ax.errorbar(w[qw][q],flx[qw][q],yerr=err[qw][q],color=speccolor)
     else:
         raise IOError("Spectrum type (extname) is not recognised")
     ax.legend(loc=0)    
@@ -1599,7 +1654,8 @@ def complement_of_ranges(ranges,rangestart=0,rangeend=None):
     xr0 = 0
     for r in ranges:
        xr1 = r[0]
-       out.append([xr0,xr1])
+       if xr1-xr0 > 1: 
+          out.append([xr0,xr1])
        xr0 = r[1]+1
     out.append([xr0,rangeend])   
     return out
@@ -1894,6 +1950,8 @@ def sum_PHAspectra(phafiles, outfile=None,
    
    example
    -------
+   Non-variable source. For variable sources add scale factor. 
+   
    phafiles = ['sw00031935002ugu_1ord_1_f.pha',
                'sw00031935002ugu_1ord_2_f.pha',
                'sw00031935002ugu_1ord_3_f.pha',
@@ -2457,20 +2515,21 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
              sys.stderr.write("invalid filename, writing emergency file %s"%(outfile))
       
    if outfile.rsplit('.')[-1][:3].lower() == 'fit':
+         qq = np.isfinite(wf[q])
          print("writing fits file")
          hdu = fits.PrimaryHDU()
          hdulist=fits.HDUList([hdu])
          hdulist[0].header['TELESCOP']=('SWIFT   ','Telescope (mission) name' )                     
          hdulist[0].header['INSTRUME']=('UVOTA   ','Instrument Name' )                       
-         col1 = fits.Column(name='wave',format='E',array=wave[q],unit='0.1nm')            
-         col2 = fits.Column(name='flux',format='E',array=wf[q],unit='erg cm-2 s-1 Angstrom-1')            
+         col1 = fits.Column(name='wave',format='E',array=wave[q][qq],unit='0.1nm')            
+         col2 = fits.Column(name='weighted_flux',format='E',array=wf[q][qq],unit='erg cm-2 s-1 Angstrom-1')            
          #col3 = fits.Column(name='fluxvar',format='E',array=wvar[q],unit='erg cm-2 s-1 Angstrom-1')            
-         #col4 = fits.Column(name='flux',format='E',array=mf[q],unit='erg cm-2 s-1 Angstrom-1')            
-         #col5 = fits.Column(name='fluxerr',format='E',array=svar[q],unit='erg cm-2 s-1 Angstrom-1')            
-         col6 = fits.Column(name='fluxerr',format='E',array=serr[q],unit='erg cm-2 s-1 Angstrom-1')            
-         col7 = fits.Column(name='n_spec',format='I',array=nsummed[q],unit='erg cm-2 s-1 Angstrom-1')            
-         col8 = fits.Column(name='sector',format='I',array=sector[q],unit='0.1nm')   
-         cols = fits.ColDefs([col1,col2,col6,col7,col8])
+         col4 = fits.Column(name='flux',format='E',array=mf[q][qq],unit='erg cm-2 s-1 Angstrom-1')            
+         col5 = fits.Column(name='sqrtvariance',format='E',array=svar[q][qq],unit='erg cm-2 s-1 Angstrom-1')            
+         col6 = fits.Column(name='fluxerr',format='E',array=serr[q][qq],unit='erg cm-2 s-1 Angstrom-1')            
+         col7 = fits.Column(name='n_spec',format='I',array=nsummed[q][qq],unit='erg cm-2 s-1 Angstrom-1')            
+         col8 = fits.Column(name='sector',format='I',array=sector[q][qq],unit='0.1nm')   
+         cols = fits.ColDefs([col1,col2,col4,col5,col6,col7,col8])
          hdu1 = fits.BinTableHDU.from_columns(cols)   
          hdu1.header['EXTNAME']=('SUMMED_SPECTRUM','Name of this binary table extension')
          hdu1.header['TELESCOP']=('Swift','Telescope (mission) name')
@@ -2552,7 +2611,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
           for i in range(nfiles):             
               fout.write("#%2i,  %s, wave-shift:%5.1f, exclude_wave=%s\n" % 
                   (i,phafiles[i],wave_shifts[i],exclude_wave[i]))
-          fout.write("#columns: wave(A),weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
+          fout.write("#columns: wave(A),  weighted flux(erg cm-2 s-1 A-1), variance weighted flux, \n"\
             +"#          flux(erg cm-2 s-1 A-1), flux error (deviations from mean),  \n"\
             +"#          flux error (mean noise), number of data summed, sector\n")
           if chatter > 4: 
@@ -2587,6 +2646,8 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
         for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
         extnames.append("")
         if extnames[2] == 'CALSPEC':
+           if chatter > 2:
+               sys.stderr.write("reading extension CALSPEC \n")
            q = np.isfinite(fx[2].data['flux'])
            wmin = np.min([wmin, np.min(fx[2].data['lambda'][q]) ])
            wmax = np.max([wmax, np.max(fx[2].data['lambda'][q]) ])
@@ -2594,6 +2655,8 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
            tstop  = np.max([tstop ,fx[2].header['tstop' ]])
            exposure += fx[2].header['exposure']
         elif extnames[1] == 'SUMMED_SPECTRUM':
+           if chatter > 2:
+               sys.stderr.write("reading extension SUMMED_SPECTRUM \n")
            q = np.isfinite(fx[1].data['flux'])
            wmin = np.min([wmin, np.min(fx[1].data['wave'][q]) ])
            wmax = np.max([wmax, np.max(fx[1].data['wave'][q]) ])           
@@ -2606,7 +2669,7 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
         sys.stderr.write( '_sum_weightedsum: wav min %6.1f\n'%wmin)
         sys.stderr.write( '_sum_weightedsum: wav max %6.1f\n'%wmax)
          
-    # create arrays - output arrays
+    # create output arrays
     wave = np.arange(int(wmin+0.5), int(wmax-0.5),1)  # wavelength in 1A steps at integer values 
     nw = len(wave)                     # number of wavelength points
     flux = np.zeros(nw,dtype=float)    # flux
@@ -2623,9 +2686,11 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
     wgt = np.zeros(nw,dtype=float)     # weight
     wvar= np.zeros(nw,dtype=float)     # weighted variance
     one = np.ones(nw,dtype=int)        # unit
-    sector = np.ones(nw,dtype=int)     # sector numbers for disconnected sections of the spectrum
+    sector = np.zeros(nw,dtype=int)    # sector numbers for disconnected sections of the spectrum
          
     D = []
+    if type(scalefactor) == type(None): 
+        scalefactor = np.ones(nfiles)
     for i in range(nfiles):
         sc = scalefactor[i]
         if chatter > 3 : 
@@ -2640,10 +2705,14 @@ def _sum_weightedsum(f,exclude_wave, wave_shifts, scalefactor=None, chatter=0):
         for k in range(1,len(fx)): extnames.append(fx[k].header['extname'])
         extnames.append("")
         if extnames[2] == 'CALSPEC' :
+           if chatter > 3:
+               sys.stderr.write("reading extension CALSPEC \n")
            W = fx['CALSPEC'].data['lambda']+wave_shifts[i]
            F = sc * fx['CALSPEC'].data['flux']   
            E = sc * np.abs(fx['CALSPEC'].data['fluxerr'])
         elif extnames[1] == 'SUMMED_SPECTRUM' :   
+           if chatter > 3:
+               sys.stderr.write("reading extension SUMMED_SPECTRUM \n")
            W = fx['SUMMED_SPECTRUM'].data['wave']+wave_shifts[i]
            F = sc * fx['SUMMED_SPECTRUM'].data['flux']   
            E = sc * np.abs(fx['SUMMED_SPECTRUM'].data['fluxerr'])
