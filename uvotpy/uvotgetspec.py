@@ -431,8 +431,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    
    a_str_type = type(curved)
    if chatter > 4 : 
-       print ("a_str_type = ",a_str_type)
-       print ("value of get_cure = ",get_curve)
+       print ("\n*****\na_str_type = ",a_str_type)
+       print ("value of get_curve = ",get_curve)
        print ("type of parameter get_curve is %s\n"%(type(get_curve)) )
        print ("type curved = ",type(curved))
    if type(get_curve) == a_str_type:
@@ -799,7 +799,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    
       # in case of summary file:
    if (not skip_field_src) & (ZOpos == None):
-      if chatter > 2: print("================== locate zeroth orders due to field sources =============")
+      if chatter > 2: print("DEBUG 802 ================== locate zeroth orders due to field sources =============")
       if wheelpos > 500: zeroth_blim_offset = 2.5 
       try:  
           ZOpos = find_zeroth_orders(filestub, ext, wheelpos,indir=indir,
@@ -824,7 +824,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       Yout.update({"ZOpos":None})       
 
    #  find background, extract straight slit spectrum
-
+   if chatter > 3 : print ("DEBUG 827 compute background")
    if sumimage != None:
       # initialize parameters for extraction summed extracted image    
       print('reading summed image file : '+sumimage)
@@ -891,7 +891,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       Yout.update({"zeroxy_imgpos":[1000,1000]}) 
    else:
       # default extraction 
-      
+      if chatter > 2 : print ("DEBUG 894 default extraction")
       # start with a quick straight slit extraction     
       exSpIm = extractSpecImg(specfile,ext,ankerimg,angle,spwid=spextwidth,
               background_lower=background_lower, background_upper=background_upper,
@@ -975,6 +975,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    #  choose order to do it for
    
    if (get_curve & interactive) | (get_curve & (get_curve_filename != None)):
+      if chatter > 3 : print ("DEBUG 978 get user-provided curve coefficients and extract spectrum")
       spextwidth = None
       # grab coefficients
       poly_1 = None
@@ -1014,19 +1015,28 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             print(poly_1)
             print(poly_2)
             print(poly_3)
-            
             raise IOError("ERROR whilst reading curvature polynomial from file\n")
-             
+      print("Curvature coefficients were read in...\npoly_1: %s \npoly_2: %s \npoly_3: %s \n"%
+            (poly_1,poly_2,poly_3))
+                 
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
           bg_second,bg_third), (borderup,borderdown), apercorr, expospec, msg, curved \
-          =  curved_extraction(extimg,ank_c,anker, wheelpos,ZOpos=ZOpos, offsetlimit=offsetlimit, 
-             predict_second_order=predict2nd,background_template=background_template,
-             angle=angle,offset=offset,  poly_1=poly_1,poly_2=poly_2,poly_3=poly_3,
-             msg=msg, curved=curved, outfull=True, expmap=expmap, fit_second=fit_second, 
-             fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
-             dropout_mask=dropout_mask, chatter=chatter) 
+          =  curved_extraction(
+             extimg, ank_c, anker, wheelpos,
+             ZOpos=ZOpos,  skip_field_sources=skip_field_src,         
+             offsetlimit=offsetlimit, 
+             predict_second_order=predict2nd,
+             background_template=background_template,
+             angle=angle,  offset=offset,  
+             poly_1=poly_1, poly_2=poly_2, poly_3=poly_3,
+             msg=msg, curved=curved, 
+             outfull=True, expmap=expmap, 
+             fit_second=fit_second, 
+             fit_third=fit_second, 
+             C_1=C_1,C_2=C_2,dist12=dist12, 
+             dropout_mask=dropout_mask, 
+             chatter=chatter) 
          # fit_sigmas parameter needs passing 
-         
       (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
               y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
@@ -1034,8 +1044,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
               y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
               x,xstart,xend,sp_all,quality,co_back)  = fitorder
 
-      # update the anchor y-coordinate        
-      ank_c[0] = y1[ank_c[1]]         
+      # update the anchor y-coordinate 
+      if chatter > 3 : print ("DEBUG 1048  update anchor coordinate\noriginal ank_c=%s\ny1=%s"%(ank_c,y1))
+      ank_c[0] = y1[np.int(ank_c[1])]         
       
       Yfit.update({"coef0":coef0,"coef1":coef1,"coef2":coef2,"coef3":coef3,
       "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
@@ -1055,17 +1066,23 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    # curvature from calibration
    
    if spextwidth != None:
-      
+      if chatter > 3 : print ("DEBUG 1067 get curve coefficients from cal file and extract spectrum ")
       fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first,\
           bg_second,bg_third), (borderup,borderdown) , apercorr, expospec, msg, curved \
-          =  curved_extraction(extimg,ank_c,anker, wheelpos, \
-             ZOpos=ZOpos, skip_field_sources=skip_field_src, offsetlimit=offsetlimit,\
-             background_lower=background_lower, background_upper=background_upper, \
+          =  curved_extraction(
+             extimg,ank_c,anker, wheelpos, 
+             ZOpos=ZOpos, skip_field_sources=skip_field_src, 
+             offsetlimit=offsetlimit,
+             background_lower=background_lower, 
+             background_upper=background_upper, \
              background_template=background_template,\
-             angle=angle,offset=offset,  outfull=True, expmap=expmap, \
-             msg = msg, curved=curved, fit_second=fit_second, 
+             angle=angle,  offset=offset,  
+             outfull=True, expmap=expmap, 
+             msg = msg, curved=curved, 
+             fit_second=fit_second, 
              fit_third=fit_second, C_1=C_1,C_2=C_2,dist12=dist12, 
-             dropout_mask=dropout_mask, chatter=chatter) 
+             dropout_mask=dropout_mask, 
+             chatter=chatter) 
              
       (present0,present1,present2,present3),(q0,q1,q2,q3), \
           (y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
@@ -1124,6 +1141,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          for k in range(len(sig3coef)):
             msg += "SIGCOEF3_"+str(k)+"=%12.4e\n" % (sig3coef[k])
 
+   if chatter > 3 : print ("DEBUG 1142 done spectral extraction, now calibrate")
    offset = ank_c[0]-100.0                      
    msg += "best fit 1st order anchor offset from spectrum = %7.1f\n"%(offset)
    msg += "anchor position in rotated extracted spectrum (%6.1f,%6.1f)\n"%(ank_c[1],y1[int(ank_c[1])])
@@ -3414,6 +3432,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    sig3coef=array([0.0059,1.5])
    
 # override coefficients y(x):
+   print ("DEBUG 3431 type coef1 is ", type(coef1) )
+   print ("DEBUG 3432 type poly_1 is ",type(poly_1))
    if (type(poly_1) != typeNone): coef1 = poly_1   
    if (type(poly_2) != typeNone): coef2 = poly_2   
    if (type(poly_3) != typeNone): coef3 = poly_3   
@@ -3431,7 +3451,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 
    # remove background  
    #if cval == None: cval = out_of_img_val = -1.0123456789  cval now global   
-   
+   if chatter > 3 : print ("DEBUG 3453 remove background") 
    bg, bg1, bg2, bgsig, bgimg, bg_limits, \
        (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
        = findBackground(extimg,background_lower=background_lower, 
@@ -3448,6 +3468,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    qflag = quality_flags()
    
    # get the mask for zeroth orders in the way 
+   if chatter > 3 : print ("DEBUG 3470 get mask zeroth orders ")
    # set bad done while extracting spectra below
    set_qual = ((not skip_field_sources) & (ZOpos != None) & (angle != None))
    
@@ -3477,6 +3498,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
 
 
    # tracks - defined as yi (delta) = 0 at anchor position (ankx,anky)  
+   if chatter > 3 : print ("DEBUG 3500 set up  y  arrays ")
    # shift to first order anchor  
    x = array(arange(nx))-ankx
    y = zeros(nx)+anky 
@@ -3498,6 +3520,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    if present3:  y3[q3] += polyval(coef3,x[q3])
    
    if trackcentroiding:   # global (default = True)
+       if chatter > 3 : print ("DEBUG 3522 centroid track")
        # refine the offset by determining where the peak in the 
        # first order falls. 
        # We NEED a map to exclude zeroth orders that fall on/near the spectrum 
@@ -3569,6 +3592,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       quality[:] = qflag['good']     
 
 # OUTPUT PARAMETER  spectra, background, slit init - full dimension retained 
+   if chatter > 3 : print ("DEBUG 3594 set up spectrum arrays ")
    # initialize
    
    sp_all    = zeros(nx) + cval   # straight slit
@@ -3766,7 +3790,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
                else: expospec[3,i] = expmap[k1:k2,i].mean()
 
       # y0,y1,y2,y3 now reflect accurately the center of the slit used.
-            
+      if chatter > 3 : print ("DEBUG 3792 stacking results in structure fitorder")      
       fitorder = (present0,present1,present2,present3),(q0,q1,q2,q3), (
               y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
               y1,dlim1L,dlim1U,sig1coef,sp_first, co_first ),(
@@ -3784,6 +3808,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    # this section was for development only
 
    if trackfull:   # fit the cross profile with gaussians; return the gaussian fit parameters 
+      if chatter > 3 : print ("DEBUG 3810  full-track update with mfit")
       # output parameter gfit:
       # define output per x[i]: numpy array gfit.shape= (6,nx) of: (x,order,amplitude,y_pix_position,sig,flags) 
       gfit = np.zeros( 4*6*nx ).reshape(4,6,nx) -1   
