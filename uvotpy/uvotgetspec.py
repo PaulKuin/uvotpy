@@ -2802,6 +2802,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    else:
       blim = set_maglimit
    if blim <  background_source_mag: blim = background_source_mag  
+   if np.isnan(blim): blim = 18
       
    # if usno-b1 catalog is present for this position, 
    # do not retrieve again      
@@ -2824,6 +2825,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        if len(stab) < 3: use_previous_search = False
    # retrieve catalog data    
    if (not os.access('search.ub1',os.F_OK)) | (not use_previous_search):
+      if (chatter > 4): print ("get_usnob1_cat(%f,%f,%f)"%(ra,dec,blim))
       status = get_usnob1_cat(ra, dec, blim)
       if status is None:
         print('ra={}, dec={}, blim={}'.format(ra, dec, blim))
