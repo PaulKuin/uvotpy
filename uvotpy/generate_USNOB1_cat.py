@@ -48,3 +48,27 @@ def get_usnob1_cat(ra, dec, blim):
     searchcenter_ofile.write('{},{}'.format(ra, dec))
     searchcenter_ofile.close()
     return 'success'
+    
+        
+gaia_dr2 = u'I/345' 
+def get_gaiadr2(ra, dec, blim):
+    ra_u = ra*u.degree
+    dec_u = dec*u.degree
+    coords = SkyCoord(ra_u, dec_u, frame='icrs') #Should this be ICRS or FK5
+    v = Vizier(columns=['RAdeg','DEdeg','yr',
+              'Plx','pmRA','pmDE','Gmag','BPmag','RPmag','RV','e_RV',
+              'RAJ2000','DEJ2000','e_Gmag','e_BPmag','e_RPmag','_r'], 
+              row_limit=200000,
+              column_filters={"Gmag":">6", 'Gmag':'<{}'.format(blim)})  # gaia2.sam file  
+    new_table_list = v.query_region(coords, 
+               radius=900*u.arcsecond, #Search 900 arcseconds
+               catalog = 'I/345/gaia2.sam')
+               
+    if len(new_table_list) == 0:
+        return None
+    else:
+        new_table = new_table_list[0]
+    #Get the 5000 closest
+    new_table.sort('_r')
+    if len(new_table) > 5000:
+        new_table.remove_rows(np.arange(5001, len(new_table)))

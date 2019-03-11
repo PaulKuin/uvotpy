@@ -65,8 +65,11 @@ from matplotlib.lines import Line2D
         find the best fit solution       
 '''
 
-__version__ = '20160115-0.0.5'
+__version__ = '20190304-1.0.0'
 
+v = sys.version
+if v[0] == '2': 
+    from __builtin__ import raw_input as input
 
 # spectroscopic summary data
 spdata = {
@@ -122,6 +125,23 @@ spdata = {
 {'transition':'2 - 3','wavevac':1640.47,'label':u'HeII'},
 {'transition':'2 - 4','wavevac':1215.17,'label':u'HeII'},
 {'transition':'2 - 6','wavevac':1025.30,'label':u'HeII'},
+    ],
+'FeIIuv3':[
+{'transition':'2 - 2','wavevac':2381., 'label':u''},
+{'transition':'1 - 2','wavevac':2365.,'label':u''},
+{'transition':'1 - 1','wavevac':2344.,'label':u'FeII - uv3'},
+    ],
+'FeIIuv2':[
+{'transition':'2 - 2','wavevac':2396., 'label':u''},
+{'transition':'2 - 1','wavevac':2374.,'label':u'FeII - uv2'},
+{'transition':'1 - 1','wavevac':2382.,'label':u''},
+    ],
+'FeIIuv1':[
+{'transition':'2 - 3','wavevac':2632., 'label':u''},
+{'transition':'2 - 2','wavevac':2612., 'label':u''},
+{'transition':'2 - 1','wavevac':2586.,'label':u'FeII - uv1'},
+{'transition':'1 - 2','wavevac':2626.,'label':u'`'},
+{'transition':'1 - 1','wavevac':2600.,'label':u''},
     ],
 'nova':[ # add also H, HeI, HeII 
 # 
@@ -444,7 +464,7 @@ def actual_line_flux(wavelength,flux, center=None,pass_it=True):
        q = (w >= x1) & (w <= x2)
        bg = interp1d([x1,x2],[y1,y2],)
        ax.fill_between(w[q], bg(w[q]), flx[q], color='c')
-       ans = raw_input("Do you want to continue ?")
+       ans = input("Do you want to continue ?")
        if (ans.upper()[0] != 'Y') & (pass_it == False) :
            print ("Answer is not yes\n TRY AGAIN ")
            ax.cla()
@@ -527,6 +547,11 @@ class DraggableSpectrum(object):
         self.delwav = 0.0
         self.incwav = 0.0
         self.ax = ax
+        self.cidpress = None
+        self.cidrelease = None
+        self.cidmotion = None
+        self.cidkey = None
+
 
     def connect(self):
         'connect to all the events we need'
@@ -617,6 +642,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     import sys
     from uvotpy import uvotmisc
     from matplotlib.pyplot import fignum_exists
+    
     # data
     if openfile != None:
        f = openfile 
@@ -700,7 +726,8 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         delwav0 = 0
         delwav = 0
     try:
-        ans1 = raw_input("Do you want to adjust wavelengths ? (Y/N) ").upper()
+        #ans1 = input("Do you want to adjust wavelengths ? (Y/N) ").upper()
+        ans1 = input("Do you want to adjust wavelengths ? (Y/N) ").upper()
         print("answer read = ", ans1," length = ", len(ans1))
         if len(ans1) > 0:
           if ans1[0] == 'Y':
@@ -710,7 +737,7 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
                 newspec.connect()
                 print("The selected wavelength shift is ",newspec.delwav," and will be applied when done. ") 
                 # register the shift from the last run          
-                ans = raw_input("When done hit a key\n")
+                ans = input("When done hit a key\n")
                 delwav += newspec.out_delwav()
                 ax.set_title(filename)
                 done = True
@@ -781,34 +808,71 @@ def apply_shift(file,delwav,recalculate=False):
     """apply a given wavelength shift in A"""
     from uvotpy import uvotmisc
     f = fits.open(file,mode='update')
-    delwav0 = 0
-    if 'WAVSHFT' in f['CALSPEC'].header:
-        delwav0 = f['CALSPEC'].header['WAVSHFT']+delwav
-    if recalculate:
-        if 'PIXSHFT' in f['CALSPEC'].header: 
-            pixshift0 = f['CALSPEC'].header['PIXSHFT']
-        else: 
-            pixshift0 = 0    
-        C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
-        C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
-        delpix = int(round(delwav / C_1[-2]))
-        pixno  = f['CALSPEC'].data['pixno']  +delpix
-        f['CALSPEC'].data['pixno'] = pixno  
-        f['CALSPEC'].data['lambda'] = np.polyval(C_1,pixno)
-        f['CALSPEC'].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
-        h = f['SPECTRUM'].header['history']
-        dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
-        if 'PIXNO2' in  f['CALSPEC'].header:
-           pixno2 = f['CALSPEC'].data['pixno2'] +delpix   
-           f['CALSPEC'].data['pixno2'] = pixno2  
-           f['CALSPEC'].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
-           f['CALSPEC'].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
-    else:       
-        f['CALSPEC'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
-        f['CALSPEC'].data['LAMBDA'] = f['CALSPEC'].data['LAMBDA'] + delwav    
-        f['SPECTRUM'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
-    f.verify()
-    f.flush()
+    # check type of file
+    getspecoutput = False
+    for ff in f: 
+        if 'CALSPEC' in ff.header: getspecoutput = True
+    if getspecoutput:    
+        delwav0 = 0
+        if 'WAVSHFT' in f['CALSPEC'].header:
+            delwav0 = f['CALSPEC'].header['WAVSHFT']+delwav
+        if recalculate:
+            if 'PIXSHFT' in f['CALSPEC'].header: 
+                pixshift0 = f['CALSPEC'].header['PIXSHFT']
+            else: 
+                pixshift0 = 0    
+            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+            delpix = int(round(delwav / C_1[-2]))
+            pixno  = f['CALSPEC'].data['pixno']  +delpix
+            f['CALSPEC'].data['pixno'] = pixno  
+            f['CALSPEC'].data['lambda'] = np.polyval(C_1,pixno)
+            f['CALSPEC'].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            h = f['SPECTRUM'].header['history']
+            dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
+            if 'PIXNO2' in  f['CALSPEC'].header:
+               pixno2 = f['CALSPEC'].data['pixno2'] +delpix   
+               f['CALSPEC'].data['pixno2'] = pixno2  
+               f['CALSPEC'].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+               f['CALSPEC'].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+        else:       
+            f['CALSPEC'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f['CALSPEC'].data['LAMBDA'] = f['CALSPEC'].data['LAMBDA'] + delwav    
+            f['SPECTRUM'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+        f.verify()
+        f.flush()
+    else:
+        extname = 'SUMMED_SPECTRUM'
+        print ("currently this program cannot recalculate the dispersion")
+        f.verify()
+        f.flush()
+        return
+        delwav0 = 0
+        if 'WAVSHFT' in f[extname].header:
+            delwav0 = f[extname].header['WAVSHFT']+delwav
+        if recalculate:
+            if 'PIXSHFT' in f[extname].header: 
+                pixshift0 = f[extname].header['PIXSHFT']
+            else: 
+                pixshift0 = 0    
+            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+            delpix = int(round(delwav / C_1[-2]))
+            pixno  = f[extname].data['pixno']  +delpix
+            f[extname].data['pixno'] = pixno  
+            f[extname].data['lambda'] = np.polyval(C_1,pixno)
+            f[extname].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            if 'PIXNO2' in  f[extname].header:
+               pixno2 = f[extname].data['pixno2'] +delpix   
+               f[extname].data['pixno2'] = pixno2  
+               f[extname].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+               f[extname].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+        else:       
+            f[extname].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f[extname].data['LAMBDA'] = f[extname].data['LAMBDA'] + delwav    
+        f.verify()
+        f.flush()
+                
 
 
 
@@ -1014,14 +1078,14 @@ def flag_bad_manually(file=None,openfile=None,openplot=None,
        done = False
        try:
            while not done:
-               ans = raw_input("Do you want to mark bad regions ? (Y) ").upper()
+               ans = input("Do you want to mark bad regions ? (Y) ").upper()
                if len(ans) > 0:
                    if ans[0] == 'Y':
                        print('Select bad wavelengths in the spectrum until happy')
                        ax.set_title("when done press key")   
                        s.connect()
                        # register the shift from the last run              
-                       ans = raw_input("When done hit the d key, then return, or just return to abort")
+                       ans = input("When done hit the d key, then return, or just return to abort")
                        badregions, lines = s.get_badlines()
                        print("got so far: ")
                        for br in lines: print("bad region : [%6.1f,%6.1f]"%(br[0],br[1]))
@@ -2283,7 +2347,7 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
         if len(excl_) > 0:
             sys.stdout.write( 
                "wavelength exclusions for this file are: %s\n"%(excl_))
-            ans = raw_input(" change this ? (y/N) : ")
+            ans = input(" change this ? (y/N) : ")
             if ans.upper()[0] == 'Y' :  OK = True
             else:                       OK = False
         else: 
@@ -2322,11 +2386,11 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
                     nix0 +=1 
                     if nix0 > 15: break
                     sys.stdout.write( "exclusion wavelengths are : %s\n"%excl_)
-                    ans = raw_input('Exclude a wavelength region ?')
+                    ans = input('Exclude a wavelength region ?')
                     if len(ans) > 0:
                         EXCL = not (ans.upper()[0] == 'N')
                         if ans.upper()[0] == 'N': break              
-                        ans = eval(raw_input(
+                        ans = eval(input(
     'Give the exclusion wavelength range as two numbers separated by a comma: '))
                         lans = list(ans)
                         if len(lans) != 2: 
@@ -2469,7 +2533,7 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
                      if len(ylim) == 2: ax.set_ylim(ylim)
                      ax.legend(loc=0)
                      try:
-                        sh1 = eval(raw_input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : "))  
+                        sh1 = eval(input("give number of Angstrom shift to apply (e.g., 2.5, 0=done) : "))  
                         if np.abs(sh1) < 1e-3:
                            wave_shifts.append(sh)
                            OK = False
@@ -2509,7 +2573,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
 
    if os.access(outfile,os.F_OK) & (not clobber):
           sys.stderr.write("output file %s already present\nGive new filename (same will overwrite)"%(outfile)) 
-          outfile = raw_input("new filename = ")
+          outfile = input("new filename = ")
           if type(outfile) != string: 
              outfile = "invalid_filename.txt"
              sys.stderr.write("invalid filename, writing emergency file %s"%(outfile))

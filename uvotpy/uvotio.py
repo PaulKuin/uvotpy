@@ -68,7 +68,7 @@ __version__ = "1.7.0"
 # version 1.7.0 December 30, 2017, update to the sensitivity correction (provisional) affecting the 1700-3000A  
 
 try:
-  from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
+  from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotgetspec
 except:
   pass
   from . import uvotgetspec

@@ -279,6 +279,7 @@ class WaveCal(Caldb):
         self.ancho2 = None # anchor 2nd order interpolated for offset position
         self.thetavalue = None # angle spectrum on detector at anchor (counter clockwise)
         self.mode = mode       
+        self.offsetdelta = [0.,0.]
         self.chatter=chatter        
         self._locate_calfilepath()
         self._read_wavecalfile()
@@ -301,7 +302,7 @@ class WaveCal(Caldb):
            
         """
         if hasattr(offsetdelta,'to'):
-            self.offsetdelta = offsetdelta.to(arcsec).value*self.pixelscale
+            self.offsetdelta = offsetdelta.to(units.arcsec).value*self.pixelscale
         else:    
             self.offsetdelta = offsetdelta  # offset from boresight 
         #       [delta X, delta Y] (subpixels) in detector coordinates  
@@ -322,7 +323,7 @@ class WaveCal(Caldb):
            delta-X, delta-Y coordinate for offset (in pixels)
         """
         if hasattr(offsetdelta,'to'):
-            self.offsetdelta = offsetdelta.to(arcsec).value*self.pixelscale
+            self.offsetdelta = offsetdelta.to(units.arcsec).value*self.pixelscale
         else:    
             self.offsetdelta = offsetdelta  # offset from boresight 
         #       [delta X, delta Y] (subpixels) in detector coordinates  
@@ -343,7 +344,7 @@ class WaveCal(Caldb):
         
         """
         if hasattr(offsetdelta,'to'):
-            self.offsetdelta = offsetdelta.to(arcsec).value*self.pixelscale
+            self.offsetdelta = offsetdelta.to(unitd.arcsec).value*self.pixelscale
         else:    
             self.offsetdelta = offsetdelta  # offset from boresight 
         #       [delta X, delta Y] (subpixels) in detector coordinates  
