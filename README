@@ -38,6 +38,15 @@ setenv UVOTPY <installation directory>
 so that $UVOTPY/calfiles/ which contains the calibration 
 files can be found by the software.
 
+Please note that recent updates require the installation of the packages 
+  future 
+  astroquery
+  
+I.e, 
+pip install future
+pip install astroquery
+
+
 This software is subject to a 3-clause BSD licence.  
 
 Please reference this UVOTPY code as follows:
