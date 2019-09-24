@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='2.2.0',
+      version='2.3.0',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images
@@ -51,7 +51,8 @@ setup(name='uvotpy',
                              'README',
 			     'README.sum_spectra',
 			     'doc/*']}, 			      
-      requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve','stsci.imagestats',],
+      requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve',
+         'stsci.imagestats','future','astroquery'],
       # futurize? 
       classifiers=['Programming Language :: Python ::2.7',
                    'Programming Language :: Python ::3.5'],
