@@ -2741,7 +2741,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
 
    tt = os.system(command)
    if tt != 0:
-      print('find_zeroth_orders: uvotdetect had a problem with this image')
+      raise('find_zeroth_orders: uvotdetect had a problem with this image\nIs HEASOFT initialised?')
       
    if not os.access(outfile,os.F_OK):  
       # so you can provide it another way
