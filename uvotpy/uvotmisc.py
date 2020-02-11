@@ -582,7 +582,7 @@ def swclockcorr(met):
     if np.sum(k) != 1:
         if met > x['tstart'][-1]:
            k = (met >= x['tstart'])
-           k = np.max(where(k))
+           k = np.max(np.where(k))
            print ("WARNING: update the Swift SC CALDB - it is out of date")
            result=False
         else:   
