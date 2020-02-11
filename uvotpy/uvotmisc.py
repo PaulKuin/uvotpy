@@ -528,7 +528,7 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
       print ('WARNING: no correction made for UT-> SC clock time')
       return swifttime
   
-def swclockcorr(met):
+def swclockcorr(met,met_tolerance=50):
     """ 
     Swift MET correction for clock drift etc. 
     
@@ -536,6 +536,8 @@ def swclockcorr(met):
     
     met: float
        the swift mission elapsed time
+    met_tolerance: float
+       tolerance in days past last CALDB entry   
        
     output parameters:
     
@@ -583,8 +585,12 @@ def swclockcorr(met):
         if met > x['tstart'][-1]:
            k = (met >= x['tstart'])
            k = np.max(np.where(k))
-           print ("WARNING: update the Swift SC CALDB - it is out of date")
-           result=False
+           if (met - x['tstart'][k]) > met_tolerance*86400.0:
+               print (met, x['tstart'][k], met_tolerance)
+               print ("WARNING: update the Swift SC CALDB - it is out of date")
+               result=False
+           else:
+               result=True    
         else:   
            raise IOError('input MET not found in Swift SC clock file')
            #return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), result
