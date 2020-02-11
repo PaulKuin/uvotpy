@@ -399,7 +399,7 @@ def uniq(list):
    return [ set.setdefault(x,x) for x in list if x not in set ]
 
 
-def swtime2JD(TSTART,useFtool=False):
+def swtime2JD(TSTART,useFtool=True,):
    '''Time converter to JD from swift time 
    
    Parameter
@@ -435,8 +435,11 @@ def swtime2JD(TSTART,useFtool=False):
       import os
       from numpy.random import rand
       delt,status = swclockcorr(TSTART)
-      if not status: print("approximate time correction ")
-      return swtime2JD(TSTART+delt,useFtool=False)
+      if not status: 
+         print("no time correction for SC clock drift")
+         return swtime2JD(TSTART,useFtool=False)
+      else:   
+         return swtime2JD(TSTART+delt,useFtool=False)
    else:
       import numpy as np
       delt = datetime.timedelta(0,TSTART,0)
@@ -450,19 +453,39 @@ def swtime2JD(TSTART,useFtool=False):
 
 def JD2swift(JD):
    import numpy as np
-   return (JD - np.double(2451910.5))*(86400.0)
+   delt, status = swclockcorr(swifttime) 
+   if status: 
+      return (JD - np.double(2451910.5))*(86400.0)-delt
+   else:   
+      print ('WARNING: no correction made for UT-> SC clock time')
+      return (JD - np.double(2451910.5))*(86400.0)
 
 def swift2JD(tswift):
-   return old_div(tswift,86400.0)  + 2451910.5
+   delt, status = swclockcorr(swifttime) 
+   if status: 
+      return old_div(tswift+delt,86400.0)  + 2451910.5
+   else:   
+      print ('WARNING: no correction made for UT-> SC clock time')
+      return old_div(tswift,86400.0)  + 2451910.5
+
    
 def MJD2swift(MJD):   
    import numpy as np
-   return (MJD - np.double(51910.0))*(86400.0)
+   delt, status = swclockcorr(swifttime) 
+   if status: 
+      return (MJD - np.double(51910.0))*(86400.0) - delt
+   else:   
+      print ('WARNING: no correction made for UT-> SC clock time')
+      return (MJD - np.double(51910.0))*(86400.0)
    
 def swift2MJD(tswift):
-   return old_div(tswift,86400.0)  + 51910.0
+   delt, status = swclockcorr(swifttime) 
+   if status: 
+      return old_div(tswift+delt,86400.0)  + 51910.0 
+   else:   
+      print ('WARNING: no correction made for UT-> SC clock time')
+      return old_div(tswift,86400.0)  + 51910.0
    
-
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''Convert time in UT to swift time in seconds.
    
@@ -483,7 +506,7 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    Returns
    ------- 
    swifttime : float
-     in seconds (see Heasarc for more conversions) 
+     in seconds (see Heasarc for more conversions) - needs clock correction 
    '''
    import datetime
    import numpy as np
@@ -497,7 +520,13 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    xx = datetime.datetime(year,imon,day,hour,minute,second,millisecond*1000)  
    xdiff = xx-swzero_datetime
    swifttime = xdiff.total_seconds() 
-   return swifttime
+   # convert from UT to SC time
+   delt, status = swclockcorr(swifttime) 
+   if status: 
+      return swifttime-delt
+   else:   
+      print ('WARNING: no correction made for UT-> SC clock time')
+      return swifttime
   
 def swclockcorr(met):
     """ 
@@ -533,25 +562,38 @@ def swclockcorr(met):
     command="quzcif swift sc - -  clock  "+date+" "+time+" - > quzcif.out"
     os.system(command)
     f = open("quzcif.out")
+    result = True
     try:
        tcorfile, ext = f.read().split()
        ext = int(ext)
        f.close()
     except:
        f.close()
-       return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), False   
+       f = open("quzcif.out")
+       print (f.readlines())
+       f.close()
+       os.system("rm -f quzcif.out")
+       raise RuntimeError('Swift SC clock file not found')
+       #return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), result   
     os.system("rm -f quzcif.out")
     xx = fits.open(tcorfile)
     x = xx[ext].data
     k = (met >= x['tstart']) & (met < x['tstop'])
-    if np.sum(k) != 1: 
-        return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), False
-
+    if np.sum(k) != 1:
+        if met > x['tstart'][-1]:
+           k = (met >= x['tstart'])
+           k = np.max(where(k))
+           print ("WARNING: update the Swift SC CALDB - it is out of date")
+           result=False
+        else:   
+           raise IOError('input MET not found in Swift SC clock file')
+           #return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), result
     t1 = old_div((met - x['tstart'][k]),86400.0)
     tcorr = x['toffset'][k] + ( x['C0'][k] + 
        x['C1'][k]*t1 + x['C2'][k]*t1*t1)*1.0e-6
+    tcorr = -tcorr   # add tcorr to MET to get time in UT
     xx.close()
-    return tcorr[0], True   
+    return tcorr, result   
    
 def get_dispersion_from_header(header,order=1):
    """retrieve the dispersion coefficients from the FITS header """ 
