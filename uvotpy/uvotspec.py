@@ -96,17 +96,26 @@ spdata = {
 {'name':'Pa-limit' ,'transition':'3s-40','wavevac':8252.2,    'label':r'Pa-limit'},
      ],
 'HeI':[
+# singlets
+{'transition':'1s2p 1Po - 1s3s 1S','wavevac':7283.4 ,'label':u'HeIs'},
+{'transition':'1s2p 1Po-1s3d 1D ','wavevac':6680.0 ,'label':u'HeIs'},
+{'transition':'1s2s 1S -1s3p 1Po','wavevac':5017.08 ,'label':u'HeIs'},
+{'transition':'1s2p 1Po -1s4d 1D','wavevac':4923.3 ,'label':u'HeIs'},
+{'transition':'1s2s 1S -1s4p 1Po','wavevac':3965.85 ,'label':u'HeIs'},
+{'transition':'1s2p 1Po -1s4s 1S','wavevac':5049.1 ,'label':u'HeIs'},
+# triplets
+{'transition':'1s2p 3Po-1s2s 3S ','wavevac':10830.3  ,'label':u'HeI'},
 {'transition':'1s2p 3Po-1s3s 3S ','wavevac':7067.14   ,'label':u'HeI'},
-{'transition':'1s2p 1Po-1s3d 1D ','wavevac':6679.9956 ,'label':u'HeI'},
+{'transition':'1s2p 3Po-1s4s 3S ','wavevac':4714.46   ,'label':u'HeI'},
+{'transition':'1s2p 3Po-1s5d 3D ','wavevac':4027.32   ,'label':u'HeI'},
 {'transition':'1s2p 3Po-1s3d 3D ','wavevac':5877.249  ,'label':u'HeI'},
-{'transition':'1s2s 1S -1s3p 1Po','wavevac':5017.0772 ,'label':u'HeI'},
-{'transition':'1s2s 3Po-1s4d 4D ','wavevac':4472.735  ,'label':u'HeI'},
 {'transition':'1s2s 3S -1s3p 3Po','wavevac':3889.75   ,'label':u'HeI'},
 {'transition':'1s2s 3S -1s4p 3Po','wavevac':3188.667  ,'label':u'HeI'},
 {'transition':'2p2  3P -2p3d 3Do','wavevac':3014.59   ,'label':u'HeI'},
 {'transition':'1s2s 3S -1s5p 3Po','wavevac':2945.967  ,'label':u'HeI'},
+{'transition':'1s2s 3Po-1s4d 3D ','wavevac':4472.735  ,'label':u'HeI'},
 #{'wavevac':2829.9,'label':u'HeI'},
-{'wavevac':2819.0,'label':u'HeI'},
+#{'wavevac':2819.0,'label':u'HeI'},
 #{'wavevac':2764.6,'label':u'HeI'},
 #{'wavevac':2723.99,'label':u'HeI'},
 #{'wavevac':2696.9,'label':u'HeI'},
@@ -1435,6 +1444,7 @@ def plot_spectrum(ax,spectrumfile,
         qualalpha=0.2,
         quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
         smooth=1, 
+        linewidth=1,
         label=None,
         offset=0,offsetfactor=1,
         ebmv=0.00, Rv=3.1,
@@ -2638,7 +2648,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
          hdu1.header['HDUCLAS2'] = ('FLUX','spectrum in units or energy per sec per area')
          hdu1.header['tstart'] = (tstart,"Swift time in seconds")
          hdu1.header['tstop']  = (tstop,"Swift time in seconds")
-         xstart = swtime2JD(tstart)
+         xstart = swtime2JD(float(tstart))
          xstop  = swtime2JD(tstop)
          hdu1.header['date-obs']=(xstart[3],'start of summed images')
          hdu1.header['date-end']=(xstop[3],'end of summed images')
@@ -2667,7 +2677,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
                 (i,phafiles[i].rsplit('/')[-1],wave_shifts[i]) )
              hdu1.header['history'] = ("%2i excl=%s"%(i,exclude_wave[i]) )
          hdulist.append(hdu1)           
-         hdulist.writeto(outfile,clobber=clobber)
+         hdulist.writeto(outfile,overwrite=True)
    else:            
           print("writing output to ascii file: ",outfile)
           fout = open(outfile,'w')

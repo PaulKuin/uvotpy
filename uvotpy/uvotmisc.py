@@ -431,6 +431,8 @@ def swtime2JD(TSTART,useFtool=True,):
    import datetime
    month2number={'JAN':'01','FEB':'02','MAR':'03','APR':'04','MAY':'05','JUN':'06',
                  'JUL':'07','AUG':'08','SEP':'09','OCT':'10','NOV':'11','DEC':'12'}
+   if type(TSTART) != float: 
+       raise IOError('input TSTART must be float %s'%(type(TSTART)))
    if useFtool:
       import os
       from numpy.random import rand
@@ -439,13 +441,14 @@ def swtime2JD(TSTART,useFtool=True,):
          print("no time correction for SC clock drift")
          return swtime2JD(TSTART,useFtool=False)
       else:   
-         return swtime2JD(TSTART+delt,useFtool=False)
+         xt = float(TSTART+delt)
+         return swtime2JD(xt,useFtool=False)
    else:
       import numpy as np
-      delt = datetime.timedelta(0,TSTART,0)
+      deltime = datetime.timedelta(0,TSTART,0)
       # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
       swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
-      gregorian = swzero_datetime + delt
+      gregorian = swzero_datetime + deltime
       MJD = np.double(51910.0) + old_div(TSTART,(24.*3600))
       JD = np.double(2451910.5) + old_div(TSTART,(24.*3600))
       outdate = gregorian.isoformat()
