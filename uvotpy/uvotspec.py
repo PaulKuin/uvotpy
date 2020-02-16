@@ -2677,7 +2677,7 @@ def _sum_output_sub4(phafiles,nfiles, outfile,wave_shifts, exclude_wave,
                 (i,phafiles[i].rsplit('/')[-1],wave_shifts[i]) )
              hdu1.header['history'] = ("%2i excl=%s"%(i,exclude_wave[i]) )
          hdulist.append(hdu1)           
-         hdulist.writeto(outfile,overwrite=True)
+         hdulist.writeto(outfile,overwrite=clobber)
    else:            
           print("writing output to ascii file: ",outfile)
           fout = open(outfile,'w')
