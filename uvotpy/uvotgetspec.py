@@ -2160,7 +2160,7 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
          sys.stderr.write( "BACKGROUND METHOD: %s;  background smoothing = %s\n"%
              (background_method,background_smoothing))
       else:
-         sys.stderr.write( "BACKGROUND METHOD:%s\n"(background_method ))
+         sys.stderr.write( "BACKGROUND METHOD:%s\n"%(background_method ))
       
    if not ((background_method == 'splinefit') | (background_method == 'boxcar') ):
       sys.stderr.write('background method missing; currently reads : %s\n'%(background_method))
