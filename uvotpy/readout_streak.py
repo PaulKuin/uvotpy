@@ -1233,15 +1233,10 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
               DW_YSIZ = np.int((y1-y0)/16)
               #  now we need to compare the values found from scan_img with those from the header
               #
-              #print("\n",30*"*+","\n",20*" ","Diagnostics for WINDOW? parameters\n")
-              #print(f"measured positions of window: {y0img},{y1img};{x0img},{x1img}, \n\n")
-              #print(f"positions from header/etc: {y0},{y1};{x0},{x1} \n\n")
-              #print(30*"*+","\n",20*" ","End of Diagnostics for WINDOW? parameters\n")
-              #
               if chatter > 0:
                  sys.stderr.write( "cropping image and updating image header window size"+
-                  "    to x: %i:%i  y: %i:%i\n"%(x0,x1,y0,y1))
-              hdu[k].data = hdu[k].data[x0:x1,y0:y1]
+                  "    to x: %i:%i  y: %i:%i\n"%(y0,y1,x0,x1))
+              hdu[k].data = hdu[k].data[y0:y1,x0:x1]
               hdu[k].header['DW_X0'] = DW_X0
               hdu[k].header['DW_Y0'] = DW_Y0
               hdu[k].header['DW_XSIZ'] = DW_XSIZ
@@ -1250,8 +1245,6 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
               hdu[k].header['WINDOWY0'] = y0
               hdu[k].header['WINDOWDX'] = x1-x0
               hdu[k].header['WINDOWDY'] = y1-y0
-             #hdu[k].header['WINDOWDX'] = DW_XSIZ*16-8
-             #hdu[k].header['WINDOWDY'] = DW_YSIZ*16-8
               hdu[k].header['CRVAL1'] = x0
               hdu[k].header['CRVAL2'] = y0
            elif (ax1 == 2048/binx):
@@ -1259,12 +1252,12 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
              sys.stderr.write("while  naxis1 = %i - Problem?? binx=%i, frame time=%f\n"%
                (ax1,binx,ft))   
                
-        if (crval1 == 0) & (crval2 == 0) & (windowx0 !=0) & (windowy0 != 0): # &(band=='UVM2')  
-           # this is for 3.6ms windows with wrong keywords in x,y (found for UVM2)
-           hdu[k].header['CRVAL1'] = windowy0
-           hdu[k].header['CRVAL2'] = windowx0         
-           hdu[k].header['WINDOWX0'] = windowy0
-           hdu[k].header['WINDOWY0'] = windowx0
+        #if (crval1 == 0) & (crval2 == 0) & (windowx0 !=0) & (windowy0 != 0): # &(band=='UVM2')  
+        #   # this is for 3.6ms windows with wrong keywords in x,y (found for UVM2)
+        #   hdu[k].header['CRVAL1'] = windowy0
+        #   hdu[k].header['CRVAL2'] = windowx0         
+        #   hdu[k].header['WINDOWX0'] = windowy0
+        #   hdu[k].header['WINDOWY0'] = windowx0
            
    # hk.close()    
     hdu.writeto(file+".new",output_verify='fix',overwrite=True)
@@ -1279,7 +1272,7 @@ def _scan_image(img):
     y = np.where(img.sum(0) != 0)
     y0 = np.min(y)
     y1 = np.max(y)
-    return x0,x1,y0,y1
+    return y0,y1,x0,x1
  
 def read_a_maghist_file(infile):
     """read the fits output from running uvotsource or uvotmaghist into a structure """
