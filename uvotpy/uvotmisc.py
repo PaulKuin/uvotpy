@@ -398,6 +398,10 @@ def uniq(list):
    set = {}
    return [ set.setdefault(x,x) for x in list if x not in set ]
 
+def dateobs2MJD(dateobs):
+   from astropy.time import Time
+   t = Time(dateobs,format='fits')
+   return t.mjd
 
 def swtime2JD(TSTART,useFtool=True,):
    '''Time converter to JD from swift time 
@@ -431,6 +435,12 @@ def swtime2JD(TSTART,useFtool=True,):
    import datetime
    month2number={'JAN':'01','FEB':'02','MAR':'03','APR':'04','MAY':'05','JUN':'06',
                  'JUL':'07','AUG':'08','SEP':'09','OCT':'10','NOV':'11','DEC':'12'}
+   if type(TSTART) == N.array:
+      TSTART = TSTART[0]
+   try:
+      TSTART = float(TSTART)
+   except: 
+      pass      
    if type(TSTART) != float: 
        raise IOError('input TSTART must be float %s'%(type(TSTART)))
    if useFtool:
@@ -463,31 +473,33 @@ def JD2swift(JD):
       print ('WARNING: no correction made for UT-> SC clock time')
       return (JD - np.double(2451910.5))*(86400.0)
 
-def swift2JD(tswift):
+def swift2JD(swifttime):
    delt, status = swclockcorr(swifttime) 
    if status: 
-      return old_div(tswift+delt,86400.0)  + 2451910.5
+      return old_div(swifttime+delt,86400.0)  + 2451910.5
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
-      return old_div(tswift,86400.0)  + 2451910.5
+      return old_div(swifttime,86400.0)  + 2451910.5
 
    
 def MJD2swift(MJD):   
    import numpy as np
-   delt, status = swclockcorr(swifttime) 
+   #get approximate time
+   approx_swifttime = (MJD-51910.0)*86400. 
+   delt, status = swclockcorr(approx_swifttime) 
    if status: 
       return (MJD - np.double(51910.0))*(86400.0) - delt
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
       return (MJD - np.double(51910.0))*(86400.0)
    
-def swift2MJD(tswift):
+def swift2MJD(swifttime):
    delt, status = swclockcorr(swifttime) 
    if status: 
-      return old_div(tswift+delt,86400.0)  + 51910.0 
+      return old_div(swifttime+delt,86400.0)  + 51910.0 
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
-      return old_div(tswift,86400.0)  + 51910.0
+      return old_div(swifttime,86400.0)  + 51910.0
    
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''Convert time in UT to swift time in seconds.
