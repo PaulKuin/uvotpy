@@ -47,7 +47,7 @@ from astropy import units
 from astropy import coordinates as coord
 import astropy
 import sys, os
-from uvotpy import uvotmisc
+from uvotpy import uvotmisc, sensitivity
 import convert_raw2det
 from matplotlib import cm
 
@@ -797,11 +797,14 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
    overlimit = False
    band = obs['band'].lower()
    systematic_err = 0.1
-   sys.stderr.write( "\n%s Readout Streak for %s in the %s filter. "%
-      (target,obs['dateobs'], band))
+   if chatter > 0:
+      sys.stderr.write( "\n%s Readout Streak for %s in the %s filter. "%
+         (target,obs['dateobs'], band))
    
    # approximate correction for sensitivity loss (not calibrated foor readout streak)
    date=obs['dateobs']
+   senscorr = sensitivity.get(band, date, timekind='UT')
+   obs.update('{"senscorr":senscorr})
    if len(date) < 11:
        xseconds = datetime.datetime(int(date[:4]),int(date[5:7]),
          int(date[8:10]))- datetime.datetime(2005,1,1,0,0,0)
@@ -810,7 +813,8 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
          int(date[8:10]),int(date[11:13]), int(date[14:16]),
          int(date[17:20]),0) - datetime.datetime(2005,1,1,0,0,0)
    xyear = xseconds.days/365.26
-   sys.stderr.write( "sensitivity correction = %7.3f"%(1+0.01*xyear))
+   if chatter > 0:
+      sys.stderr.write( "sensitivity correction = %7.3f (~ %7.3f)"%(senscorr,1+0.01*xyear))
 
    # index for the proper frametime - search within 0.015
    try:
@@ -855,6 +859,7 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
 def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,lss,zp,band,max_cr,
         overlimit,chatter=0): 
    import numpy as np
+   senscorr = obs['senscorr']
    # correcting for the MCP recharge time - assume done
    if (1.0-(S[k]*rate*t_MCP)) <= 0. :
        overlimit=True
@@ -869,10 +874,10 @@ def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,lss,zp,band,max_cr,
           sys.stderr.write( "observed CR =%10.5f,  MCP-loss corrected CR =%10.5f"%(rate,r_coi) )
    # now correct for LSS
    
-   r_coi = r_coi * (1+0.01*xyear)/lss
-   err = err * (1+0.01*xyear)/lss
-   r_coi_u = r_coi_u * (1+0.01*xyear)/lss
-   r_coi_d = r_coi_d * (1+0.01*xyear)/lss
+   r_coi = r_coi * senscorr/lss
+   err = err * senscorr/lss
+   r_coi_u = r_coi_u * senscorr/lss
+   r_coi_d = r_coi_d * senscorr/lss
    
    if r_coi > max_cr[k]:  overlimit=True
    mag = zp[band][k] - 2.5*np.log10(r_coi)
@@ -1053,7 +1058,7 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     magff[1].data = t
     magff[1].header['COLUSED'] = n+1
     if chatter > 3:
-       print (f"colused parameter set to {n+1}\n")
+       print (f"<colused> parameter set to {n+1}\n")
     magff.flush()
     return magff    
 

@@ -466,7 +466,13 @@ def swtime2JD(TSTART,useFtool=True,):
 
 def JD2swift(JD):
    import numpy as np
-   delt, status = swclockcorr(swifttime) 
+   #get approximate time
+   approx_swifttime = (MJD-51910.0)*86400. 
+   if approx_swifttime > 0.:
+      delt, status = swclockcorr(approx_swifttime) 
+   else:
+      delt = 0
+      status = True   
    if status: 
       return (JD - np.double(2451910.5))*(86400.0)-delt
    else:   
@@ -486,7 +492,11 @@ def MJD2swift(MJD):
    import numpy as np
    #get approximate time
    approx_swifttime = (MJD-51910.0)*86400. 
-   delt, status = swclockcorr(approx_swifttime) 
+   if approx_swifttime > 0.:
+      delt, status = swclockcorr(approx_swifttime) 
+   else:
+      delt = 0
+      status = True   
    if status: 
       return (MJD - np.double(51910.0))*(86400.0) - delt
    else:   
@@ -536,14 +546,17 @@ def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    xdiff = xx-swzero_datetime
    swifttime = xdiff.total_seconds() 
    # convert from UT to SC time
-   delt, status = swclockcorr(swifttime) 
+   if swifttime > 0. :
+      delt, status = swclockcorr(swifttime) 
+   else:
+      delt, status = 0., True   
    if status: 
       return swifttime-delt
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
       return swifttime
   
-def swclockcorr(met,met_tolerance=50):
+def swclockcorr(met,met_tolerance=50,):
     """ 
     Swift MET correction for clock drift etc. 
     
