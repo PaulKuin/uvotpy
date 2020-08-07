@@ -60,15 +60,22 @@ def get(uvotfilter, time, timekind='swifttime',
       sens_rate : float 
          basic rate of decay for whole grism
       wheelpos: int 
-         position in filter wheel to identify filter/mode (grism only)   
+         position in filter wheel to identify filter/mode (grism only)  
+         
+   Requires Swift CALDB configured       
+         
+   2020-08-07 NPMK fecit
    """
    bands = {'v':'v','b':'b','u':'u','uvw1':'uvw1','uvm2':'uvm2','uvw2':'uvw2',
      'w1':'uvw1','m2':'uvm2','w2':'uvw2', 'wh':'white', 'white':'white',
      'ugc':'ug160','vgc':'vgc990','ug160':'ug160','vg990':'vg990',
      'ugn':'ug200','vgn':'vg1000','un200':'ug200','vg1000':'vg1000',     
    }
-   
-   current = bands[uvotfilter.lower()]
+   if uvotfilter.lower() in bands:
+      current = bands[uvotfilter.lower()]
+   else:
+      raise IOError(f"invalid filter band name {uvotfilter}\n")    
+      
    caldb = os.getenv("CALDB")
    
    # convert time (accuracy better than 1 minute)
@@ -104,11 +111,12 @@ def get(uvotfilter, time, timekind='swifttime',
       f = open('sfile_.tmp')
       sfile = f.readline()
       f.close()
+      os.system("rm sfile_.tmp")
       if len(sfile) > 0: 
          try:
             tab = fits.getdata(sfile.split()[0],ext=int(sfile.split()[1]))
          except:
-            sys.stderr.write("cannot open file:  "+sfile+" at time {time,UT}")   
+            raise IOError(f"cannot open file: {sfile} at time {time,UT}\n")   
          
          # columns in SENSCORR file are named TIME. OFFSET, SLOPE   
          # multiply count rate C as follows:
@@ -122,8 +130,11 @@ def get(uvotfilter, time, timekind='swifttime',
             print (f"senscorr[-1] = {senscorr[-1]}")
          return senscorr[-1]
       else:
-          print (f"WARNING - no sensitivity file found.\n=>Assuming no sensitivity loss.\n")
+          if chatter > 0:
+             print (f"WARNING - no sensitivity file found.\n=>Assuming no sensitivity loss.\n")
           return 1.0
-   else: # grism modes 
-      return uvotio.sensitivityCorrection(swtime,wave=None,sens_rate=0.01,wheelpos=0)  
+   elif uvotfilter.lower() in list(bands.keys())[10:]:  # grism modes 
+      return uvotio.sensitivityCorrection(swtime,wave=None,sens_rate=0.01,wheelpos=0)
+   else:
+      raise IOError(f"invalid filter band name {uvotfilter}\n")    
    #
