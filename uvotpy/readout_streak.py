@@ -37,7 +37,8 @@
 #            Add the shift caused by the pointing offset before settling 
 #            Change code to fix HWWindow keywords in raw files
 #            Add correct sensitivity loss (now 1%/yr)
-#
+# 2020-08-05 Get sensitivity loss from CALDB
+# 2020-08-07 Add calling from the OS using optparse; encapsulating print/write with chatter
 #
 
 from __future__ import division
@@ -46,10 +47,11 @@ from astropy.io import ascii,fits
 from astropy import units
 from astropy import coordinates as coord
 import astropy
-import sys, os
-from uvotpy import uvotmisc, sensitivity
-import convert_raw2det
+import sys,os
+from uvotpy import sensitivity,uvotmisc
+from uvotpy.convert_raw2det import radec2pos,radec2det,from_det_to_raw
 from matplotlib import cm
+import optparse
 
 bands =['uwh','uw2','um2','uw1','uuu','ubb','uvv']
 filts = ['wh','uvw2','uvm2','uvw1','u','b','v'] 
@@ -58,8 +60,8 @@ maxmag = {"wh":9.}
 def photometry(obsid,
        target='target',
        radec=None,
-       interactive=True,
-       magfile='streak_photometry',
+       interactive=False,
+       outfile='streak_photometry',
        do_only_band=None,
        rerun_readout_streak=False,
        snthresh=6.0, 
@@ -81,7 +83,7 @@ def photometry(obsid,
       if False, no LSS correction will be done
    ***datadir***: path
       the path of the directory containing the image files   
-   ***magfile*** : path
+   ***outfile*** : path
       the path of the file to append a summary of the selected sources to.
       When choosing an absolute path, multiple observations can be 
       done this way.  
@@ -171,10 +173,10 @@ def photometry(obsid,
           Added Fits output. Changed informative print out to stderr, added 
           verbosity parameter. Change LSS to not be interactive when told. 
           Require RA, Dec or specidy "without". 
-           
+     2020-08-07 upgrade to Python3 (drop Python 2 support)
    Bugs/desired upgrades:
-    - include the readout_streak code in the distribution (requires fitsio and
-      wcstools.) 
+    - include the readout_streak c code in the distribution (requires fitsio and
+      wcstools or cython.) 
    
    '''
    import os
@@ -183,6 +185,7 @@ def photometry(obsid,
    from astropy.io import fits
    import astropy
    
+   magfile = outfile
    syserr = 0.1
    # test for presence CALDB and Swift Ftools
    CALDB = os.getenv('CALDB')
@@ -233,7 +236,7 @@ def photometry(obsid,
    # open or create text output file 
    if not os.access(textout, os.F_OK): #write header first time opening
        magfh = open(textout,'w')
-       magfh.write("MJD mag(Vega) magerr syserr filter tstart date-obs obsid+ext\n") 
+       magfh.write("MJD mag(Vega) magerr syserr filter tstart date-obs obsid+ext lss\n") 
    else: 
        magfh = open(textout,'a')
 
@@ -284,7 +287,8 @@ def photometry(obsid,
      md = rf1+'md.img'
      bp = rf1+'bp.img'
      sk = rf1+'sk.img'
-     sys.stderr.write(
+     if chatter > 0:
+        sys.stderr.write(
         "filenames:\n   raw %s\n   bad points %s\n   mod8 corrected %s\n   sky %s\n"%
         ( rf, bp,md,sk))
      
@@ -294,13 +298,15 @@ def photometry(obsid,
      if not os.access(md, os.F_OK):
         command = "uvotbadpix infile="+rf+".new"+" badpixlist=CALDB outfile="+\
         bp+" compress=YES clobber=yes history=yes chatter="+str(chatter)
-        sys.stderr.write("executing in shell: " +command )
+        if chatter > 0:
+           sys.stderr.write("executing in shell: " +command )
         os.system(command)         
         command = "uvotmodmap infile="+rf+".new"+" badpixfile="+bp+" outfile="+md+\
         " mod8prod=NO mod8file=CALDB nsig=3 ncell=16 subimage=NO "+\
         " xmin=0 xmax=2047 ymin=0 ymax=2047 clobber=yes history=yes chatter="\
-        +str(chatter)
-        sys.stderr.write("executing in shell: " +command )
+        +str(chatter) 
+        if chatter > 0:
+            sys.stderr.write("executing in shell: " +command )
         os.system(command)          
 
      # run Mat's readout_streak c program on the mod8 corrected file
@@ -308,7 +314,8 @@ def photometry(obsid,
      resfile = "results."+band+"_.txt"
      if (not os.access(resfile, os.F_OK)) or rerun_readout_streak: 
          command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
-         sys.stderr.write( "calling readout_streak main program:\n"+command)
+         if chatter > 0:     
+             sys.stderr.write( "calling readout_streak main c program:\n"+command)
          # if already present only rerun if parameter is set
          os.system(command)
          
@@ -341,7 +348,8 @@ def photometry(obsid,
          
      # run readout_streak_mag on each image 
      for obs in obses:
-        sys.stderr.write( "\n============== LSS and magnitudes for : "+
+        if chatter > 0:
+            sys.stderr.write( "\n============== LSS and magnitudes for : "+
             obs["infile"]+"+"+str(obs["extension"])+"\n" )
 
         # find source position in raw image
@@ -349,17 +357,18 @@ def photometry(obsid,
         if radec != 'without':
                ext = obs['extension']
                sys.stderr.write("  skyfile = %s, ext=%s\n"%(sk,ext))
-               posJ2000 = convert_raw2det.radec2pos(ra, dec, chatter)
-               detx, dety = convert_raw2det.radec2det(posJ2000,sk,ext,chatter, det_as_mm=False)
+               posJ2000 = radec2pos(ra, dec, chatter)
+               detx, dety = radec2det(posJ2000,sk,ext,chatter, det_as_mm=False)
                obs.update( {'det_coord':(detx,dety)})       
-               rawx, rawy = convert_raw2det.from_det_to_raw(detx,dety,invert=True)
+               rawx, rawy = from_det_to_raw(detx,dety,invert=True)
                obs.update( {'rawxy': [rawx,rawy]})
                obs.update( {'img_coord':(rawx,rawy)})
                if (rawx < 0) | (rawx > 2047) | (rawy < 0) | (rawy > 2047):
-                   sys.stderr.write(
+                   if chatter > 0:
+                      sys.stderr.write(
                       "WARNING: Source falls outside RAW image. "+
                       "RAW position = (%10.1f,%10.1f)\n "%(rawx,rawy))
-                   sys.stderr.write("Continuing with interactive pick of source\n")
+                      sys.stderr.write("Continuing with interactive pick of source\n")
                    radec = 'without'
                    # and here a call to a subroutine for processing a single image 
                else: 
@@ -385,10 +394,11 @@ def photometry(obsid,
             obs.update( {'magnitudes': data})
             result.append(obs)
         else:
-            print ("\nskipping this image\nconsider running uvotsource\n" ) 
+           if chatter > 0:
+               print ("\nskipping this image\nconsider running uvotsource\n" ) 
 
    # mag output : cycle through filters
-   if chatter > -1: print (f"\n * * * Outputting results * * * \n\n")
+   if chatter > 0: print (f"\n * * * Outputting results * * * \n\n")
    if (do_only_band != None):
       filts = ['uvw2','uvm2','uvw1','u','b','v']
    for fi in filts:
@@ -403,13 +413,17 @@ def photometry(obsid,
                   if len(obj['streak_col_SN_CR_ERR']) < 1: # no streak found
                       mag = -1. 
                       err = -1.
-                      print ("check no streak case :",obj)
+                      ext = -1
+                      if chatter > 0:
+                         print ("check no streak case :",obj)
                   else:    
+                    if chatter > 3: print (f"line 420 OBJ = {obj}\n")
                     for s in  obj['streak_col_SN_CR_ERR']: streaks.append(s[0])
+                    streaks = np.array(streaks)
                     # first try to pick the brightest streak within 16 subpixels
                     # if that did not work, just use the closest one in distance
                     try:  
-                      kandi = np.abs(streaks-x) < 16
+                      kandi = np.abs(streaks-x) < 16  # this can match more than one
                       kanmag = []
                       kanerr = []
                       for k in obj['magnitudes']:
@@ -417,6 +431,8 @@ def photometry(obsid,
                          kanerr.append( k[3] )
                       kanmag = np.array(kanmag)[kandi]
                       kanerr = np.array(kanerr)[kandi]
+                      if chatter > 3: 
+                         print (f"\n kanmag = {kanmag}\n kanerr = {kanerr}\n")
                       if len(kanmag) == 0: 
                           k = np.where(np.abs((streaks-x)) == np.min(np.abs(streaks - x)))
                           k = k[0][0]
@@ -431,6 +447,8 @@ def photometry(obsid,
                        k = k[0][0]
                        mag = obj['magnitudes'][k][2]
                        err = obj['magnitudes'][k][3]
+                       if chatter > 3: 
+                          print ("*** problem line 447\n")
                        pass
                   # overlimit = obj['streak_col_SN_CR_ERR'][k][0] when, set errors to .9999
                   datobs = obj['dateobs']
@@ -439,18 +457,18 @@ def photometry(obsid,
                   extnam = obj['extname']
                   MJD = dateobs2MJD(datobs)
                   lss = obj['lss']
-                  sys.stderr.write( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
-                  sys.stderr.write("\n")
+                  if chatter > 0:
+                     sys.stderr.write( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
+                     sys.stderr.write("\n")
                except:
-                  sys.stderr.write( "there seems to be a problem writing: %s\n"%( obj ))
+                  if chatter > 0:
+                     sys.stderr.write( "there seems to be a problem writing: %s\n"%( obj ))
                   pass
-               if chatter > 1 : print (f"... outputting result for {obsid}+{ext}\n")   
+               if chatter > 0 : print (f"... outputting result for {obsid}+{ext}\n")   
                magfh.write("%12.5f %7.3f %5.3f %5.3f %6s %11.1f %11s %11s %2i %7.4f\n"%
                      (MJD,mag,err,syserr,fi,tsta,datobs[0:16],obsid,ext,lss))
-               #print ("text file written")   
                magff = _mag_to_fitsout(magff, obj['band'], mag, err,tsta, datobs[0:16],\
                       obsid,ext,extnam,MJD,lss,syserr,chatter=chatter)
-               #print ("fits file written")    
 
    magfh.close()
    #try:
@@ -538,6 +556,7 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
           rawx,rawy = rawxy
           R = hdr['windowdx']/15./hdr['binx']
           if chatter > 1:
+             if rawxy == [1024/binx,1024/binx]: print (f"Using the default values for the ")
              print ("\ncenter position rawxy+window0 = ",rawx-hdr['windowx0'],rawy-hdr['windowy0'])
              print (f"rawxy = ({rawx},{rawy})")
              print (f"windowx0,--y0 = ({hdr['windowx0']},{hdr['windowy0']})")
@@ -579,7 +598,7 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
             if rawxy != None:
                rawx,rawy = rawxy
                R = hdr['windowdx']/20./hdr['binx']
-               ax.plot(R*circle[0]+rawx-hdr['windowx0'],R*circle[1]+rawy-hdr['windowy0'], '-',
+               ax.plot(R*circle[0]+xpick-hdr['windowx0'],R*circle[1]+ypick-hdr['windowy0'], '-',
                   color='lawngreen',alpha=0.7,lw=1,label='adopted position')
                ax.legend() 
                
@@ -607,7 +626,8 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
       yloc = np.int(yloc)*binx #+hdr['windowy0']  
    
    # now do the correction 
-   sys.stderr.write(f"getting the LSS correction at location {yloc},{xloc}\n")
+   if chatter > 0:
+      sys.stderr.write(f"getting the LSS correction at location {yloc},{xloc}\n")
    lss = 1.0
    band = obs['band']
    caldb = os.getenv('CALDB')
@@ -653,7 +673,7 @@ def _read_readout_streak_output(obses,inp='results.txt',
    lower limits are not given ?
    ''' 
    import numpy as np
-   if chatter > 10: 
+   if chatter > 5: 
       print (band, dateobs, tstart, infile, extname)
       print (rawxy,inp,obses)
    
@@ -699,7 +719,7 @@ def _read_readout_streak_output(obses,inp='results.txt',
            ))
       if r[0:3] == 'Ext':
          if int(r[3:6]) != int(ext):
-            if chatter > 0:
+            if chatter > 1:
                sys.stderr.write("%s/n"%( r ))
                sys.stderr.write(
                  "check extension failed : %i  not equal to %i\n"%
@@ -804,7 +824,7 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
    # approximate correction for sensitivity loss (not calibrated foor readout streak)
    date=obs['dateobs']
    senscorr = sensitivity.get(band, date, timekind='UT')
-   obs.update('{"senscorr":senscorr})
+   obs.update({"senscorr":senscorr})
    if len(date) < 11:
        xseconds = datetime.datetime(int(date[:4]),int(date[5:7]),
          int(date[8:10]))- datetime.datetime(2005,1,1,0,0,0)
@@ -813,6 +833,12 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
          int(date[8:10]),int(date[11:13]), int(date[14:16]),
          int(date[17:20]),0) - datetime.datetime(2005,1,1,0,0,0)
    xyear = xseconds.days/365.26
+   maxsenscorr = 4
+   if senscorr < 1.0 or senscorr > maxsenscorr : 
+      if chatter > 0: 
+         print (f"senscorr = {senscorr} is out of range: setting to 1 percent a year\n")
+      senscorr = 1.+0.01*xyear
+      obs["senscorr"]= senscorr
    if chatter > 0:
       sys.stderr.write( "sensitivity correction = %7.3f (~ %7.3f)"%(senscorr,1+0.01*xyear))
 
@@ -823,7 +849,7 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
       raise RuntimeError("Frame time is not in our list or differs by more than 1.5 percent")
    
    # if not target in 'streak_id' field, set first
-   xx = obs['streak_id'] != "" 
+   xx = obs['goodstreak'] #!= "" 
    if chatter > 3:
       print ("\nobs[...] ", obs)
       print ("target",target)
@@ -834,8 +860,8 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
       column,SN,rate,err = streak
       #err += systematic_err
       # note : only a return for the matched column 
-      sys.stderr.write(f"The column matched is at {column}")
-      sys.stderr.write("\n")
+      if chatter > 0:
+         sys.stderr.write(f"The column matched is at {column}\n")
       return [_readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
               lss,zp,band,max_cr,overlimit)]
    else:
@@ -884,14 +910,15 @@ def _readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,lss,zp,band,max_cr,
    mag_u = zp[band][k] - 2.5*np.log10(r_coi_u)
    mag_d = zp[band][k] - 2.5*np.log10(r_coi_d)
    if overlimit: 
-      sys.stderr.write( "WARNING: count rate is over the recommended limit !\n")
-      sys.stderr.write( "%s magnitude <%7.3f (+%7.3f -%7.3f)\n"%(band,mag,mag_u-mag,mag-mag_d) )
+      if chatter > 0:
+         sys.stderr.write( "WARNING: count rate is over the recommended limit !\n")
+         sys.stderr.write( "%s magnitude <%7.3f (+%7.3f -%7.3f)\n"%(band,mag,mag_u-mag,mag-mag_d) )
       return overlimit,band,mag,-mag_u+mag,-mag+mag_d
    else:   
       sys.stderr.write( "%s magnitude = %7.3f +%7.3f -%7.3f\n"%(band,mag,mag_u-mag,mag-mag_d) )
    return overlimit,band,mag,mag_u-mag,mag-mag_d
 
-def read_the_old_readout_streak_table(infile,comment='#',chatter=0):
+def read_the_old_readout_streak_table(infile,comment='#',chatter=0): #obsolete
     """read the photometry table output from readout_streak into a structure"""
     # if exposure is added as a field, that needs to be an option
     f = open(infile)
@@ -1145,7 +1172,7 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
     # DW_X0*16:(DW_X0+DW_XSIZ)*16 ,  DW_Y0*16,(DW_Y0+DW_YSIZ)*16 
     # though the first left columns are looking blank. 
     # Is only needed if the the window is not properly put in the header as
-    # can be seen when NAXIS1,NAXIS2=2048,2048 in the raw image header, while 
+    #can be seen when NAXIS1,NAXIS2=2048,2048 in the raw image header, while 
     # the frame time is faster than the default.
     #
     # a better fit excluding most of the unreliable edge regions seems to be:
@@ -1253,8 +1280,9 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
               hdu[k].header['CRVAL1'] = x0
               hdu[k].header['CRVAL2'] = y0
            elif (ax1 == 2048/binx):
-             sys.stderr.write("HDU[%i] the expected image size is %i\n"%(k, expected)) 
-             sys.stderr.write("while  naxis1 = %i - Problem?? binx=%i, frame time=%f\n"%
+              if chatter > 0:
+                 sys.stderr.write("HDU[%i] the expected image size is %i\n"%(k, expected)) 
+                 sys.stderr.write("while  naxis1 = %i - Problem?? binx=%i, frame time=%f\n"%
                (ax1,binx,ft))   
                
         #if (crval1 == 0) & (crval2 == 0) & (windowx0 !=0) & (windowy0 != 0): # &(band=='UVM2')  
@@ -1279,7 +1307,7 @@ def _scan_image(img):
     y1 = np.max(y)
     return y0,y1,x0,x1
  
-def read_a_maghist_file(infile):
+def read_a_maghist_file(infile,chatter=0):
     """read the fits output from running uvotsource or uvotmaghist into a structure """
     f = fits.open(infile)
     band = f[1].data['filter']
@@ -1456,7 +1484,7 @@ def merge_data(from_readout1,from_readout2=None,from_maghist=None,
              x.update({'day':day})                   
     return {"w2":w2,"m2":m2,"w1":w1}                 
        
-def write_qdp_all(from_merge,outfile="photom.qdp",bin=True,timedel=None,mode='log'):
+def write_qdp_all(from_merge,outfile="photom.qdp",bin=True,timedel=None,mode='log',chatter=0):
     """given the output from merge_data() write a QDP file 
      
        parameters
@@ -1570,7 +1598,7 @@ def write_qdp_all(from_merge,outfile="photom.qdp",bin=True,timedel=None,mode='lo
     f.close()       
     fb.close()      
 
-def _binit(time,dur,mag,err,timedel,mode='log'):
+def _binit(time,dur,mag,err,timedel,mode='log',chatter=0):
     """bin the data 
        mode : ['linear','log']
           way the time bins are measured
@@ -1586,9 +1614,11 @@ def _binit(time,dur,mag,err,timedel,mode='log'):
     wmag = 0.
     sweights = 0.
     for lt,t,d,m,e in zip(ltime,time,dur,mag,err):
-        print (lt,t,d,m,e  )      
+        if chatter > 0:
+            print (lt,t,d,m,e  )      
         if np.abs(lt-lt0) < timedel:
-            print ('adding')
+            if chatter > 0:
+                print ('adding')
             stime += t
             sdur.append(t-d)
             sdur.append(t+d)
@@ -1596,9 +1626,11 @@ def _binit(time,dur,mag,err,timedel,mode='log'):
             wmag  += m/e**2
             n += 1  
         else:
-            print ('writing')
+            if chatter > 0:
+                print ('writing')
             sdur = np.array(sdur)
-            print ("sdur:",sdur)
+            if chatter > 0:
+                print ("sdur:",sdur)
             dd = sdur.max()-sdur.min()
             if dd < d: dd = d
             mm = wmag/sweights
@@ -1610,8 +1642,8 @@ def _binit(time,dur,mag,err,timedel,mode='log'):
             sdur = [t-d]
             wmag = m/e**2
             sweights = 1./e**2
-            
-    print ('wrapping up'  )  
+    if chatter > 0:
+        print ('wrapping up'  )  
     sdur = np.array(sdur)
     dd = sdur.max()-sdur.min()
     mm = wmag/sweights
@@ -1620,156 +1652,75 @@ def _binit(time,dur,mag,err,timedel,mode='log'):
     if out[-1]['t'] < stime/n:
         out.append({'t':stime/n,'d':dd,'m':mm,'e':ee})
     return out    
-####################### end readout streak
-'''
-def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):  
-    """
-    Fix the WINDOW?? parameters in the raw image file header
-    and crop the image for hardware modes with fast frame times.
-    
-    parameters
-    ----------
-    file : path 
-       to raw image file
-    chatter : int
-       verbosity
-       
-    Notes
-    -----    
-    some RAW image headers that were taken in a hardware mode (event) 
-    have the parameters WINDOWX0,WINDOWY0, WINDOWDX, WINDOWDY set
-    to 0,0,2048,2048, which is the event window size in the 
-    house keeping files. However the actual data is in only a small
-    part of the window, which is decided on-board depending on the 
-    actual pointing. Further processing, for example for the 
-    read-out streak needs just the good data. This program actually
-    limits the range slightly to avoid empty columns at the edge. 
-    
-    Other image have the exposed part of the image not in the expected position. 
-    
-    Although the planned positions of windows in hardware mode are 
-    positioned in the center of the detector, in practice some exposures 
-    are started before the slew ends and the exposed image can appear 
-    shifted by a considerable amount. 
-    
-    2020-07-25 Modifying approach to reduce complete reliance on HK files 
-    """
-    # The window location is encoded in the hk/sw00*uct.hk file. 
-    # The parameters: DW_X0, DW_Y0, DW_XSIZ,DW_YSIZ are in 2 physical pixel units
-    # Therefore the image coordinates are 
-    # DW_X0*16:(DW_X0+DW_XSIZ)*16 ,  DW_Y0*16,(DW_Y0+DW_YSIZ)*16 
-    # though the first left columns are looking blank. 
-    # Is only needed if the the window is not properly put in the header as
-    # can be seen when NAXIS1,NAXIS2=2048,2048 in the raw image header, while 
-    # the frame time is faster than the default.
-    #
-    # a better fit excluding most of the unreliable edge regions seems to be:
-    #In [714]: xx0 = x0*16-1+8
-    #In [715]: xx1 = xx0+16*dx-8
-    #In [716]: yy0 = y0*16-1+8
-    #In [717]: yy1 = yy0+dx*16-8
-    status = 0 
-    if chatter> 0: 
-        sys.stderr.write( "\nfix_hwwindow_header: examining "+file+"\n" )
-    hdu = fits.open(file,'update')
-    n_ext= len(hdu)
-    obsid = hdu[1].header['obs_id']
-    rootdir = file.rsplit('/',1)
-    if len(rootdir) == 1:
-       rootdir = './'
-    elif len(rootdir) == 2:
-       rootdir = rootdir[0]+'/'
-    else: raise RuntimeError("this should not happen\n")      
-    if chatter > 2:
-       sys.stderr.write("converting image size - checking presence HK file.\n")
-    if os.access(rootdir+'../hk/sw'+obsid+'uct.hk.gz', os.F_OK): 
-       os.system('gunzip -f'+'../hk/sw'+obsid+'uct.hk.gz')
-    if os.access(rootdir+'../hk/sw'+obsid+'uct.hk', os.F_OK):
-       hk = fits.open(rootdir+'../hk/sw'+obsid+'uct.hk')
-    else:
-        status = 1
-        sys.stderr.write("ERROR: houskeeping file %s not found\n")
+####################### end readout streak subs
 
-    for k in range(1,n_ext):
-        if chatter > 0:
-           sys.stderr.write( "examining HDU number : %i\n"%(k))   
-        ft = hdu[k].header['framtime'] 
-        ax1 = hdu[k].header['naxis1']
-        binx = hdu[k].header['binx']
-        tstart=hdu[k].header['tstart']
-        expid = hdu[k].header['expid']
-        windowx0 = hdu[k].header['WINDOWX0']
-        windowy0 = hdu[k].header['WINDOWY0']
-        windowdx = hdu[k].header['WINDOWDX']
-        windowdy = hdu[k].header['WINDOWDY']
-        # determine part of image with data > 0. img[y0img:y1img,x0img:x1img]
-        x0img,x1img,y0img,y1img = _scan_image(hdu[k].data)
-        if chatter > 3:  # report 
-            sys.stderr.write(f"frametime = {ft}\n")
-            sys.stderr.write(f"HDR[window**] x0={windowx0},y0={windowy0},"+
-            f" dx={windowdx}, dy={windowdy}\n")
-            sys.stderr.write("scanning position of image\n")
-            sys.stderr.write(f"scanned: x={x0img}-{x1img}, y={y0img}-{y1img}\n")
-            sys.stderr.write( "TSTART = %f; exposure=%s\n"%(tstart,expid))
-        
-        
-        
-        if (windowdx*binx < 2048) & (not fiximage_extension):
-            # we'll not fix this extension header 
-            if chatter > 3:
-               sys.stderr.write("...not fixing header of extension %i\n"%(k))
-            #break -- this cause further extensions to be skipped
+if __name__ == '__main__':
+   #in case of called from the OS
 
-        # the window size
-        # for the hardware mode with smaller frame time, the window 
-        # size gets smaller in proportion; use 0.1 tolerance
-        else:
-          expected = int(8*256/binx*(ft/0.0110329) + 0.1)
-          if (np.abs(expected - ax1) > 5) & (ax1 == 2048/binx) : 
-            # make sub image for the extension
-            #  information on the window position is in the housekeeping files
-            #
-             sys.stderr.write("converting image size.\n")
-             xx = np.array(expid - hk[1].data['expid'],dtype=int)
-             nnn= np.where( np.abs (xx) == np.min(np.abs(xx)))[0][0]
-             #DW_Y0 = hk[1].data['DW_X0'][nnn]
-             #DW_X0 = hk[1].data['DW_Y0'][nnn]
-             #DW_YSIZ = hk[1].data['dw_xsiz'][nnn]
-             #DW_XSIZ = hk[1].data['dw_ysiz'][nnn]
-             DW_X0 = hk[1].data['DW_X0'][nnn]
-             DW_Y0 = hk[1].data['DW_Y0'][nnn]
-             DW_XSIZ = hk[1].data['dw_xsiz'][nnn]
-             DW_YSIZ = hk[1].data['dw_ysiz'][nnn]
-             x0=DW_X0*16+7
-             x1=x0+DW_XSIZ*16-8
-             y0=DW_Y0*16+7
-             y1=y0+DW_YSIZ*16-8 
-            #
-            #  now we need to compare the values found from scan_img with those from the header
-            #
-             print("\n",30*"*+","\n",20*" ","Diagnostics for WINDOW? parameters\n")
-             print(f"measured positions of window: {y0img},{y1img};{x0img},{x1img}, \n\n")
-             print(f"positions from header/etc: {y0},{y1};{x0},{x1} \n\n")
-             print(30*"*+","\n",20*" ","End of Diagnostics for WINDOW? parameters\n")
+   if status == 0:
+      usage = "usage: %prog [options] -d obsid "
 
-            #
-             if chatter > 0:
-                sys.stderr.write( "cropping image and updating image header window size"+
-                  "    to x: %i:%i  y: %i:%i\n"%(x0,x1,y0,y1))
-             hdu[k].data = hdu[k].data[x0:x1,y0:y1]
-             hdu[k].header['DW_X0'] = DW_X0
-             hdu[k].header['DW_Y0'] = DW_Y0
-             hdu[k].header['DW_XSIZ'] = DW_XSIZ
-             hdu[k].header['DW_YSIZ'] = DW_YSIZ
-             hdu[k].header['WINDOWX0'] = x0
-             hdu[k].header['WINDOWY0'] = y0
-             hdu[k].header['WINDOWDX'] = DW_XSIZ*16-8
-             hdu[k].header['WINDOWDY'] = DW_YSIZ*16-8
-          elif (ax1 == 2048/binx):
-             sys.stderr.write("HDU[%i] the expected image size is %i\n"%(k, expected)) 
-             sys.stderr.write("while  naxis1 = %i - Problem?? binx=%i, frame time=%f\n"%
-               (ax1,binx,ft))       
-    hk.close()    
-    hdu.writeto(file+".new",output_verify='fix',overwrite=True)
-    hdu.close()
-'''
+      epilog = '''
+      get the readout streak photometry of the files of an obsid
+      requires the raw and sky files, uncompressed
+               ''' 
+      parser = optparse.OptionParser(usage=usage,epilog=epilog)
+      parser.disable_interspersed_args()
+      
+      # main options
+
+      parser.add_option("", "--obsid", dest = "obsid", action="store_false",
+                  help = "Swift OBSID of observation as a string, i.e. '00034380004'",
+                  default="obsid",)
+      parser.add_option("-t", "--target", dest = "target", action="store_true",
+                  help = "name of target",
+                  default="target",)
+      parser.add_option("-s", "--radec", dest = "radec", action="store_true",
+                  help = "the sky position as list [ra,dec] (J2000) positions in deg [default]",
+                  default = "without")
+      parser.add_option("-i", "--interactive", dest = "interactive", action="store_true",
+                  help = "interactive? True/False",default=False)
+      parser.add_option("-o", "--outfile", dest = "outfile", action="store_true",
+                  help = "output file name",default="streak_photometry")
+      parser.add_option("-d", "--datadir", dest = "datadir",
+                  help = "path to directory with obsid data files",
+                  default = '.')
+      parser.add_option("-z", "--timezero", dest = "timezero",
+                  help = "swift time reference (s since 2005-01-01T00:00:00)",
+                  default = None)
+      parser.add_option("-b", "--do_only_band", dest = "do_only_band",
+                  help = "only process given uvot filter",
+                  default = None)
+      parser.add_option("-c", "--chatter", dest = "chatter",
+                  help = "verbosity [default: %default]",
+                  default = 0)
+                  
+   (options, args) = parser.parse_args()
+   
+   chatter = options.chatter
+   if options.chatter > 0: 
+       sys.stderr.write( "options: %s\n"%( options ))
+       sys.stderr.write( "other args: %s\n"%(args))
+   if options.obsid == "obsid":
+       sys.stderr.write( f"The OBSID is a required argument.\n")
+       parser.print_help()
+       parser.exit       
+   elif type(options.radec) != list:
+       sys.stderr.write( "ra and dec must be given as a list \n")
+       parser.print_help()
+   elif len(options.radec) != 2:
+       sys.stderr.write( "Provide a value for only one ra and dec\n")
+       parser.print_help()
+
+   photometry(options.obsid,
+       target=options.target,
+       radec=options.radec,
+       interactive=options.interactive,
+       outfile=options.outfile,
+       do_only_band=options.do_only_band,
+       rerun_readout_streak=False,
+       snthresh=6.0, 
+       timezero=options.timezero,
+       datadir=options.datadir,
+       figno=None,
+       chatter=chatter)     
