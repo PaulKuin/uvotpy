@@ -295,16 +295,18 @@ def photometry(obsid,
      # reprocess to obtain the MOD8 corrected raw file. 
      # We use the mod8 file to measure readout streak.
      
-     if not os.access(md, os.F_OK):
+     if not os.access(bp, os.F_OK):
         command = "uvotbadpix infile="+rf+".new"+" badpixlist=CALDB outfile="+\
-        bp+" compress=YES clobber=yes history=yes chatter="+str(chatter)
+        bp+" compress=YES clobber=yes history=yes chatter="+str(np.min([chatter,5]))
         if chatter > 0:
            sys.stderr.write("executing in shell: " +command )
-        os.system(command)         
+        os.system(command)   
+              
+     if not os.access(md, os.F_OK):
         command = "uvotmodmap infile="+rf+".new"+" badpixfile="+bp+" outfile="+md+\
         " mod8prod=NO mod8file=CALDB nsig=3 ncell=16 subimage=NO "+\
         " xmin=0 xmax=2047 ymin=0 ymax=2047 clobber=yes history=yes chatter="\
-        +str(chatter) 
+        +str(np.min([chatter,5])) 
         if chatter > 0:
             sys.stderr.write("executing in shell: " +command )
         os.system(command)          
@@ -598,7 +600,7 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
             if rawxy != None:
                rawx,rawy = rawxy
                R = hdr['windowdx']/20./hdr['binx']
-               ax.plot(R*circle[0]+xpick-hdr['windowx0'],R*circle[1]+ypick-hdr['windowy0'], '-',
+               ax.plot(R*circle[0]+xpick,R*circle[1]+ypick, '-',
                   color='lawngreen',alpha=0.7,lw=1,label='adopted position')
                ax.legend() 
                
