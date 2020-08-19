@@ -68,6 +68,7 @@ def photometry(obsid,
        timezero=None,
        datadir='.',
        figno=20,
+       use_python_only=False,
        chatter=1):
    '''
    do the readout streak extraction in Swift UVOT images 
@@ -103,6 +104,8 @@ def photometry(obsid,
          or in the format "2014-02-01T01:12:13.0" as a string   
    ***figno*** : int or None    
          default = 20 
+   ***use_python_only** : bool
+      if the c-code readout_streak from Mat Page is not available, set to True      
          
    output
    ======
@@ -114,7 +117,7 @@ def photometry(obsid,
    =====
    Required: - download the swift uvot auxil, uvot/hk, and uvot/image/ data. 
              - unzip the *_rw.img files if they are compressed, prior to running the code.
-             - the c-program readout_streak which can be downloaded from 
+             - install the c-program readout_streak which can be downloaded from 
                http://www.mssl.ucl.ac.uk/www_astro/uvot/ 
    
    Sources which are over the brightness limit for which the UVOT readout 
@@ -167,16 +170,19 @@ def photometry(obsid,
        parameter.
    
    History:
-     2020-07-25 rewrite: always both fits and ascii output; will use ra,dec provided, or 
-     override if interactive; new ascii output format; works on full images frametime=11ms. 
-     2014-09-03 t0 06 Added support for converting from Sky to RAW coordinates.
+     2014-09-03 t0 06 npmk Added support for converting from Sky to RAW coordinates.
           Added Fits output. Changed informative print out to stderr, added 
           verbosity parameter. Change LSS to not be interactive when told. 
           Require RA, Dec or specidy "without". 
-     2020-08-07 upgrade to Python3 (drop Python 2 support)
+     2020-07-25 npmk rewrite: always both fits and ascii output; will use ra,dec provided, or 
+     override if interactive; new ascii output format; works on full images frametime=11ms. 
+     2020-08-07 NPMK upgrade to Python3 (drop Python 2 support)
    Bugs/desired upgrades:
+    - the code only works correctly if run inside the directory/folder with the images
     - include the readout_streak c code in the distribution (requires fitsio and
       wcstools or cython.) 
+     2020-08-19 NPMK wrote (slow) pure python implementation of Mat Page's readout_streak
+      code, module ros.py. 
    
    '''
    import os
@@ -312,15 +318,22 @@ def photometry(obsid,
         os.system(command)          
 
      # run Mat's readout_streak c program on the mod8 corrected file
-     #  (replace with python call - TBD)
+     #  try the c-code implementation first
      resfile = "results."+band+"_.txt"
      if (not os.access(resfile, os.F_OK)) or rerun_readout_streak: 
          command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
          if chatter > 0:     
              sys.stderr.write( "calling readout_streak main c program:\n"+command)
          # if already present only rerun if parameter is set
-         os.system(command)
-         
+         if not use_python_only:
+            command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
+            if chatter > 0:     
+               sys.stderr.write( "calling readout_streak main c program:\n"+command)
+            os.system(command)
+         else: 
+            import ros
+            matros = ros.ros(infile=md,outfile=resfile,chatter=chatter)
+            matresult = matros.process()  
          
      # process the output from readout_streak ; obtain raw coordinates for each extension
      hdu = fits.open(md)
