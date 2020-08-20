@@ -38,6 +38,19 @@ setenv UVOTPY <installation directory>
 so that $UVOTPY/calfiles/ which contains the calibration 
 files can be found by the software.
 
+Swift UVOT readout streak photometry
+------------------------------------
+
+Revised modules have been included to also enable the extraction of UVOT photometry 
+for brighter objects, roughly in the 12th to 9th magnitude range, using the method
+described in Page, M.J.  et al. (2013) MNRAS 436, 1684. This also requires the 
+Swift UVOT CALDB calibration database installed and updated. If the source 
+position is given and the raw and sky files are available the result is
+obtained automatically. If that is not possible, an interactive source position 
+needs to be provided. 
+
+
+
 This software is subject to a 3-clause BSD licence.  
 
 Please reference this UVOTPY code as follows:
