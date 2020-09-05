@@ -51,7 +51,7 @@ from astropy.io import ascii,fits
 from astropy import units
 
 
-__version__ = '0.1 20150805'  
+__version__ = '0.2 20200905'  
 
 typeNone = type(None)
 
@@ -197,8 +197,6 @@ class Caldb(object):
             self.msg += "effective area file : %s\n"%(self.calfilepath.split('/')[-1])                       
             return self.calfilepath, self.ea_extname, self.ea_model
             
-
-
 class WaveCal(Caldb):
 
     """
@@ -237,7 +235,7 @@ class WaveCal(Caldb):
 
     def __init__(self, grismmode=None, wheelpos=None, msg="", 
          use_caldb=False,
-         mode = 'bisplines',
+         mode = 'bilinear', #'bisplines',
          chatter=0 ):
 
         self.N1 = 0
@@ -609,14 +607,14 @@ class WaveCal(Caldb):
               if self.chatter > 2: print('getCalData. dispersion second order = ', c20i,c21i, c22i)
            #
            elif self.mode == 'bilinear':
-               c10i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c10 )
-               c11i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c11 )
-               c12i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c12 )
-               c13i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c13 )
-               c14i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c14 )
-               c20i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c20 )
-               c21i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c21 )
-               c22i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c22 )
+               c10i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c10 )
+               c11i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c11 )
+               c12i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c12 )
+               c13i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c13 )
+               c14i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c14 )
+               c20i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c20 )
+               c21i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c21 )
+               c22i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c22 )
                if self.chatter > 1: 
                    print('getCalData. bilinear interpolation') 
                    print('getCalData. dispersion first  order = ',c10i,c11i,c12i,c13i,c14i)
@@ -741,7 +739,7 @@ class WaveCal(Caldb):
            #
            elif self.mode == 'bilinear':
                #  reduce arrays to section surrounding point and interpolate
-               thi  = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), th  )
+               thi  = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), th  )
                if self.chatter > 1: 
                    print('waveCal. bilinear interpolation') 
                    print('waveCal. angle theta = %7.1f ' % (thi ))
@@ -765,6 +763,8 @@ class WaveCal(Caldb):
         xf, yf = self.field   # array of field coordinates
         xp1, yp1 = self.xp1, self.yp1
         xp2, yp2 = self.xp2, self.yp2
+        if self.chatter > 3:
+           print (f"interpolation mode = {self.mode}\n")
         #
         #  test if offset is within the field array boundaries
         #
@@ -851,20 +851,21 @@ class WaveCal(Caldb):
                   yp2 = yp2.flatten()[q4] 
      
               # find the anchor positions by extrapolation
+              # 2020-09-05 npmk changed arguments tck2? from ?p1 to ?p2
               
               anker  = np.zeros(2)
               anker2 = np.zeros(2)
               tck1x = interpolate.bisplrep(xf, yf, xp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
               tck1y = interpolate.bisplrep(xf, yf, yp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
-              tck2x = interpolate.bisplrep(xf, yf, xp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
-              tck2y = interpolate.bisplrep(xf, yf, yp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
+              tck2x = interpolate.bisplrep(xf, yf, xp2, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
+              tck2y = interpolate.bisplrep(xf, yf, yp2, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
      
               anker[0]  = xp1i = interpolate.bisplev(rx,ry, tck1x) 
               anker[1]  = yp1i = interpolate.bisplev(rx,ry, tck1y)  
               anker2[0] = xp2i = interpolate.bisplev(rx,ry, tck2x) 
               anker2[1] = yp2i = interpolate.bisplev(rx,ry, tck2y) 
       
-              if self.chatter > 3: 
+              if self.chatter > 4: 
                   print('waveCal. bicubic extrapolation  ') 
                   print('waveCal. first order anchor position = (%8.1f,%8.1f)' % (xp1i,yp1i))
               if c20i == NaN:
@@ -901,24 +902,29 @@ class WaveCal(Caldb):
               yp1i = interpolate.bisplev(rx,ry, tck2)
               xp2i = 0
               yp2i = 0
+              tck1 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], xp2.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
+              tck2 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], yp2.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
+              xp2i = interpolate.bisplev(rx,ry, tck1)
+              yp2i = interpolate.bisplev(rx,ry, tck2)
              
               if self.chatter > 3: print('getCalData. x,y, = ',xp1i,yp1i, ' second order ', xp2i, yp2i)
            #
            elif self.mode == 'bilinear':
-               xp1i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp1 ,chatter=self.chatter)
-               yp1i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp1 ,chatter=self.chatter)
-               xp2i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp2 )
-               yp2i = bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp2 )
-               if self.chatter > 3: 
+               xp1i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp1 )
+               yp1i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp1 )
+               xp2i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp2 )
+               yp2i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp2 )
+               if self.chatter > 4: 
                    print('waveCal. bilinear interpolation') 
                    print('waveCal. first order anchor position = (%8.1f,%8.1f)' % (xp1i,yp1i))
-               print('waveCal. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))            
+                   print('waveCal. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))            
         self.anchor1 = np.array([xp1i,yp1i]) 
         self.anchor2 = np.array([xp2i,yp2i]) 
         if self.chatter > 0: 
             print('waveCal. anker [DET-pix]   = ', self.anchor1)
             print('waveCal. anker [DET-img]   = ', self.anchor1 - [77+27,77+1])
-            print('waveCal. second order anker at = ', self.anchor2, '  [DET-pix] ') 
+            print('waveCal. second order anker [DET-pix] = ', self.anchor2, '  [DET-pix] ') 
+            print('waveCal. second order anker [DET-img] = ', self.anchor2 - [77+27,77+1], '  [DET-img] ') 
         self.msg = msg
 
     def bilinear(self,x1,x2,x1a,x2a,f,):
