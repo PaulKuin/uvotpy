@@ -3444,8 +3444,8 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    import os
    from scipy.ndimage import convolve
    #from convolve import boxcar
-   import uvotio
-   import uvotgetspec
+   from . import uvotio
+   from . import uvotgetspec
    from scipy import interpolate
    
    #  instrument_fwhm = 2.7/0.54 # pix
@@ -3697,12 +3697,12 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    import numpy as np
    import os
    from scipy.ndimage import convolve
-   import uvotio
-   import uvotgetspec
+   from . import uvotio
+   from . import uvotgetspec
    from scipy import interpolate
    import datetime
    
-   version = '150208'
+   version = '200929'
    
    if not ((lsfVersion == '001') | (lsfVersion == '002') | (lsfVersion == '003') ):
       raise IOError("please update the calfiles directory with new lsf file.")
@@ -3813,17 +3813,24 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
          # rescale lsf from half-pixels (centre is on a boundary) to channels 
 
          # find the range in pixels around the e_mid pixel at index k
-         pdel = len(lsfepix)/2/2  # one-way difference; half->whole pixels
+         pdel = len(lsfepix)//2//2  # one-way difference; half->whole pixels
 
          # where to put in matrix row :
          qrange = np.arange( np.max([k-pdel,0]),  np.min([k+pdel,NN]), 1,dtype=int)
+         nqr = len(qrange)
 
          # skipping by lsfepix twos so that we can add neighboring half-pixel LSF 
          qpix = np.arange(pdel*4-2,-1,-2,dtype=int)
-         
+         nqp = len(qpix)
          
          matrixrow   = np.zeros(NN)      
-         matrixrow[qrange] = lsf[qpix]+lsf[qpix+1]
+         #At high energy we chop off the highest E points
+         if k < pdel+1:
+            matrixrow[qrange] = lsf[qpix[:nqr]]+lsf[qpix[:nqr]+1]
+         elif k > NN - pdel:   
+            matrixrow[qrange] = lsf[qpix[:nqr-nqp]]+lsf[qpix[:nqr-nqp]+1]
+         else:
+            matrixrow[qrange] = lsf[qpix]+lsf[qpix+1]   
          # centre is in middle of a channel
          matrix[k,:] = matrixrow*resp[k]
 
@@ -3918,7 +3925,7 @@ def _interpolate_lsf(en,lsfener,lsfdata,lsfepix,):
         
     """
     import numpy as np
-    if  not ((type(en) == float) | (type(en) == np.float32)):  
+    if  not ((type(en) == float) | (type(en) == np.float32) | (type(en) == np.float64)):  
         print("en = ",en)
         print("type en = ", type(en))
         raise IOError("_interpolate_lsf only works on one *en* element at a time")
@@ -3948,7 +3955,7 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
     """
     import os
     from astropy.io import fits
-    import uvotio
+    from . import uvotio
     
     UVOTPY = os.getenv('UVOTPY')
     if UVOTPY == '': 
