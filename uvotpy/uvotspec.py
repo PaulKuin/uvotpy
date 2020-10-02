@@ -154,6 +154,8 @@ spdata = {
     ],
 'nova':[ # add also H, HeI, HeII 
 # 
+#{'transition':'','wavevac':1213.81, 'label':u'[O V]'},
+#{'transition':'1S-3Po3869/3968','wavevac':1218.344, 'label':u'O V'},
 {'transition':'','wavevac':1750 , 'label':u'N III]'},
 {'transition':"",'wavevac':1810 , 'label':'Si II'},
 {'transition':'','wavevac':1862.3  , 'label':u'Al III]'},
@@ -618,7 +620,7 @@ class DraggableSpectrum(object):
 def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     ylim=[None,None],ions=['HI','HeII'],reference_spectrum=None,
     recalculate=True, figno=None):
-    """manually adjust the wavelength scale
+    """manually adjust the wavelength scale 
     
     Parameters
     ----------
@@ -642,8 +644,10 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
     Notes
     -----
     The header will be updated with the value of the wavelength shift
-    The wavelengths in the second extension lambda column will be shifted. 
-    The response file will need to be recreated separately. 
+    For the *.pha output (not summed data):
+    - The wavelengths in the second extension lambda column will be shifted. 
+    - The response file will need to be recreated separately. 
+    Summed files: the 'wave' column will be adjusted.
     
     Returns the figure instance    
     
@@ -1148,10 +1152,12 @@ def plotquality(ax,
        flux = None,
        flag=['bad','weakzeroth','zeroth','too_bright'],
        colors=['c','y','m','b','r','g','k'],alpha=0.2,
-       quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,'too_bright':True,'first':True},
+       quallegend={'bad':True,'weakzeroth':True,'zeroth':True,'overlap':True,
+           'too_bright':True,'first':True,'good':False},
        marker='x',
        speccolor='b', 
        label=None,
+       lw=1,
        chatter=0):
        """ mark up plot with data quality
        either add vertical greyscale regions in plot for each 
@@ -1181,7 +1187,7 @@ def plotquality(ax,
        -----
        Should add an option to plot quality in a different way. 
        """
-       from .uvotgetspec import quality_flags
+       from uvotpy.uvotgetspec import quality_flags
        
        typeNone = type(None)
        
@@ -1219,6 +1225,8 @@ def plotquality(ax,
                if chatter > 2: print("for quality="+fla+" we get ranges ",vrange)        
                for v1 in vrange: 
                    flab = None
+                   if chatter > 4:
+                       print ("line 1222 %s %s %i\n"%(dolabel,quallegend,fla))
                    if dolabel & quallegend[fla]: 
                       flab = fla
                       dolabel = False
@@ -1228,7 +1236,7 @@ def plotquality(ax,
                        qp = (w >= w[v1[0]]) & (w <= w[v1[1]])
                        # mfc marker face colors
                        ax.plot(w[qp],flux[qp], marker=marker, mfc=colors[k],ms=3,
-                          label=flab,color=speccolor)  
+                          label=flab,color=speccolor,lw=lw)  
        # the algorithm skips two adjacent points which will be ignored.                    
                                       
 def check_flag(quality,flag,chatter=0):
@@ -1447,7 +1455,8 @@ def plot_spectrum(ax,spectrumfile,
         linewidth=1,
         label=None,
         offset=0,offsetfactor=1,
-        ebmv=0.00, Rv=3.1,
+        ebmv=0.00, Rv=3.1, 
+        reddening_law='Pei', reddening='GAL',
         redshift=0.,
         wrange=[1680,6800],
         chatter=0):
@@ -1493,6 +1502,9 @@ def plot_spectrum(ax,spectrumfile,
        the value of E(B-V), and Rv to correct for reddening 
        (requires the photometry2 module)
        default: no reddening
+    reddening_law: ['Pei','Cardelli']  
+    reddening: ['GAL','LMC','SMC'] 
+       only for reddening_law = 'Pei' 
     redshift: float
        z value   
     offset: float
@@ -1509,7 +1521,7 @@ def plot_spectrum(ax,spectrumfile,
     import numpy as np
     from stsci.convolve import boxcar
     try:
-       from photometry2 import Cardelli
+       from photometry2 import Cardelli, Pei
     except: pass
      
     if type(ax) != 'matplotlib.axes.AxesSubplot' :
@@ -1535,7 +1547,11 @@ def plot_spectrum(ax,spectrumfile,
         if type(label) == type(None):   # default label
            label = f[1].header['date-obs']
         if ebmv != 0.:
-           X = Cardelli(wave=w*1e-4,Rv=Rv)
+           X = 0.
+           if reddening_law == 'Cardelli':
+              X = Cardelli(wave=w*1e-4,Rv=Rv)
+           elif reddening_law == 'Pei':
+              X = Pei(etype=reddening,wave=w*1e-4,Rv=Rv)
         else: 
            X = 0. 
         flx = flx*10**(0.4*X*ebmv)
@@ -1558,13 +1574,14 @@ def plot_spectrum(ax,spectrumfile,
                     qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
                     ax.plot(w[rr[0]:rr[1]][qw],
                         boxcar( flx[rr[0]:rr[1]],(smooth,))[qw],
-                        color=speccolor,
+                        color=speccolor,linewidth=linewidth,
                         label=label)
                     first = False
                 else:
                     qw = (w[rr[0]:rr[1]] > wrange[0]) & (w[rr[0]:rr[1]] < wrange[1])
                     ax.plot(w[rr[0]:rr[1]][qw],
                          boxcar(flx[rr[0]:rr[1]],(smooth,))[qw],
+                         linewidth=linewidth,
                          color=speccolor)
                 if errhaze:
                     smi = np.int( 5*smooth )
@@ -1602,7 +1619,11 @@ def plot_spectrum(ax,spectrumfile,
         w = f['SUMMED_SPECTRUM'].data['wave']/(1+redshift)
         qw = (w > wrange[0]) & (w < wrange[1])
         if ebmv != 0.:
-           X = Cardelli(wave=w*1e-4,Rv=Rv)
+           X = 0.
+           if reddening_law == 'Cardelli':
+              X = Cardelli(wave=w*1e-4,Rv=Rv)
+           elif reddening_law == 'Pei':
+              X = Pei(etype=reddening,wave=w*1e-4,Rv=Rv)
         else: 
            X = 0. 
         flx = (boxcar(f['SUMMED_SPECTRUM'].data['flux'],(smooth,))+offset)*offsetfactor*10**(0.4*X*ebmv)
@@ -1617,10 +1638,10 @@ def plot_spectrum(ax,spectrumfile,
             q = sector[qw] == s
             if not errbars:
                 if first:
-                    ax.plot(w[qw][q],flx[qw][q],label=label,color=speccolor)
+                    ax.plot(w[qw][q],flx[qw][q],label=label,color=speccolor,linewidth=linewidth,)
                     first = False
                 else:
-                    ax.plot(w[qw][q],flx[qw][q],color=speccolor)       
+                    ax.plot(w[qw][q],flx[qw][q],color=speccolor,linewidth=linewidth,)       
                 if errhaze:
                     flxlower=flx[qw][q]-err[qw][q]
                     flxlower[flxlower <= 0] = 1e-27
