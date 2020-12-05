@@ -478,8 +478,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    smooth=50
    testparam=None
    msg = "" ; msg2 = "" ; msg4 = ""
-   attime = datetime.datetime.now()
-   logfile = 'uvotgrism_'+obsid+'_'+str(ext)+'_'+'_'+attime.isoformat()[0:19]+'.log'
+   attime = str(datetime.datetime.now())
+   logfile = 'uvotgrism_'+obsid+'_'+str(ext)+'.log'#'_'+'_'+attime.isoformat()[0:19]+'.log'
    if type(fluxcalfile) == bool: fluxcalfile = None
    tempnames.append(logfile)
    tempntags.append('logfile')
@@ -1456,7 +1456,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             plt.ylabel(u'1st order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
             # find reasonable limits flux 
             qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
-            if qf > 2e-12: qf = 2e-12
+            if np.isnan(qf) | (qf > 2e-12): qf = 2e-12
             plt.ylim(0.001*qf,1.2*qf)
             plt.xlim(1600,6000)
 
