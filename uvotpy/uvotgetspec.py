@@ -1238,7 +1238,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #if highlight: plt.contour(net,levels=levels,extent=(ac,ac+extimg.shape[1],0,extimg.shape[0]))
          #  cross_section_plot: 
          cp2 = cp2/np.max(cp2)*100
-         plt.plot(ac+cp2+ank_c[1],np.arange(len(cp2)),'k',lw=2,alpha=0.6,ls='steps')
+         plt.plot(ac+cp2+ank_c[1],np.arange(len(cp2)),'k',lw=2,alpha=0.6,drawstyle='steps')
          # plot zeroth orders
          if not skip_field_src:
             pivot= np.array([ank_c[1],ank_c[0]-offset])
@@ -1304,16 +1304,16 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          plt.rcParams['legend.fontsize'] = 'small'
          if curved == 'straight':
             p1, = plt.plot( dis[ank_c[2]:ank_c[3]], spnet[ank_c[2]:ank_c[3]],'k',
-                      ls='steps',lw=0.5,alpha=0.5,label='straight')
+                      drawstyle='steps',lw=0.5,alpha=0.5,label='straight')
             p2, = plt.plot( dis[ank_c[2]:ank_c[3]], 
                       spextwidth*(bg1[ank_c[2]:ank_c[3]]+bg2[ank_c[2]:ank_c[3]])*0.5, 
                       'b',alpha=0.5,label='background')
             plt.legend([p1,p2],['straight','background'],loc=0,)
          
          if curved != "straight":
-            p3, = plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'r',ls='steps',label='spectrum')             
-            plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'k',alpha=0.2,ls='steps',label='_nolegend_')       
-            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.5,lw=1.1,ls='steps',label='background') 
+            p3, = plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'r',drawstyle='steps',label='spectrum')             
+            plt.plot(x[q1[0]],(sp_first-bg_first)[q1[0]],'k',alpha=0.2,drawstyle='steps',label='_nolegend_')       
+            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.5,lw=1.1,drawstyle='steps',label='background') 
             #    bad pixels:        
             qbad = np.where(quality[q1[0]] > 0)
             p4, = plt.plot(x[qbad],(sp_first-bg_first)[qbad],'xk',markersize=4)
@@ -1324,9 +1324,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             topcnt = 1.2 * np.max([np.max(spnet[q1[0]]),maxbg, np.max((sp_first-bg_first)[q1[0]])])
             plt.ylim(np.max([ -20, np.min((sp_first-bg_first)[q1[0]])]), np.min([topcnt, maxcounts]))
          if optimal_extraction:
-            p5, = plt.plot(x[q1[0]],counts[1,q1[0]],'g',alpha=0.5,ls='steps',lw=1.2,label='optimal' )
-            p6, = plt.plot(x[q1[0]],counts[1,q1[0]],'k',alpha=0.5,ls='steps',lw=1.2,label='_nolegend_' )
-            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.7,lw=1.1,ls='steps',label='background')            
+            p5, = plt.plot(x[q1[0]],counts[1,q1[0]],'g',alpha=0.5,drawstyle='steps',lw=1.2,label='optimal' )
+            p6, = plt.plot(x[q1[0]],counts[1,q1[0]],'k',alpha=0.5,drawstyle='steps',lw=1.2,label='_nolegend_' )
+            p7, = plt.plot(x[q1[0]], bg_first[q1[0]],'y',alpha=0.7,lw=1.1,drawstyle='steps',label='background')            
             plt.legend([p3,p5,p7],['spectrum','optimal','background'],loc=0,)
             topcnt = 1.2 * np.max((sp_first-bg_first)[q1[0]])       
             ylim1,ylim2 = -10,  np.min([topcnt, maxcounts])
@@ -1352,13 +1352,13 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                   np.min([np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
             plt.xlim(ank_c[2]-ank_c[1],ank_c[3]-ank_c[1])
             if optimal_extraction:
-               p3, = plt.plot(x[q2[0]],counts[2,q2[0]],'g',alpha=0.5,ls='steps',label='optimal' )
+               p3, = plt.plot(x[q2[0]],counts[2,q2[0]],'g',alpha=0.5,drawstyle='steps',label='optimal' )
                plt.legend((p1,p7,p2,p3),('spectrum','background','suspect','optimal',),loc=2)
                #plt.ylim(np.max([ -10,np.min(counts[2,q2[0]]), np.min((sp_second-bg_second)[q2[0]])]),\
                #   np.min([np.max(counts[2,q2[0]]), np.max((sp_second-bg_second)[q2[0]]), maxcounts]))
                plt.ylim( ylim1,ylim2 )
          if predict2nd :
-               p4, = plt.plot(dis2p+dist12,flux2p, ls='steps',label='predicted')
+               p4, = plt.plot(dis2p+dist12,flux2p, drawstyle='steps',label='predicted')
                p5, = plt.plot(dis2p[np.where(qual2p != 0)]+dist12,flux2p[np.where(qual2p != 0)],'+k',label='suspect',markersize=4)         
                if optimal_extraction & fit_second:
                   plt.legend((p1,p2,p3,p4,p5),('curved','suspect','optimal','predicted','suspect'),loc=2)
@@ -1395,7 +1395,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                plt.ylim(np.max([ -100, np.min((sp_second-bg_second)[q3[0]])]),\
                   np.min([np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
             if optimal_extraction:
-               p4, = plt.plot(x[q3[0]],counts[3,q3[0]],'b',alpha=0.5,ls='steps',label='optimal' )
+               p4, = plt.plot(x[q3[0]],counts[3,q3[0]],'b',alpha=0.5,drawstyle='steps',label='optimal' )
                plt.legend([p1,p3,p2,p4],['spectrum','background','suspect','optimal',],loc=2)
                #plt.ylim(np.max([ -100,np.min(counts[3,q3[0]]), np.min((sp_second-bg_second)[q3[0]])]),\
                #   np.min([np.max(counts[3,q3[0]]), np.max((sp_third-bg_third)[q3[0]]), maxcounts]))
@@ -1473,8 +1473,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                anker=anker, #option=1, fudgespec=1.32,
                frametime=framtime, 
                debug=False,chatter=1)
-            p3, = plt.plot(wav1, flux1,'g',alpha=0.5,ls='steps',lw=2,label='optimal' )
-            p4, = plt.plot(wav1,flux1,'k',alpha=0.5,ls='steps',lw=2,label='_nolegend_' )
+            p3, = plt.plot(wav1, flux1,'g',alpha=0.5,drawstyle='steps',lw=2,label='optimal' )
+            p4, = plt.plot(wav1,flux1,'k',alpha=0.5,drawstyle='steps',lw=2,label='_nolegend_' )
             plt.legend([p1,p2,p3],['curved','suspect','optimal'],loc=0,)
 
             qf = (flux1 > 0.) & (flux1 < 1.0e-11)
@@ -1824,7 +1824,7 @@ def extractSpecImg(file,ext,anker,angle,anker0=None,anker2=None, anker3=None,\
                y_default=int(offsetlimit[0]+0.5)  # round to nearest pixel
            else: 
                raise IOError("parameter offsetlimit[0]=%i, must be in range [51,149]."+
-               "\nIs the aspect correction right (in reference images)?"%(offsetlimit[0]))        
+               f"\n{offsetlimit[0]} the aspect correction right (in reference images)?")        
            if offsetlimit[1] < 1:
                fixoffset = offsetlimit[0]-100
            else:  
@@ -8266,8 +8266,8 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                   ax1.set_xlabel('wavelength in $\AA$')
                   
                   ax2 = fig.add_subplot(2,1,2)
-                  ax2.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
-                  if do_COI: ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
+                  ax2.plot(W[q],FL[q],drawstyle='steps',label='QUALITY FLAG')
+                  if do_COI: ax2.plot(W[q],COI[q],drawstyle='steps',label='COI-FACTOR')
                   ax2.legend(loc=0)
                   ax2.set_xlabel('wavelength in $\AA$')
                   
@@ -8356,10 +8356,10 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                while OK: 
                   fig1.clf()
                   ax = fig1.add_subplot(111)
-                  ax.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference')     
+                  ax.plot(refW[q],refF[q],'k',lw=1.5,drawstyle='steps',label='wavelength reference')     
                   ax.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.1) 
                   
-                  ax.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift')          
+                  ax.plot(W[p]+sh,F[p],'b',drawstyle='steps',label='spectrum to shift')          
                   ax.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.1)
                   
                   ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum')                           
