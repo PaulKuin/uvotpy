@@ -103,7 +103,7 @@ def get_tck(invert=True):
     """
     # to re-derive the coefficients, use distortfit.py
     # a somewhat smoother set of coefficents smo=200 in x,y 
-    # has a slightly worse fit to the input in places
+    #has a slightly worse fit to the input in places
     # using the optimum smoothing of the Dierkx Bspline algorithm 
     # gives errors of about 4 pixels. That may be the error 
     # as out fit has been forced to follow the input data 
