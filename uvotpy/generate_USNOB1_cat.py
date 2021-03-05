@@ -3,13 +3,29 @@ from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy import table
-import numpy as np
+import astropy
+
 
 usnob_cat = Vizier.find_catalogs('USNO-B1.0')
 
-def get_usnob1_cat(ra, dec, blim):
-    ra_u = ra*u.degree
-    dec_u = dec*u.degree
+def get_usnob1_cat(ra, dec, blim,radius=15.0*u.arcmin):
+    """
+    Assume that the ra,dec are given as float parameters in units of deg
+    
+    if (type(ra) == float) & (type(dec) == float):
+       ra_u = ra*u.degree
+       dec_u = dec*u.degree
+    elif (type(ra) == np.float64) & (type(dec) == np.float64):
+       ra_u = ra*u.degree
+       dec_u = dec*u.degree
+    elif hasattr(ra,'to'):  
+       ra_u = ra.to(u.deg)
+       dec_u = dec.to(u.deg)  
+    else:
+       raise IOError(f"ra,dec not in correct format\n") 
+    """     
+    ra_u = ra * u.deg
+    dec_u = dec * u.deg
     coords = SkyCoord(ra_u, dec_u, frame='icrs') #Should this be ICRS or FK5
     #Only Class 0 (stars) - unable to implement this at the current time. Need to understand
     #USNO-B1 s/g classification
@@ -19,7 +35,7 @@ def get_usnob1_cat(ra, dec, blim):
                 row_limit=500000,
                column_filters={"B2mag":">6", 'B2mag':'<{}'.format(blim)}) #B2mag fainter than 6, brighter than blim
     new_table_list = v.query_region(coords, 
-                                 radius=900*u.arcsecond, #Search 900 arcseconds
+                                 radius=radius, #Search 900 arcseconds
                                  catalog = 'I/284')
     if len(new_table_list) ==0:
         return None
@@ -72,3 +88,6 @@ def get_gaiadr2(ra, dec, blim):
     new_table.sort('_r')
     if len(new_table) > 5000:
         new_table.remove_rows(np.arange(5001, len(new_table)))
+    # unfinished subroutine 
+    
+    
