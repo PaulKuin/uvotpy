@@ -479,9 +479,12 @@ def photometry(obsid,
                   if chatter > 0:
                      sys.stderr.write( "there seems to be a problem writing: %s\n"%( obj ))
                   pass
-               if chatter > 0 : print (f"... outputting result for {obsid}+{ext}\n")   
-               magfh.write("%12.5f %7.3f %5.3f %5.3f %6s %11.1f %11s %11s %2i %7.4f\n"%
+               if chatter > 0 : print (f"... outputting result for {obsid}+{ext}\n") 
+               try:  
+                 magfh.write("%12.5f %7.3f %5.3f %5.3f %6s %11.1f %11s %11s %2i %7.4f\n"%
                      (MJD,mag,err,syserr,fi,tsta,datobs[0:16],obsid,ext,lss))
+               except:
+                 raise RuntimeError("Failed to write result to file.\n")      
                magff = _mag_to_fitsout(magff, obj['band'], mag, err,tsta, datobs[0:16],\
                       obsid,ext,extnam,MJD,lss,syserr,chatter=chatter)
 
