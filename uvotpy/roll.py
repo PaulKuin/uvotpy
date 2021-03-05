@@ -70,7 +70,7 @@ def optimum_roll(ra,dec,utime):
         newroll = newroll/dtor
     else:
         # roll is not uniquely defined, arbitrarily pick 0.0 or 180.0
-        newroll = 0
+        newroll = 0.
         if (vSun[0]*(-cos(newroll)*sin(dec)*cos(ra) - sin(newroll)*sin(ra))
             + vSun[1]*(-cos(newroll)*sin(dec)*sin(ra) + sin(newroll)*cos(ra))
             + vSun[2]*cos(newroll)*cos(dec) < 0.0):
@@ -92,7 +92,7 @@ day = lt[7]
 #dec = -29*dtor
 
 rollcons = 9.5
-suncons = 45
+suncons = 45.
 
 def table(ra,dec,year=year,startday=0,endday=265):
     """ Produce a table of approximate roll ranges for Swift observation of a target 
@@ -122,5 +122,15 @@ def table(ra,dec,year=year,startday=0,endday=265):
             print("%3d %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f"%(i,sra/dtor,sdec/dtor,
               sundist/dtor,oroll/dtor,oroll/dtor-roll_range,oroll/dtor+roll_range))
 
-
-
+def forday(ra,dec,year=year,day=0):
+    ra = ra*dtor
+    dec = dec*dtor
+    now = ICSdateconv("%s-%03d-00:00:00"%(year,day))
+    sra,sdec = sunradec(now)
+    oroll = optimum_roll(ra,dec,now)
+    sundist = ephem.separation([ra,dec],[sra,sdec])
+    roll_range = rollcons/numpy.sin(sundist)
+    return {'valid_sun_dist':sundist/dtor > suncons,'day':day,'sun_ra_deg':sra/dtor,'sun_dec_deg':sdec/dtor,\
+           'sun_dist_deg':sundist/dtor,'sun_limit_deg':suncons,\
+           'roll':oroll/dtor,'min_roll':oroll/dtor-roll_range,\
+           'max_roll':oroll/dtor+roll_range}
