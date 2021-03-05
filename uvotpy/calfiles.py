@@ -236,12 +236,19 @@ class WaveCal(Caldb):
     def __init__(self, grismmode=None, wheelpos=None, msg="", 
          use_caldb=False,
          mode = 'bilinear', #'bisplines',
+         _flimit=0.19, # do not change unless you know what you do
+         _fail_or_report=True,
          chatter=0 ):
 
         self.N1 = 0
+        self.niter = 0
         self.msg = msg
+        self._flimit = _flimit
+        #if fail has been unset, then returns "None" values when no solution can be found.
+        self.fail = _fail_or_report == True 
         self.phipos = None
         self.use_caldb = use_caldb
+        self.status = 0 # good
         self.calfilepath = None
         self.pixelscale = 0.54 # arcsec per pixel on grism (used in my calibration; Wayne used 0.56)
         self.subpixsize = 0.0001394444 # 0.502 arcsec/pix on lenticular/ 3600 to degrees 
@@ -295,6 +302,7 @@ class WaveCal(Caldb):
         ==========
         sporder: int [1,2]
            returns for the first or second order only
+           if fail unset, then returns None values when no solution can be found.
         offsetdelta : astropy Quantity, list of length 2, optional
            delta-X, delta-Y coordinate for offset (in pixels)
            
@@ -303,8 +311,12 @@ class WaveCal(Caldb):
             self.offsetdelta = offsetdelta.to(units.arcsec).value*self.pixelscale
         else:    
             self.offsetdelta = offsetdelta  # offset from boresight 
+        if not np.isscalar(self.offsetdelta[0]):
+            if len(np.asarray(self.offsetdelta[0]).shape) > 1:
+                raise IOError("calfiles.WaveCal.disp can only be called for one offset at a time.")    
         #       [delta X, delta Y] (subpixels) in detector coordinates  
         self._interpolate_anchor()
+        #if status == 0:
         if sporder == 1: return self.anchor1
         elif sporder == 2: return self.anchor2
         else: return [self.anchor1],[self.anchor2] 
@@ -318,13 +330,16 @@ class WaveCal(Caldb):
         Parameters
         ==========
         offsetdelta : astropy Quantity, list of length 2, optional
-           delta-X, delta-Y coordinate for offset (in pixels)
+           delta-X, delta-Y coordinate for offset from anchor/pointing (in pixels)
         """
         if hasattr(offsetdelta,'to'):
             self.offsetdelta = offsetdelta.to(units.arcsec).value*self.pixelscale
         else:    
-            self.offsetdelta = offsetdelta  # offset from boresight 
-        #       [delta X, delta Y] (subpixels) in detector coordinates  
+            self.offsetdelta = offsetdelta  # offset from boresight (value)
+        if not np.isscalar(self.offsetdelta[0]):
+            if len(np.asarray(self.offsetdelta[0]).shape)  > 1:
+                raise IOError("calfiles.WaveCal.theta can only be called for one offset at a time.")    
+        #       [delta X, delta Y] (subpixels) in lent detector coordinates  
         self._interpolate_theta()
         return self.thetavalue * units.deg
         
@@ -345,14 +360,19 @@ class WaveCal(Caldb):
             self.offsetdelta = offsetdelta.to(unitd.arcsec).value*self.pixelscale
         else:    
             self.offsetdelta = offsetdelta  # offset from boresight 
+        if not np.isscalar(self.offsetdelta[0]):
+            if len(np.asarray(self.offsetdelta[0]).shape)  > 1:
+                raise IOError("calfiles.WaveCal.disp can only be called for one offset at a time.")    
         #       [delta X, delta Y] (subpixels) in detector coordinates  
         self._interpolate_dispersion()
+        #if status == 0:
         if sporder == 1: return self.coef1
         elif sporder == 2: return self.coef2
         else: return self.coef1, self.coef2
    
 
     def _read_wavecalfile(self,): 
+         _flimit = self._flimit
          cal = fits.open(self.calfilepath)
          if self.chatter > 0: 
              print("opening the wavelength calibration file: %s"%(self.calfilepath))
@@ -406,12 +426,16 @@ class WaveCal(Caldb):
         return cal[1].data
 
     def _offset2phi(self,):
+        # input is the offset of the target from the anchor in the lenticular filter
+        # offset in number of subpixels ; 
+        # phipos in  units of degrees
         dx,dy = self.offsetdelta
         self.phipos = dx*self.subpixsize, dy*self.subpixsize 
         return self.phipos 
         
-    def _phi2offset(self,): 
-        x,y = self.phipos     
+    def _phi2lfilter_offset(self,): 
+        # iinnverse of _offset2phi
+        x,y = self.field    
         x = x/self.subpixsize
         y = y/self.subpixsize
         return x, y
@@ -424,7 +448,9 @@ class WaveCal(Caldb):
         
         """
         from scipy import interpolate
+        import numpy as np
         #
+        _flimit = self._flimit
         msg = self.msg
         N1 = self.N1
         rx, ry = self._offset2phi() # assume rx as well as ry are floats.   
@@ -435,11 +461,11 @@ class WaveCal(Caldb):
         #
         xfp = xf[0,:]
         yfp = yf[:,0]
-        if ((rx < min(xfp)) ^ (rx > max(xfp))):
+        if ((rx < np.min(xfp)) ^ (rx > max(xfp))):
            inXfp = False
         else:
            inXfp = True
-        if ((ry < min(yfp)) ^ (ry > max(yfp))):
+        if ((ry < np.min(yfp)) ^ (ry > max(yfp))):
            inYfp = False
         else:
            inYfp = True         
@@ -447,26 +473,26 @@ class WaveCal(Caldb):
         #    lower corner (ix,iy)
         # 
         if inXfp :
-           ix  = max( np.where( rx >= xf[0,:] )[0] ) 
-           ix_ = min( np.where( rx <= xf[0,:] )[0] ) 
+           ix  = np.max( np.where( rx >= xf[0,:] )[0] ) 
+           ix_ = np.min( np.where( rx <= xf[0,:] )[0] ) 
         else:
-           if rx < min(xfp): 
+           if rx < np.min(xfp): 
                ix = ix_ = 0
                if self.chatter > 0: 
                    print("WARNING: point has xfield lower than calfile provides")
-           if rx > max(xfp): 
+           if rx > np.max(xfp): 
                ix = ix_ = N1-1   
                if self.chatter > 0:
                    print("WARNING: point has xfield higher than calfile provides")
         if inYfp :   
-            iy  = max( np.where( ry >= yf[:,0] )[0] ) 
-            iy_ = min( np.where( ry <= yf[:,0] )[0] ) 
+            iy  = np.max( np.where( ry >= yf[:,0] )[0] ) 
+            iy_ = np.min( np.where( ry <= yf[:,0] )[0] ) 
         else:
-            if ry < min(yfp): 
+            if ry < np.min(yfp): 
                 iy = iy_ = 0
                 if self.chatter > 0:
                     print ("WARNING: point has yfield lower than calfile provides")
-            if ry > max(yfp): 
+            if ry > np.max(yfp): 
                 iy = iy_ = 27   
                 if self.chatter > 0:
                     print("WARNING: point has yfield higher than calfile provides")
@@ -534,23 +560,23 @@ class WaveCal(Caldb):
      
               # find the dispersion
       
-              tck = interpolate.bisplrep(xf, yf, c10,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+              tck = interpolate.bisplrep(xf, yf, c10,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
               c10i = interpolate.bisplev(rx,ry, tck)
-              tck = interpolate.bisplrep(xf, yf, c11,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+              tck = interpolate.bisplrep(xf, yf, c11,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
               c11i = interpolate.bisplev(rx,ry, tck)
-              tck = interpolate.bisplrep(xf, yf, c12,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+              tck = interpolate.bisplrep(xf, yf, c12,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
               c12i = interpolate.bisplev(rx,ry, tck)
-              tck = interpolate.bisplrep(xf, yf, c13,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+              tck = interpolate.bisplrep(xf, yf, c13,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
               c13i = interpolate.bisplev(rx,ry, tck)
-              tck = interpolate.bisplrep(xf, yf, c14,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+              tck = interpolate.bisplrep(xf, yf, c14,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
               c14i = interpolate.bisplev(rx,ry, tck)
       
               if ((ix == N1-1) ^ (iy == 0)):
-                  tck = interpolate.bisplrep(xf, yf, c20,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+                  tck = interpolate.bisplrep(xf, yf, c20,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
                   c20i = interpolate.bisplev(rx,ry, tck)
-                  tck = interpolate.bisplrep(xf, yf, c21,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+                  tck = interpolate.bisplrep(xf, yf, c21,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
                   c21i = interpolate.bisplev(rx,ry, tck)
-                  tck = interpolate.bisplrep(xf, yf, c22,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
+                  tck = interpolate.bisplrep(xf, yf, c22,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
                   c22i = interpolate.bisplev(rx,ry, tck)
               else:
                   c20i = c21i = c22i = np.NaN 
@@ -561,8 +587,13 @@ class WaveCal(Caldb):
                   print(" no second order extracted ")
               else:   
                       print('getCalData. dispersion second order = ', c20i,c21i, c22i)
-          except:   
-              raise RuntimeError("interpolation of wavecal data failed - ABORTING")   
+          except: 
+              if self.fail:  
+                  raise RuntimeError("interpolation of wavecal data failed - ABORTING") 
+              else: 
+                  self.status = -1      
+                  c14i,c13i,c12i,c11i,c10i = None, None, None, None, None
+                  c22i,c21i,c20i = None, None, None
                 
         else: 
         # 
@@ -578,33 +609,33 @@ class WaveCal(Caldb):
                kx = ky = 3
                s = None    
            if self.mode == 'bisplines':
-              # compute the Bivariate-spline coefficients
-              # kx = ky =  3 # cubic splines (smoothing) and =1 is linear
-              task = 0 # find spline for given smoothing factor
-              #  s = 0 # 0=spline goes through the given points
-              # eps = 1.0e-6  (0 < eps < 1)
-              m = N1*N1
-              if self.chatter > 3: print('\n getCalData. splines ') 
-              qx = qy = np.where( (np.isfinite(xf.reshape(m))) & (np.isfinite(yf.reshape(m)) ) )
+               # compute the Bivariate-spline coefficients
+               # kx = ky =  3 # cubic splines (smoothing) and =1 is linear
+               task = 0 # find spline for given smoothing factor
+               #  s = 0 # 0=spline goes through the given points
+               # eps = 1.0e-6  (0 < eps < 1)
+               m = N1*N1
+               if self.chatter > 3: print('\n getCalData. splines ') 
+               qx = qy = np.where( (np.isfinite(xf.reshape(m))) & (np.isfinite(yf.reshape(m)) ) )
              
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c10.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c10i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c11.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c11i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c12.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c12i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c13.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c13i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c14.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c14i = interpolate.bisplev(rx,ry, tck)
-              if self.chatter > 2: print('getCalData. dispersion first order = ',c10i,c11i,c12i,c13i,c14i)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c20.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c20i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c21.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c21i = interpolate.bisplev(rx,ry, tck)
-              tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c22.reshape(m),xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
-              c22i = interpolate.bisplev(rx,ry, tck)
-              if self.chatter > 2: print('getCalData. dispersion second order = ', c20i,c21i, c22i)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c10.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c10i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c11.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c11i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c12.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c12i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c13.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c13i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c14.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c14i = interpolate.bisplev(rx,ry, tck)
+               if self.chatter > 2: print('getCalData. dispersion first order = ',c10i,c11i,c12i,c13i,c14i)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c20.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c20i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c21.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c21i = interpolate.bisplev(rx,ry, tck)
+               tck  = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], c22.reshape(m),xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
+               c22i = interpolate.bisplev(rx,ry, tck)
+               if self.chatter > 2: print('getCalData. dispersion second order = ', c20i,c21i, c22i)
            #
            elif self.mode == 'bilinear':
                c10i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), c10 )
@@ -632,11 +663,13 @@ class WaveCal(Caldb):
         if outside wavecal area: extrapolate; select the useful values only         
         """
         from scipy import interpolate
+        import numpy as np
         #
+        _flimit = self._flimit
         N1 = self.N1
-        rx, ry = self._offset2phi() # assume rx as well as ry are floats.   
-        xf, yf = self.field   # array of field coordinates
-        xp1, yp1 = self.xp1, self.yp1
+        rx, ry = self._offset2phi() # assume rx as well as ry are floats.  
+        xf, yf = np.asarray(self.field[0]),  np.asarray(self.field[1]) # array of field coordinates
+        xp1, yp1 = np.asarray(self.xp1), np.asarray(self.yp1)
         c1n = self.coef1list[5]
         th = self.thetalist
         msg = self.msg
@@ -645,11 +678,11 @@ class WaveCal(Caldb):
         #
         xfp = xf[0,:]
         yfp = yf[:,0]
-        if ((rx < min(xfp)) ^ (rx > max(xfp))):
+        if ((rx < np.min(xfp)) or (rx > np.max(xfp))):
            inXfp = False
         else:
            inXfp = True
-        if ((ry < min(yfp)) ^ (ry > max(yfp))):
+        if ((ry < np.min(yfp)) or (ry > np.max(yfp))):
            inYfp = False
         else:
            inYfp = True         
@@ -657,29 +690,29 @@ class WaveCal(Caldb):
         #    lower corner (ix,iy)
         # 
         if inXfp :
-           ix  = max( np.where( rx >= xf[0,:] )[0] ) 
-           ix_ = min( np.where( rx <= xf[0,:] )[0] ) 
+           ix  = np.max( np.where( rx >= xf[0,:] )[0] ) 
+           ix_ = np.min( np.where( rx <= xf[0,:] )[0] ) 
         else:
-           if rx < min(xfp): 
+           if rx < np.min(xfp): 
                ix = ix_ = 0
                if self.chatter > 0: 
-                   print("WARNING: point has xfield lower than calfile provides")
-           if rx > max(xfp): 
+                   print(f"WARNING: point has xfield rx={rx} lower than calfile provides")
+           if rx > np.max(xfp): 
                ix = ix_ = N1-1   
                if self.chatter > 0:
-                   print("WARNING: point has xfield higher than calfile provides")
+                   print(f"WARNING: point has xfield rx={rx} higher than calfile provides")
         if inYfp :   
-            iy  = max( np.where( ry >= yf[:,0] )[0] ) 
-            iy_ = min( np.where( ry <= yf[:,0] )[0] ) 
+            iy  = np.max( np.where( ry >= yf[:,0] )[0] ) 
+            iy_ = np.min( np.where( ry <= yf[:,0] )[0] ) 
         else:
-            if ry < min(yfp): 
+            if ry < np.min(yfp): 
                 iy = iy_ = 0
                 if self.chatter > 0:
-                    print("WARNING: point has yfield lower than calfile provides")
-            if ry > max(yfp): 
+                    print(f"WARNING: point has yfield ry={ry} lower than calfile provides")
+            if ry > np.max(yfp): 
                 iy = iy_ = 27   
                 if self.chatter > 0:
-                    print("WARNING: point has yfield higher than calfile provides")
+                    print(f"WARNING: point has yfield ry={ry} higher than calfile provides")
         if inYfp & inXfp & (self.chatter > 3): 
            print('waveCal.   extrapolate               rx,         ry,     Xank,        Yank ')
            print(ix, ix_, iy, iy_)
@@ -691,12 +724,12 @@ class WaveCal(Caldb):
         #  first block deals with offset point outside wavecal area
         #  i.e., exception at outer grid edges: 
         #
-        if ((ix == N1-1) ^ (iy == N1-1) ^ (ix_ == 0) ^ (iy_ == 0)):
+        if ((ix == N1-1) or (iy == N1-1) or (ix_ == 0) or (iy_ == 0)):
            
           # select only coefficient with order 4 (or 3 for wheelpos=955)
           if self.chatter > 0:
               print("WARNING: anchor point is outside the calibration array: extrapolating theta") 
-          msg += "WARNING: anchor point is outside the wavecal area: extrapolating theta"
+          msg += "WARNING: anchor point is outside the wavecal area: extrapolating theta\n"
           try: 
               if self.wheelpos == 955 :
                   q4 = np.where( c1n.flatten() == 3 )
@@ -706,15 +739,22 @@ class WaveCal(Caldb):
                   th  = self.thetalist.flatten()[q4]
       
               # find the angle  
-      
-              tck = interpolate.bisplrep(xf, yf, th,xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=3,ky=3,s=None) 
-              thi = interpolate.bisplev(rx,ry, tck)
-      
+              # 21/02/16 problem: bi-spline since xf, yf dim = 28x28, but th flattened. 
+              # Does not work
+              # change to nearest grid point
+              #tck = interpolate.bisplrep(xf, yf, th,xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=3,ky=3,s=None) 
+              #thi = interpolate.bisplev(rx,ry, tck)
+              xx9 = np.swapaxes(np.array([xf.flatten(),yf.flatten()]),1,0)
+              yy9 = self.thetalist.flatten()
+              thi = interpolate.griddata(xx9,yy9,np.array([rx,ry]),
+                           method='nearest',fill_value=np.nan,rescale=False)
+              if not np.isscalar(thi):
+                  thi=thi[0]
               if self.chatter > 2: 
-                  print('waveCal. bicubic extrapolation  ') 
+                  print('waveCal. nearest grid point ') 
                   print('waveCal. angle theta = %7.1f ' % (thi ))
           except:   
-              raise RuntimeError("interpolation of wavecal data failed - ABORTING")   
+              raise RuntimeError(f"interpolation of wavecal data at ({rx},{ry}) failed - ABORTING")   
                 
         else: 
         # 
@@ -734,13 +774,13 @@ class WaveCal(Caldb):
               m = N1*N1
               qx = qy = np.where( (np.isfinite(xf.reshape(m))) & (np.isfinite(yf.reshape(m)) ) )
               tck3 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], th.reshape(m),
-                  xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s)
+                  xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s)
               thi  = interpolate.bisplev(rx,ry, tck3)
            #
            elif self.mode == 'bilinear':
                #  reduce arrays to section surrounding point and interpolate
                thi  = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), th  )
-               if self.chatter > 1: 
+               if self.chatter > 2: 
                    print('waveCal. bilinear interpolation') 
                    print('waveCal. angle theta = %7.1f ' % (thi ))
         # only theta for the first order is available         
@@ -756,7 +796,9 @@ class WaveCal(Caldb):
                 
         """
         from scipy import interpolate
+        import numpy as np
         #
+        _flimit = self._flimit
         msg = self.msg
         N1 = self.N1
         rx, ry = self._offset2phi() # assume rx as well as ry are floats.   
@@ -770,11 +812,11 @@ class WaveCal(Caldb):
         #
         xfp = xf[0,:]
         yfp = yf[:,0]
-        if ((rx < min(xfp)) ^ (rx > max(xfp))):
+        if ((rx < np.min(xfp)) ^ (rx > np.max(xfp))):
            inXfp = False
         else:
            inXfp = True
-        if ((ry < min(yfp)) ^ (ry > max(yfp))):
+        if ((ry < np.min(yfp)) ^ (ry > np.max(yfp))):
            inYfp = False
         else:
            inYfp = True         
@@ -782,28 +824,28 @@ class WaveCal(Caldb):
         #    lower corner (ix,iy)
         # 
         if inXfp :
-           ix  = max( np.where( rx >= xf[0,:] )[0] ) 
-           ix_ = min( np.where( rx <= xf[0,:] )[0] ) 
+           ix  = np.max( np.where( rx >= xf[0,:] )[0] ) 
+           ix_ = np.min( np.where( rx <= xf[0,:] )[0] ) 
         else:
-           if rx < min(xfp): 
+           if rx < np.min(xfp): 
                ix = ix_ = 0
                if self.chatter > 0: 
                    print("WARNING: point has xfield lower than calfile provides")
-           if rx > max(xfp): 
+           if rx > np.max(xfp): 
                ix = ix_ = N1-1   
                if self.chatter > 0:
                    print("WARNING: point has xfield higher than calfile provides")
         if inYfp :   
-            iy  = max( np.where( ry >= yf[:,0] )[0] ) 
-            iy_ = min( np.where( ry <= yf[:,0] )[0] ) 
+            iy  = np.max( np.where( ry >= yf[:,0] )[0] ) 
+            iy_ = np.min( np.where( ry <= yf[:,0] )[0] ) 
         else:
-            if ry < min(yfp): 
+            if ry < np.min(yfp): 
                 iy = iy_ = 0
                 if self.chatter > 0:
                     print("WARNING: point has yfield lower than calfile provides")
-            if ry > max(yfp): 
+            if ry > np.max(yfp): 
                 iy = iy_ = 27   
-                if self.chatter > 0:
+                if self.chatter > 1:
                      print("WARNING: point has yfield higher than calfile provides")
         if inYfp & inXfp & (self.chatter > 3): 
            print('getCalData.                             rx,         ry,     Xank,        Yank ')
@@ -855,25 +897,29 @@ class WaveCal(Caldb):
               
               anker  = np.zeros(2)
               anker2 = np.zeros(2)
-              tck1x = interpolate.bisplrep(xf, yf, xp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
-              tck1y = interpolate.bisplrep(xf, yf, yp1, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
-              tck2x = interpolate.bisplrep(xf, yf, xp2, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
-              tck2y = interpolate.bisplrep(xf, yf, yp2, xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19,kx=3,ky=3,s=None) 
+              tck1x = interpolate.bisplrep(xf, yf, xp1, xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit,kx=3,ky=3,s=None) 
+              tck1y = interpolate.bisplrep(xf, yf, yp1, xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit,kx=3,ky=3,s=None) 
+              tck2x = interpolate.bisplrep(xf, yf, xp2, xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit,kx=3,ky=3,s=None) 
+              tck2y = interpolate.bisplrep(xf, yf, yp2, xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit,kx=3,ky=3,s=None) 
      
               anker[0]  = xp1i = interpolate.bisplev(rx,ry, tck1x) 
               anker[1]  = yp1i = interpolate.bisplev(rx,ry, tck1y)  
               anker2[0] = xp2i = interpolate.bisplev(rx,ry, tck2x) 
               anker2[1] = yp2i = interpolate.bisplev(rx,ry, tck2y) 
       
-              if self.chatter > 4: 
+              if self.chatter > 2: 
                   print('waveCal. bicubic extrapolation  ') 
                   print('waveCal. first order anchor position = (%8.1f,%8.1f)' % (xp1i,yp1i))
               if c20i == NaN:
                   print(" no second order extracted ")
-              else:   
+              else:  
+                if self.chatter > 2: 
                   print('waveCal. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))
-          except:   
-              raise RuntimeError("interpolation of wavecal data failed - ABORTING")   
+          except: 
+              if self.fail:  
+                 raise RuntimeError("interpolation of wavecal data failed - ABORTING") 
+              else:
+                 xp1i,yp1i,xp2i,yp2i = None, None, None, None  
                 
         else: 
         # 
@@ -896,14 +942,14 @@ class WaveCal(Caldb):
               # eps = 1.0e-6  (0 < eps < 1)
               m = N1*N1
               qx = qy = np.where( (np.isfinite(xf.reshape(m))) & (np.isfinite(yf.reshape(m)) ) )
-              tck1 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], xp1.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
-              tck2 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], yp1.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
+              tck1 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], xp1.reshape(m)[qx],xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s) 
+              tck2 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], yp1.reshape(m)[qx],xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s) 
               xp1i = interpolate.bisplev(rx,ry, tck1)
               yp1i = interpolate.bisplev(rx,ry, tck2)
               xp2i = 0
               yp2i = 0
-              tck1 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], xp2.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
-              tck2 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], yp2.reshape(m)[qx],xb=-0.19,xe=+0.19,yb=-0.19,ye=0.19, kx=kx,ky=ky,s=s) 
+              tck1 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], xp2.reshape(m)[qx],xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s) 
+              tck2 = interpolate.bisplrep(xf.reshape(m)[qx], yf.reshape(m)[qy], yp2.reshape(m)[qx],xb=-_flimit,xe=+_flimit,yb=-_flimit,ye=_flimit, kx=kx,ky=ky,s=s) 
               xp2i = interpolate.bisplev(rx,ry, tck1)
               yp2i = interpolate.bisplev(rx,ry, tck2)
              
@@ -914,17 +960,18 @@ class WaveCal(Caldb):
                yp1i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp1 )
                xp2i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), xp2 )
                yp2i = self.bilinear( rx, ry, xf[0,:].squeeze(), yf[:,0].squeeze(), yp2 )
-               if self.chatter > 4: 
+               if self.chatter > 2: 
                    print('waveCal. bilinear interpolation') 
                    print('waveCal. first order anchor position = (%8.1f,%8.1f)' % (xp1i,yp1i))
                    print('waveCal. second order anchor position = (%8.1f,%8.1f) ' % (xp2i,yp2i))            
         self.anchor1 = np.array([xp1i,yp1i]) 
         self.anchor2 = np.array([xp2i,yp2i]) 
-        if self.chatter > 0: 
-            print('waveCal. anker [DET-pix]   = ', self.anchor1)
-            print('waveCal. anker [DET-img]   = ', self.anchor1 - [77+27,77+1])
-            print('waveCal. second order anker [DET-pix] = ', self.anchor2, '  [DET-pix] ') 
-            print('waveCal. second order anker [DET-img] = ', self.anchor2 - [77+27,77+1], '  [DET-img] ') 
+        if self.chatter > 1: 
+            print(f'waveCal. anker [DET-pix]   = {self.anchor1}')
+        if self.chatter > 2:    
+            print(f'waveCal. anker [DET-img]   = {self.anchor1 - [77+27,77+1]}')
+            print(f'waveCal. second order anker [DET-pix] = {self.anchor2}  [DET-pix] ') 
+            print(f'waveCal. second order anker [DET-img] = {self.anchor2 - [77+27,77+1]}  [DET-img] ') 
         self.msg = msg
 
     def bilinear(self,x1,x2,x1a,x2a,f,):
