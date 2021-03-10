@@ -47,10 +47,29 @@ def maketime(t,format=None):
 
 class SimGrism():
 
-   def __init__(self,target_position_or_name, wheelpos, roll, 
-        offset=[0,0], datetime=None, blim=16.0, 
+   def __init__(self,target_position_or_name, wheelpos=160, roll=None, 
+        offset=[0,0], datetime=None, blim=16.0, figno=16,
         timeformat=None, chatter=0):
-       """ draw the plot:
+       """ 
+       input parameters:
+          target: name, astropy coordinate, or (ra,dec) in degrees
+          wheelpos: one of 160,200,955,1000
+             uv clocked : 160, uv nominal: 200, visible clocked: 955, visible nominal: 1000
+          roll : int or float
+             value roll in degrees  
+          offset: list of dimension 2
+             offset on detector from center in arcminutes! 
+          datetime: datetime object, time string formatted as "2000-01-01"
+          blim: float 
+             limiting magnitude (typically 16.5 plus minus 1.5)
+          figno: int
+             number for plot of grism detector image at roll extremes for given date.
+          timeformat: string
+             if datetime is given in an alternative format besides above 
+             (from astropy.time.Time)
+          chatter: 0..5 
+             verbosity   
+       old plan was: draw the plot:
            - the rotated DSS image 
            - the source positions [zeroth order]
            - the position of the spectra
@@ -59,7 +78,16 @@ class SimGrism():
 
        """
        from pylab import figure
-       # find valid dates for given roll .... TBD
+       import warnings
+       #import matplotlib
+       
+       warnings.filterwarnings('ignore') # ignore all
+       #with warnings.catch_warnings():
+       #   warnings.filterwarnings('ignore', r'posx and posy should be finite values')
+       #   warnings.filterwarnings('ignore','UserWarning: Warning: converting a masked element to nan.\
+       # return array(a, dtype, copy=False, order=order)' )
+  
+       # for certain sky position, find valid dates for given roll .... TBD
        
        # plot given date+time or roll 
        
@@ -67,35 +95,43 @@ class SimGrism():
           t0 = maketime(datetime,format=timeformat)
        else: t0 = None   
        
+       if type(roll) == type(None): extra_plot = False 
+       else: extra_plot = True
+       
        X1 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=roll,
           offset=[offset[1],offset[0]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
-       # 
+       # now we have the range of roll ; plot extreme cases
        roll_range = X1.rolldata
        min_roll = float(roll_range["min_roll"])
        max_roll = float(roll_range["max_roll"])
-       fig0 = figure()
-       fig1 = figure()
-       fig2 = figure()
-       X1.plot_catalog_on_det(fig1,title2="optimum roll")
-       #
        X0 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=min_roll,
           offset=[offset[1],offset[0]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
-       X0.plot_catalog_on_det(fig0,title2="minimum roll")
-       #
        X2 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=max_roll,
           offset=[offset[1],offset[0]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
-       X2.plot_catalog_on_det(fig2,title2="maximum roll")
+
+       fig0 = figure(figno,figsize=(9,4.5))
+       ax0 = fig0.add_subplot(121)
+       ax1 = fig0.add_subplot(122)
+       R = X0.plot_catalog_on_det(ax0,title2="minimum roll")
+       R = X2.plot_catalog_on_det(ax1,title2="maximum roll")
+       fig0.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
+       
        # print out details
        # use ranew,decnew = self.decsex(raoff.value,decoff.value) to get sexagesimal 
        targ_ra_hms, targ_dec_dms  = X1.decsex(X1.target.ra.deg,X1.target.dec.deg)
        point_ra_hms,point_dec_dms = X1.decsex(X1.pointing.ra.deg,X1.pointing.dec.deg)
-       print (60*"=")
-       print (f"target position: {X1.target} at offset: {X1.offset}  = {targ_ra_hms}, {targ_dec_dms}\n")
-       print (f"pointing position: {X1.pointing}  = {point_ra_hms}, {point_dec_dms}")
-       print (60*"=")
+       print (80*"=")
+       print (f"\nroll:{X1.roll} has target position: {X1.target} \n")
+       print (f"   at offset: {X1.offset}  = {targ_ra_hms}, {targ_dec_dms}\n")
+       print (f"   pointing position: {X1.pointing}  = {point_ra_hms}, {point_dec_dms}\n")
+       print (80*"=")
+       # 
+       if extra_plot:
+           fig1 = figure(figno+1)
+           X1.plot_catalog_on_det(fig1,title2="optimum roll")
         
    def update_roll():
        x=1
@@ -215,7 +251,7 @@ class SimGrism_sub1(SimGrism):
        self.chatter = chatter
        self.chatter2 = 0
        self.dtor = np.pi/180.0
-
+       
        # spacecraft Roll angle (optional input parameter)
        if hasattr(roll,'to'):
            self.roll = roll.to(units.degrees)
@@ -225,13 +261,14 @@ class SimGrism_sub1(SimGrism):
            self.set_roll = False
        elif type(roll) == type(None):
            if type(datetime) == type(None): 
-               roll = 0.0
+               self.roll = 0.0 *units.deg
                self.set_roll = False
            else:
                self.set_roll = True
+               self.roll = 0.0*units.deg
        else:   
            raise IOError("Parameter roll_angle is not correct.")  
-
+       
        # sky position target (input parameter)
        if hasattr(target, 'ra'):
            self.ra =  target.ra
@@ -429,8 +466,13 @@ class SimGrism_sub1(SimGrism):
        """
        import numpy as np
        from astropy import coordinates, units  
-       ax = fighandle.add_subplot(111)
-       
+       import matplotlib
+       if type(fighandle) == matplotlib.figure.Figure :
+          ax = fighandle.add_subplot(111)
+          do_colorbar = True
+       else: # just assume fighandle is an matplotlib.axes._subplots.AxesSubplot instance
+          ax = fighandle
+          do_colorbar = False
        # colour of stars (using UB1 catalog R2 and B2 magnitudes)
        B2mR2 = [-0.8,+2.4]
        for a,b,c,d in zip(self.ub1ra,self.ub1dec,self.ub1b2mag,self.ub1r2mag): 
@@ -491,7 +533,8 @@ class SimGrism_sub1(SimGrism):
 
        # colorbar
        if annotate:
-          fighandle.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
+          if do_colorbar:
+              fighandle.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
           ax.set_xlabel('IMG-X (pix)')
           ax.set_ylabel('IMG-Y (pix)') 
           ax.plot(z[0][:],z[1][:],'k',lw=1)  # plot IMG frame
@@ -527,7 +570,8 @@ class SimGrism_sub1(SimGrism):
            if xank < 1750:
              ax.plot(xxm[q],yym[q],'c-',lw=lw)
              ax.plot(xxp[q],yyp[q],'c-',lw=lw)
-           if annotate and (type(xank) != type(None)):
+           if (annotate and (type(xank) != type(None)) and 
+                np.isfinite(xank) and np.isfinite(yank)):
                ax.text(xank,yank,str(nn),fontsize=8,color='k',ma='center')
                ax.text(zde1,zde2,str(nn),fontsize=8,color='g',ma='center') 
        ax.set_xlim(-100,2450)
@@ -537,6 +581,8 @@ class SimGrism_sub1(SimGrism):
            f"{grism[self.wheelpos]}  roll={np.int(self.roll.value)}  B < {self.blim}",
            fontsize=8,
            bbox_to_anchor=(0.05,1.02,1.3,0.15),loc=3,ncol=3) 
+       if not do_colorbar: return R
+           
 
    def slit_at_offset(self,xank,yank,theta):
        """
