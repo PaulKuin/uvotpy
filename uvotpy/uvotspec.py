@@ -496,7 +496,7 @@ def actual_line_flux(wavelength,flux, center=None,pass_it=True):
     ax = subplot(111)
     getit = True
     while getit:
-       ax.plot(w,flx,ls='steps',color='darkblue')
+       ax.plot(w,flx,ds='steps',color='darkblue')
        print ("please click the desired limits of the profile at the background level")
        print ("no timeout")
        aa = ginput(n=2,timeout=0)
@@ -2439,9 +2439,9 @@ def _sum_exclude_sub2(phafiles,nfiles, exclude_wave,
                 ax1.set_xlabel('wavelength in $\AA$')
                   
                 ax2 = fig.add_subplot(2,1,2)
-                ax2.plot(W[q],FL[q],ls='steps',label='QUALITY FLAG')
+                ax2.plot(W[q],FL[q],ds='steps',label='QUALITY FLAG')
                 if do_COI: 
-                    ax2.plot(W[q],COI[q],ls='steps',label='COI-FACTOR')
+                    ax2.plot(W[q],COI[q],ds='steps',label='COI-FACTOR')
                 ax2.legend(loc=0)
                 ax2.set_xlabel('wavelength in $\AA$')
                                   
@@ -2585,10 +2585,10 @@ def _sum_waveshifts_sub3(phafiles, nfiles, adjust_wavelengths, exclude_wave,
                   while OK: 
                      fig1.clf()
                      ax = fig1.add_subplot(111)
-                     ax.plot(refW[q],refF[q],'k',lw=1.5,ls='steps',label='wavelength reference')          
+                     ax.plot(refW[q],refF[q],'k',lw=1.5,ds='steps',label='wavelength reference')          
                      ax.fill_between(refW[q],(refF-refE)[q],(refF+refE)[q],color='k',alpha=0.1) 
                   
-                     ax.plot(W[p]+sh,F[p],'b',ls='steps',label='spectrum to shift')       
+                     ax.plot(W[p]+sh,F[p],'b',ds='steps',label='spectrum to shift')       
                      ax.fill_between(W[p]+sh,(F-E)[p],(F+E)[p],color='b',alpha=0.1)
                   
                      ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum')                        
