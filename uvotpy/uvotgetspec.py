@@ -37,13 +37,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2017, see Licence  
+# (c) 2009-2021, see Licence  
 
 from future.builtins import str
 from future.builtins import input
 from future.builtins import range
 
-__version__ = '2.9.0 20171209'
+__version__ = '2.10.0 20210610'
 
  
 import sys
@@ -119,7 +119,7 @@ senscorr = True # do sensitivity correction
 
 print(66*"=")
 print("uvotpy module uvotgetspec version=",__version__)
-print("N.P.M. Kuin (c) 2009-2017, see uvotpy licence.") 
+print("N.P.M. Kuin (c) 2009-2021, see uvotpy licence.") 
 print("please use reference provided at http://github.com/PaulKuin/uvotpy")
 print(66*"=","\n")
 
