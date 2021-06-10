@@ -1,6 +1,11 @@
 The uvot grism python software release notes
 ============================================
 
+Version 2.4  2021-06-10
+
+Many small changes to support API changes in matplotlib, Python,
+astropy, and Numpy. Dropped support for Pytthon 2.x. 
+
 Version 2.2  2017-05-16 
 
 Due to changes in the Astropy package and others, minor fixes 

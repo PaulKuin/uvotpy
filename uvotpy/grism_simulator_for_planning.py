@@ -99,38 +99,44 @@ class SimGrism():
        else: extra_plot = True
        
        X1 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=roll,
-          offset=[offset[1],offset[0]],
+          offset=[offset[0],offset[1]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
        # now we have the range of roll ; plot extreme cases
        roll_range = X1.rolldata
        min_roll = float(roll_range["min_roll"])
        max_roll = float(roll_range["max_roll"])
        X0 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=min_roll,
-          offset=[offset[1],offset[0]],
+          offset=[offset[0],offset[1]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
        X2 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=max_roll,
-          offset=[offset[1],offset[0]],
+          offset=[offset[0],offset[1]],
           datetime=t0,blim=blim,storeDSS=None,chatter=0,)
 
-       fig0 = figure(figno,figsize=(9,4.5))
+       fig0 = figure(figno,figsize=(12.5,4.5))
+       fig0.clf()
        ax0 = fig0.add_subplot(121)
        ax1 = fig0.add_subplot(122)
        R = X0.plot_catalog_on_det(ax0,title2="minimum roll")
        R = X2.plot_catalog_on_det(ax1,title2="maximum roll")
        fig0.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
+       #ax0.text(-50,750,f"{target_name_or_position}",rotation='vertical',va='center')
+       ax1.set_ylabel("")
        
        # print out details
        # use ranew,decnew = self.decsex(raoff.value,decoff.value) to get sexagesimal 
        targ_ra_hms, targ_dec_dms  = X1.decsex(X1.target.ra.deg,X1.target.dec.deg)
        point_ra_hms,point_dec_dms = X1.decsex(X1.pointing.ra.deg,X1.pointing.dec.deg)
        print (80*"=")
-       print (f"\nroll:{X1.roll} has target position: {X1.target} \n")
-       print (f"   at offset: {X1.offset}  = {targ_ra_hms}, {targ_dec_dms}\n")
-       print (f"   pointing position: {X1.pointing}  = {point_ra_hms}, {point_dec_dms}\n")
+       print (f"\ntarget=({target_position_or_name}) -- report for roll:{X1.roll} has\n")
+       print (f"   target position: {X1.target} = {targ_ra_hms}, {targ_dec_dms}")
+       print (f"   at offset: {X1.offset} \n")
+       print (f"   plan pointing position: {X1.pointing}  = {point_ra_hms}, {point_dec_dms}")
+       print (f"   with roll = {X1.roll}\n ")
        print (80*"=")
        # 
        if extra_plot:
            fig1 = figure(figno+1)
+           fig1.clf()
            X1.plot_catalog_on_det(fig1,title2="optimum roll")
         
    def update_roll():
@@ -251,6 +257,7 @@ class SimGrism_sub1(SimGrism):
        self.chatter = chatter
        self.chatter2 = 0
        self.dtor = np.pi/180.0
+       self.targetin = target
        
        # spacecraft Roll angle (optional input parameter)
        if hasattr(roll,'to'):
@@ -536,7 +543,7 @@ class SimGrism_sub1(SimGrism):
           if do_colorbar:
               fighandle.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
           ax.set_xlabel('IMG-X (pix)')
-          ax.set_ylabel('IMG-Y (pix)') 
+          ax.set_ylabel(f'{self.targetin}\nIMG-Y (pix)') 
           ax.plot(z[0][:],z[1][:],'k',lw=1)  # plot IMG frame
           ax.plot(z[0][0],z[1][0],'*k',ms=7,label='IMG origin') # origin
        # delineation of clocked aperture zeroth orders
