@@ -1505,7 +1505,8 @@ def getZmxFlux(x,y,model,ip=1):
 def uvotify (spectrum, fileout=None, disp=None, wheelpos=160, lsffile=None, clean=True, chatter=1, clobber=False):
    '''
    Fold a high resolution input spectrum through the uvot spectral 
-   response to "uvotify" the spectrum.
+   response to "uvotify" the spectrum. Assumes significantly higher 
+   resolution in the input spectrum R > 5000.
   
    Parameters
    ----------
@@ -3985,3 +3986,15 @@ def _read_lsf_file(lsfVersion='003',wheelpos=160,):
     lsffile.close()
    
     return lsfwav,lsfepix,lsfdata,lsfener
+
+def write_spectrum_textfile(fitsfile,targetname="",overwr=True):
+    from astropy.io import fits,ascii as ioascii
+    f = fits.open(fitsfile)
+    w = f["CALSPEC"].data['lambda']
+    flx = f["CALSPEC"].data['flux']
+    err = f["CALSPEC"].data['fluxerr']
+    q = flx > 0.
+    colnames = ['#wave','flam','err']
+    datetime=f[1].header['tstart']/86400.+51910.0
+    ascfile=fitsfile.split('.pha')[0]+"_"+targetname+"_"+str(datetime)[:10]+'.txt'
+    ioascii.write([w[q],flx[q],err[q]], output=ascfile, names=colnames, formats={'#wave':'%9.1f','flam':'%12.3e','err':'%12.3e'},overwrite=overwr)
