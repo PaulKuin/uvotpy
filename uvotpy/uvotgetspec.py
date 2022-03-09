@@ -2767,7 +2767,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
        flags = g.field('flags')
        f.close()
    else:
-       rate_bkg = array([0.08]) 
+       rate_bkg = array([0.08,0.08,0.08]) 
      
    hh = fits.getheader(gfile, ext) 
    exposure = hh['exposure']
@@ -2796,9 +2796,13 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       return None
    
    if set_maglimit == None:  
-      b_background = zp + 2.5*log10( (rate_bkg.std())*1256.6 )
+      b_background = zp
+      if chatter > 4: print (f"rate_bkg : length={len(rate_bkg)}, mean={rate_bkg.mean()}")
+      if rate_bkg.std() != 0:
+         b_background = zp + 2.5*log10( (rate_bkg.std())*1256.6 )
       # some typical measure for the image
-      blim= b_background.mean() + b_background.std() + zeroth_blim_offset  
+      #blim= b_background.mean() + b_background.std() + zeroth_blim_offset  
+      blim= b_background + zeroth_blim_offset  
    else:
       blim = set_maglimit
    if blim <  background_source_mag: blim = background_source_mag  
