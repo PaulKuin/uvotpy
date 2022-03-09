@@ -2911,6 +2911,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    distx = []
    disty = []
    kx = -1
+   dx = -999
    dxlim = 100 # maximum distance in X
    dylim = 100 # maximum distance in Y
    tol = 5     # tolerance in x and y match
