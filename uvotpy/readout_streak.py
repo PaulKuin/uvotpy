@@ -413,18 +413,30 @@ def photometry(obsid,
                print ("\nskipping this image\nconsider running uvotsource\n" ) 
 
    # mag output : cycle through filters
-   if chatter > 0: print (f"\n * * * Outputting results * * * \n\n")
+
+   if chatter > 0: print (f"\n * * * Outputting results * * * \n***************************************")
    if (do_only_band != None):
       filts = ['uvw2','uvm2','uvw1','u','b','v']
    for fi in filts:
        for obj in result:
+           datobs = obj['dateobs']    # INSERTED TO PREVENT FAILED WRITE 2022-08-23
+           ext = obj['extension']
+           tsta = obj['tstart']
+           extnam = obj['extname']
+           lss = obj['lss']
+           MJD = dateobs2MJD(datobs)  #
+           no_streaks_found = False
            if (do_only_band != None) & (fi != do_only_band): 
                 break
            #sys.stderr.write("obj band= %s searching band = %s\n"%(obj['band'],fi))
            if obj['band'] == fi:
+               mag = -99.  # initialise
+               err = 99.
                try:
                   x = obj['img_coord'][0]
-                  streaks=[]
+                  matched_only = obj['magnitudes'][0] == "matched_only"
+                  # matched_only means there was a single streak with 'true' 
+                  if chatter > 3: print (f"selected column img_coord={x}")
                   if len(obj['streak_col_SN_CR_ERR']) < 1: # no streak found
                       mag = -1. 
                       err = -1.
@@ -432,46 +444,78 @@ def photometry(obsid,
                       if chatter > 0:
                          print ("check no streak case :",obj)
                   else:    
-                    if chatter > 3: print (f"line 420 OBJ = {obj}\n")
-                    for s in  obj['streak_col_SN_CR_ERR']: streaks.append(s[0])
+                    if chatter > 3: print (f"line 443 OBJ = {obj}\n")
+                    streaks=[]
+                    for s in  obj['streak_col_SN_CR_ERR']: 
+                        streaks.append(s[0])
                     streaks = np.array(streaks)
+                    no_streaks_found = len(streaks) == 0 # should not happen 
+                    if chatter > 3: print(f"446found the following streaks:\n\t {streaks}.")
                     # first try to pick the brightest streak within 16 subpixels
                     # if that did not work, just use the closest one in distance
-                    try:  
+                    try:   # 1
+                      if chatter > 3: print(f"450trying to pick the brightest streak within 16 subpixels.")
+                      
                       kandi = np.abs(streaks-x) < 16  # this can match more than one
                       kanmag = []
                       kanerr = []
-                      for k in obj['magnitudes']:
-                         kanmag.append( k[2] )
-                         kanerr.append( k[3] )
-                      kanmag = np.array(kanmag)[kandi]
-                      kanerr = np.array(kanerr)[kandi]
+                      if not matched_only: # this depends on _readout_streak_mag returning a single mag or for all streaks
+                         for k in obj['magnitudes']:
+                            kanmag.append( k[2] )
+                            kanerr.append( k[3] )
+                         if chatter > 3: print(f"466 brightest search: kandi={kandi} mags={kanmag}")   
+                         kanmag = np.array(kanmag)[kandi]
+                         kanerr = np.array(kanerr)[kandi]
+                      else:  # single mag ... 
+                         objmag = obj['magnitudes'][1]   
+                         kanmag=[objmag[2]]
+                         kanerr=[objmag[3]]
+                         mag = kanmag[0]
+                         err = kanerr[0]
                       if chatter > 3: 
-                         print (f"\n kanmag = {kanmag}\n kanerr = {kanerr}\n")
-                      if len(kanmag) == 0: 
+                          print (f"474 brightest mag and err:\n\t mag = {mag}\n\t err = {err}\n")
+                      if (len(kanmag) == 0) and (not no_streaks_found): 
+                          if chatter > 3: print (f"476 since no brightest, try find closest streak to {x}. ")
                           k = np.where(np.abs((streaks-x)) == np.min(np.abs(streaks - x)))
                           k = k[0][0]
+                          mag = obj['magnitudes'][k][2]  # wrong magnitudes is different array
+                          err = obj['magnitudes'][k][3]
+                      elif no_streaks_found:  # put failed numbers in mag,err
+                          mag = -99.
+                          err = 99.    
+                    except:  
+                       # 1 -- there is not a brightest ro streak nor a single one flagged true
+                       # this will run if there are multiple streaks 'true' and not brightest
+                       if chatter > 3: 
+                          print(f"trying to find the closest readout streak to {x}. streaks={streaks}, {type(streaks)}")
+                          
+                       k = np.where(np.abs((streaks-x)) == np.min(np.abs(streaks - x)))
+                       if chattter > 3: 
+                           print (f"streak index is k={k}\n")
+                       k = k[0][0]
+                       if matched_only:
+                          k_mag = obj['magnitudes'][1][0]
+                          if np.abs(k_mag - k) > 16: 
+                              print (f"\nWARNING\nWarning: matching problem with nearest to selected streak.\n\t Check results!\n")
+                              mag = obj['magnitudes'][1][2]
+                              err = obj['magnitudes'][1][3]
+                          if chatter > 3: print (f"mag={mag}, err={err}")
+                       else:
                           mag = obj['magnitudes'][k][2]
                           err = obj['magnitudes'][k][3]
-                      else:
-                          k = (kanmag == np.min(kanmag))  
-                          mag = kanmag[k]
-                          err = kanerr[k]
-                    except:
-                       k = np.where(np.abs((streaks-x)) == np.min(np.abs(streaks - x)))
-                       k = k[0][0]
-                       mag = obj['magnitudes'][k][2]
-                       err = obj['magnitudes'][k][3]
+                          if chatter > 3: print (f"mag={mag}, err={err}")
                        if chatter > 3: 
-                          print ("*** problem line 447\n")
+                          print ("*** problem line 499\n")
                        pass
                   # overlimit = obj['streak_col_SN_CR_ERR'][k][0] when, set errors to .9999
+                  if chatter > 3: print ("line 515")
                   datobs = obj['dateobs']
                   ext = obj['extension']
                   tsta = obj['tstart']
                   extnam = obj['extname']
                   MJD = dateobs2MJD(datobs)
                   lss = obj['lss']
+                  if chatter > 3: print ( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
                   if chatter > 0:
                      sys.stderr.write( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
                      sys.stderr.write("\n")
@@ -480,12 +524,13 @@ def photometry(obsid,
                      sys.stderr.write( "there seems to be a problem writing: %s\n"%( obj ))
                   pass
                if chatter > 0 : print (f"... outputting result for {obsid}+{ext}\n") 
-               try:  
-                 magfh.write("%12.5f %7.3f %5.3f %5.3f %6s %11.1f %11s %11s %2i %7.4f\n"%
-                     (MJD,mag,err,syserr,fi,tsta,datobs[0:16],obsid,ext,lss))
-               except:
-                 raise RuntimeError("Failed to write result to file.\n")      
-               magff = _mag_to_fitsout(magff, obj['band'], mag, err,tsta, datobs[0:16],\
+               if not no_streaks_found:
+                  try:  
+                      magfh.write("%12.5f %7.3f %5.3f %5.3f %6s %11.1f %11s %11s %2i %7.4f\n"%
+                      (MJD,mag,err,syserr,fi,tsta,datobs[0:16],obsid,ext,lss))
+                  except:
+                      raise RuntimeError("Failed to write result to file.\n")      
+                  magff = _mag_to_fitsout(magff, obj['band'], mag, err,tsta, datobs[0:16],\
                       obsid,ext,extnam,MJD,lss,syserr,chatter=chatter)
 
    magfh.close()
@@ -871,16 +916,16 @@ def _readout_streak_mag(obs, target='target',lss=1.0,subimg_coord=None,
    if chatter > 3:
       print ("\nobs[...] ", obs)
       print ("target",target)
-   if xx.any():
+   if xx.sum() == 1:
       streak = obs['streak_col_SN_CR_ERR'][ np.where(np.array(obs['goodstreak']))[0][0] ]
       if chatter > 3:
-         print ("readout_streak_mag: streak",streak)
+         print ("in sub _readout_streak_mag: streak",streak)
       column,SN,rate,err = streak
       #err += systematic_err
       # note : only a return for the matched column 
       if chatter > 0:
          sys.stderr.write(f"The column matched is at {column}\n")
-      return [_readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
+      return ['matched_only',_readout_streak_mag_sub(k,S,rate,t_MCP,err,obs,xyear,
               lss,zp,band,max_cr,overlimit)]
    else:
       # here no columnn chosen - results for all columns 
@@ -1077,7 +1122,7 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     # fill a row of data, update COLSUSED record +1
     t = magff[1].data
     n = magff[1].header['COLSUSED']
-    if chatter > 0:
+    if chatter > 3:
        print (f"inputs _mag_to_fitsout : {band} {mag} {err} \n "+
        f"tstart {tstart} {dateobs} \n {obsid} {ext} {extname} MJD {MJD} {lss} \n")
        print (f"colused parameter = {n}\n")
