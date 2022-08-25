@@ -60,10 +60,10 @@ maxmag = {"wh":9.}
 def photometry(obsid,
        target='target',
        radec=None,
-       interactive=False,
+       interactive=True,
        outfile='streak_photometry',
        do_only_band=None,
-       rerun_readout_streak=False,
+       rerun_readout_streak=True, # only use in directory of the observation or won't rerun
        snthresh=6.0, 
        timezero=None,
        datadir='.',
@@ -81,7 +81,7 @@ def photometry(obsid,
       name target
    ***interactive*** : bool
       if True, select the row for computing an LSS correction      
-      if False, no LSS correction will be done
+      if False, no LSS correction will be done in general
    ***datadir***: path
       the path of the directory containing the image files   
    ***outfile*** : path
@@ -235,8 +235,10 @@ def photometry(obsid,
    if os.access(fitsout,os.F_OK):  
       # exists: append the new photometry
       magff = fits.open(fitsout,mode="update")
+      if chatter > 3: print (f"will be updating {fitsout}")
    else:
       # new table 
+      if chatter > 3 : print (f"creating {fitsout}")
       magff = _init_fitsoutput(fitsout,chatter=chatter)
 
    # open or create text output file 
@@ -320,6 +322,8 @@ def photometry(obsid,
      # run Mat's readout_streak c program on the mod8 corrected file
      #  try the c-code implementation first
      resfile = "results."+band+"_.txt"
+     if (os.access(resfile, os.F_OK)):
+        print (f"The previous results from Mat Page's c-code are there;\n\tDelete {resfile} if new data.")
      if (not os.access(resfile, os.F_OK)) or rerun_readout_streak: 
          command = 'readout_streak infile='+md+' snthresh='+str(snthresh)+' > '+resfile
          if chatter > 0:     
@@ -514,6 +518,7 @@ def photometry(obsid,
                   tsta = obj['tstart']
                   extnam = obj['extname']
                   MJD = dateobs2MJD(datobs)
+                  # if timezero not None: normtime = MJD-timezero
                   lss = obj['lss']
                   if chatter > 3: print ( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
                   if chatter > 0:
@@ -538,7 +543,7 @@ def photometry(obsid,
    f = open('readout_streak.results.py','w')
    f.write("%s"%(result))
    f.close()
-   if fitsout: 
+   if len(fitsout) > 0: 
        magff.writeto(fitsout,checksum=True,overwrite=True)  
        magff.close() 
    return result
@@ -1061,7 +1066,7 @@ def read_the_old_readout_streak_table(infile,comment='#',chatter=0): #obsolete
         vv = None                     
     return {"w2":w2,"m2":m2,"w1":w1,"u":uu,"b":bb,"v":vv}
 
-def _init_fitsoutput(file,nrow=60,chatter=0):
+def _init_fitsoutput(file,nrow=512,chatter=0):
    p = fits.PrimaryHDU()
    hdr = fits.Header()
    hdr['EXTNAME'] = ("MAG_READOUTSTREAK","extension contains readout streak magnitudes")
@@ -1115,6 +1120,7 @@ def fitsBinTable_add_nrows(BinTableHDU,nrows=60):
   
 def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,syserr,chatter=0):
     # 
+    from astropy.table import Table
     if not (magff.fileinfo(1)['filemode'] == 'update'):
        raise CodeError("the file should be opened with mode update")
     if magff[1].header['COLSUSED'] == magff[1].header['naxis2']: 
@@ -1123,6 +1129,7 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     t = magff[1].data
     n = magff[1].header['COLSUSED']
     if chatter > 3:
+       print (f"older data = {Table(t[:n+1])}")
        print (f"inputs _mag_to_fitsout : {band} {mag} {err} \n "+
        f"tstart {tstart} {dateobs} \n {obsid} {ext} {extname} MJD {MJD} {lss} \n")
        print (f"colused parameter = {n}\n")
@@ -1132,23 +1139,24 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     t['obsid'][n] = obsid
     t['ext'][n] = ext
     t['extname'][n] = extname
-    t['filter'] = band
-    t['lss'] = lss
-    t['sys_err'] = syserr
+    t['filter'][n] = band
+    t['lss'][n] = lss
+    t['sys_err'][n] = syserr
     if err > 0 :
-       # no a limit
-       t["mag"] = mag
-       t["mag_err"] = err
-       t['maglim'] = 0
+       # not a limit
+       t["mag"][n] = mag
+       t["mag_err"][n] = err
+       t['maglim'][n] = 0
     else:
        # limit   
-       t["mag"] = mag
-       t["mag_err"] = err
-       t['maglim'] = 0
+       t["mag"][n] = mag
+       t["mag_err"][n] = 0
+       t['maglim'][n] = mag+3*err
     magff[1].data = t
-    magff[1].header['COLUSED'] = n+1
+    magff[1].header['COLSUSED'] = n+1
     if chatter > 3:
-       print (f"<colused> parameter set to {n+1}\n")
+       print (f"new data={Table(t[:n+2])}")
+       print (f"new colsused parameter = {magff[1].header['COLSUSED']}\n")
     magff.flush()
     return magff    
 
