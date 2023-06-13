@@ -244,7 +244,8 @@ def photometry(obsid,
    # open or create text output file 
    if not os.access(textout, os.F_OK): #write header first time opening
        magfh = open(textout,'w')
-       magfh.write("MJD mag(Vega) magerr syserr filter tstart date-obs obsid+ext lss\n") 
+       #magfh.write("MJD mag(Vega) magerr syserr filter tstart date-obs obsid+ext lss\n") 
+       magfh.write(" MJD         vegamag staterr syserr filter tstart     dateobs         obsid       ext lss\n")
    else: 
        magfh = open(textout,'a')
 
