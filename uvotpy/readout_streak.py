@@ -201,6 +201,11 @@ def photometry(obsid,
    if HEADAS == '': 
       sys.stderr.write('WARNING: The HEADAS environment variable has not been set\n'+\
            'which is needed for the calls to Swift Ftools\n')
+   try:
+      print ("cleaning up the old results.u??_.txt files")
+      os.system('rm results.u??_.txt')
+   except:
+      pass   
    
    # require ra,dec, or go for interactive pick of source
    if (radec == None):
