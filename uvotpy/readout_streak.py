@@ -341,8 +341,8 @@ def photometry(obsid,
                sys.stderr.write( "calling readout_streak main c program:\n"+command)
             os.system(command)
          else: 
-            import ros
-            matros = ros.ros(infile=md,outfile=resfile,chatter=chatter)
+            from uvotpy import ros as ros_py
+            matros = ros_py.ros(infile=md,outfile=resfile,chatter=chatter)
             matresult = matros.process()  
          
      # process the output from readout_streak ; obtain raw coordinates for each extension

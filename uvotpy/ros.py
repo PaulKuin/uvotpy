@@ -2,6 +2,7 @@
 # readout_streak (Mat Page) c-code translation to python code
 # NPMK 2020-08-(13-19)
 # this is a translation from c to python.
+# npmk 2023-06025 corrected extension number output by adding 1
 # 
 import sys
 import numpy as np
@@ -105,7 +106,7 @@ class ros():
              #print (f"Extension={self.hdunum}: naxis1,naxis2 = {naxis1},{naxis2} \n")
              im = np.transpose(np.copy(im_array))
              im_transposed = True
-             self.foutput.write(f"\n Extension {self.hdunum}, exposure {exposure}, frametime {frametime}\n")   
+             self.foutput.write(f"\n Extension {self.hdunum+1}, exposure {exposure}, frametime {frametime}\n")   
              image_data, image_mask, masked_image = self.clean_sources(im, hdr)
              column_stuff = self.collapse_columns(image_data, np.copy(image_mask),  
                          self.columnfileflag, self.snthresh,hdr,
