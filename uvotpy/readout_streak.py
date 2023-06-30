@@ -531,6 +531,19 @@ def photometry(obsid,
                      sys.stderr.write( f"{MJD}  {fi}={mag}+/-{err} {tsta} {datobs} {extnam}+{ext}" )
                      sys.stderr.write("\n")
                except:
+                  try:
+                     datobs = obj['dateobs']
+                     ext = obj['extension']
+                     tsta = obj['tstart']
+                     #print(f"except: datobs={datobs},ext={ext},tsta={tsta}")
+                     extnam = obj['extname']
+                     MJD = dateobs2MJD(datobs)
+                     lss = obj['lss']
+                     #print (f"except extnam={extnam}, MJD={MJD}, lss={lss}, syserr={syserr}")
+                     mag = obj['magnitudes'][0][2]
+                     err = obj['magnitudes'][0][3]
+                     #print (f"except: IS THIS BECAUSE THERE IS ONLY ONE R.O.S.? {mag},{err}")
+                  except: pass
                   if chatter > 0:
                      sys.stderr.write( "there seems to be a problem writing: %s\n"%( obj ))
                   pass
