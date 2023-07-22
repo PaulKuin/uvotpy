@@ -1595,6 +1595,15 @@ def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
     ax.set_xlim(1700,5100)
     for a,b in zip (wpeak,fpeak-cpeak):
         ax.text(a,1.2*b,f"{a:.0f}",rotation='vertical',ha='center',fontsize='small')
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    axins = inset_axes(ax,width="30%",height="25%",loc=1)
+    axins.plot(wave,flux13,color='k',lw=0.5)
+    axins.plot(wave,cont13,color='gold',lw=1.5)
+    axins.set_xlim(1700,5100)
+    ymx = np.max(flux13[(wave > 1800) & (wave < 4400)])
+    ymn = np.min(flux13[(wave > 1800) & (wave < 4400)])*0.9
+    axins.set_ylim(ymn,ymx)
+            
 
 def plot_spectrum(ax,spectrumfile,
         errbars=False, errhaze=False, hazecolor='grey', hazealpha=0.2, 
