@@ -852,18 +852,30 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         ax.figure.canvas.draw()
     return fig, ax, spectrum, f
 
-def apply_shift(file,delwav,recalculate=False):
-    """apply a given wavelength shift in A"""
-    from uvotpy import uvotmisc
-    f = fits.open(file,mode='update')
+def apply_shift(file,delwav,recalculate=False,chatter=0):
+   """apply a given wavelength shift in A
+       2023-07-22 updated 
+   """
+   from uvotpy import uvotmisc
+   with fits.open(file,mode='update') as f:
+
+    #f = fits.open(file,mode='update')
     # check type of file
+    if chatter > 0:
+       f.info()
+    # check if CALSPEC extension present   
     getspecoutput = False
-    for ff in f: 
-        if 'CALSPEC' in ff.header: getspecoutput = True
-    if getspecoutput:    
+    for k in range(1,len(f)): 
+        if 'CALSPEC' == f[k].header['EXTNAME']: 
+            getspecoutput = True
+            if chatter > 0: print ("CALSPEC extension found")
+            
+    if getspecoutput:  
+        if chatter > 1: print ("processing PHA file") 
+        # regular PHA type files from uvotgetspec.getSpec() 
         delwav0 = 0
         if 'WAVSHFT' in f['CALSPEC'].header:
-            delwav0 = f['CALSPEC'].header['WAVSHFT']+delwav
+            delwav0 = f['CALSPEC'].header['WAVSHFT']
         if recalculate:
             if 'PIXSHFT' in f['CALSPEC'].header: 
                 pixshift0 = f['CALSPEC'].header['PIXSHFT']
@@ -876,6 +888,7 @@ def apply_shift(file,delwav,recalculate=False):
             f['CALSPEC'].data['pixno'] = pixno  
             f['CALSPEC'].data['lambda'] = np.polyval(C_1,pixno)
             f['CALSPEC'].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            if chatter > 1: print (f"wavelengths recalculated after shift {delpix} pix ")
             h = f['SPECTRUM'].header['history']
             dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
             if 'PIXNO2' in  f['CALSPEC'].header:
@@ -883,46 +896,31 @@ def apply_shift(file,delwav,recalculate=False):
                f['CALSPEC'].data['pixno2'] = pixno2  
                f['CALSPEC'].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
                f['CALSPEC'].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+               if chatter > 2: print (f"second order wavelengths recalculated after shift {delpix} pix")
         else:       
-            f['CALSPEC'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f['CALSPEC'].header['WAVSHFT'] = (delwav+delwav0, 
+                "manual straight shift applied, no recalculation using dispersion")
             f['CALSPEC'].data['LAMBDA'] = f['CALSPEC'].data['LAMBDA'] + delwav    
-            f['SPECTRUM'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f['SPECTRUM'].header['WAVSHFT'] = (delwav+delwav0, "straight wavelength shift applied")
         f.verify()
         f.flush()
-    else:
-        extname = 'SUMMED_SPECTRUM'
-        print ("currently this program cannot recalculate the dispersion")
-        f.verify()
-        f.flush()
+        f.close()
         return
+    else:
+        # summed files - cannot redo the dispersion solution for the wavelength
         delwav0 = 0
-        if 'WAVSHFT' in f[extname].header:
-            delwav0 = f[extname].header['WAVSHFT']+delwav
-        if recalculate:
-            if 'PIXSHFT' in f[extname].header: 
-                pixshift0 = f[extname].header['PIXSHFT']
-            else: 
-                pixshift0 = 0    
-            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
-            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
-            delpix = int(round(delwav / C_1[-2]))
-            pixno  = f[extname].data['pixno']  +delpix
-            f[extname].data['pixno'] = pixno  
-            f[extname].data['lambda'] = np.polyval(C_1,pixno)
-            f[extname].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
-            if 'PIXNO2' in  f[extname].header:
-               pixno2 = f[extname].data['pixno2'] +delpix   
-               f[extname].data['pixno2'] = pixno2  
-               f[extname].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
-               f[extname].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
-        else:       
-            f[extname].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
-            f[extname].data['LAMBDA'] = f[extname].data['LAMBDA'] + delwav    
+        if 'WAVSHFT' in f[1].header:
+            delwav0 = f[1].header['WAVSHFT']+delwav
+        extname = 'SUMMED_SPECTRUM'
+        f[1].header['WAVSHFT'] = (delwav+delwav0, 
+                "manual straight shift applied, no recalculation using dispersion")
+        f[1].data['WAVE'] = f['CALSPEC'].data['LAMBDA'] + delwav    
+        f[1].header['WAVSHFT'] = (delwav+delwav0, "straight wavelength shift applied")
+        print ("we cannot recalculate the dispersion for summed spectra; do it before summing.")
         f.verify()
         f.flush()
-                
-
-
+        f.close()
+        return
 
 class SelectBadRegions(object):
     """Select the bad regions on a spectrum interactively"""
@@ -1578,7 +1576,9 @@ def peakfinder(phafile,std_mult=2,chatter=0):
     wpeaks = wave[bb]
     fpeaks = flux13[bb] 
     cpeaks = cont13[bb]
-    return wpeaks, fpeaks, cpeaks,  wave, flux13, cont13, fnorm , peaks 
+    # limit wpeaks to > 1720A - too noisy 
+    q = wpeaks > 1720.
+    return wpeaks[q], fpeaks[q], cpeaks[q],  wave, flux13, cont13, fnorm , peaks 
     
 def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
     wpeak,fpeak,cpeak,  wave,flux13,cont13,fnorm, peaks = peakfinder(phafile,
@@ -1603,7 +1603,25 @@ def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
     ymx = np.max(flux13[(wave > 1800) & (wave < 4400)])
     ymn = np.min(flux13[(wave > 1800) & (wave < 4400)])*0.9
     axins.set_ylim(ymn,ymx)
-            
+    ax.set_title(f"{phafile}")
+
+def pickfix2800(phafile, std_mult=1.5,wref=2800.,wtol=5,chatter=0):
+    """
+    automate the wavelength correction a bit for spectra with MgII 2800A in emission 
+    (the reference wavelength needs to be close to 3000A)
+    """
+    import numpy as np
+    wpeaks,fpeaks,cpeaks,  wave,flux13,cont13,fnorm, peaks = peakfinder(phafile,
+        std_mult=std_mult,chatter=chatter)  
+    d = np.abs(wpeaks-wref)
+    w2800 = wpeaks[d == np.min(d)]
+    wshft = wref-w2800[0]
+    if (np.abs(wshft) > wtol) & (np.abs(wshft) < 130) :
+        # need to adjust the wavelenths in phafile
+        print (f"apply_shift of {wshft} to {phafile}")
+        apply_shift(phafile,wshft,recalculate=True,chatter=chatter)
+    else: 
+        print (f"required shift {wshft} is too small or too large")    
 
 def plot_spectrum(ax,spectrumfile,
         errbars=False, errhaze=False, hazecolor='grey', hazealpha=0.2, 
