@@ -79,9 +79,10 @@ spdata = {
 {'name':'Ly-gamma' ,'transition':'1s-4' ,'wavevac':972.537,   'label':r'Ly$\gamma$'},
 {'name':'Ly-delta' ,'transition':'1s-5' ,'wavevac':949.742,   'label':r'Ly$\delta$'},
 {'name':'Ly-epsilon' ,'transition':'1s-6' ,'wavevac':937.814,   'label':r'Ly$\epsilon$'},
-{'name':'Ly-7' ,'transition':'1s-7' ,'wavevac':930.751,   'label':r'Ly 1-7'},
-{'name':'Ly-8' ,'transition':'1s-8' ,'wavevac':926.249,   'label':r'Ly 1-8'},
-{'name':'Ly-9' ,'transition':'1s-9' ,'wavevac':923.151,   'label':r'Ly 1-9'},
+{'name':'Ly-6' ,'transition':'1s-7' ,'wavevac':930.751,   'label':r'Ly 1-7'},
+{'name':'Ly-7' ,'transition':'1s-8' ,'wavevac':926.249,   'label':r'Ly 1-8'},
+{'name':'Ly-8' ,'transition':'1s-9' ,'wavevac':923.151,   'label':r'Ly 1-9'},
+{'name':'Ly-9' ,'transition':'1s-10' ,'wavevac':920.947,   'label':r'Ly 1-9'},
 {'name':'Ly-limit' ,'transition':'1s-40','wavevac':912.3,     'label':r'Ly-limit'},
 #{'name':'Mg II' ,'transition':'2S-2Po','wavevac':946.73,     'label':r'Mg II]'},
 {'name':'N I' ,'transition':'4So-4P' ,'wavevac':963.990,   'label':r'N I'},
@@ -105,7 +106,7 @@ spdata = {
 {'name':'O I' ,'transition':'','wavevac':1302.168,     'label':r'O I'},
 {'name':'C II' ,'transition':'','wavevac':1334.532,     'label':r'C II'},
 {'name':'C II' ,'transition':'','wavevac':1335.708,     'label':r'C II'},
-{'name':'[O V]' ,'transition':'A=1.37e-4','wavevac':1371.296,     'label':r'[O V]'},
+{'name':'O V]' ,'transition':'A=1.37e-4','wavevac':1371.296,     'label':r'O V]'},
 ],
 'HI':[
 {'name':'Ly-alpha' ,'transition':'1s-2' ,'wavevac':1215.67,   'label':r'Ly$\alpha$'},
@@ -410,7 +411,7 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
      [4170,4200],[4430,4460],[4750,4800]],
      phafiles=[]):
     import numpy as np
-    #phafiles = rdTab('list_phafiles_g.txt')
+    #phafiles = rdTab('list_phafiles_g.txt') input parameter
 
     z = get_continuum(phafiles,regions=regions, tstart=398093612.4,)
     wave=z[0]
@@ -1396,7 +1397,11 @@ def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
     qlimit : int
       include only quality less than this limit    
     cont_regions : list
-      a list of [start, stop] wavelengths
+      a list of [start, stop] wavelengths, for example:
+
+     regions = [[1700,1720],[1770,1830],[2010,2040],[2600,2700],
+     [3530,3580],[3580,3630],[3930,3960],[4030,4050],
+     [4170,4200],[4430,4460],[4750,4800],[5100,5200]]
     
     returns
     -------
@@ -1412,12 +1417,11 @@ def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
        q = (wave > r[0]) & (wave <= r[1]) & (quality < qlimit) & np.isfinite(flux)
        if len(np.where(q)[0]):
           result.append([wave[q].mean(),flux[q].mean(), flux[q].std()])
-       else: 
-          result.append([np.NaN,np.NaN,np.NaN])   
+       #else: 
+       #   result.append([np.NaN,np.NaN,np.NaN])   
     return result
     
-def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,
-    full=True,chatter=0):
+def get_continuum(phafiles,regions=[],qlimit=1,full=True,chatter=0):
     '''
     given a list of PHA spectra files and a list of (continuum)
     regions, extract the mean flux and error in the 
@@ -1427,13 +1431,19 @@ def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,
     ----------
     cont_regions : list
       a list of [start, stop] wavelengths
+      
+    qlimit : int
+       if qlimit = 1 only quality 0 is used
+       
+    tstart needs to be in MJD   
     
     returns
     -------
-    wavelength, mean flux+error in each region as an astropy table
+    wavelength, mean flux, error in each region as an astropy table
     '''   
     import numpy as np
     from astropy.io import ascii,fits
+    from astropy.time import Time
     
     # build wavelengths array
     w = []
@@ -1442,16 +1452,18 @@ def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,
     w = np.array(w,dtype=float)
     n = len(w)
     records=[]  
-    if daily: daynorm=86400.0
-    else: daynorm = 1.0
     for filex in phafiles:
        if chatter > 1: print("reading ",filex)
        try:
           sp = fits.open(filex)
        except:   
           sp = fits.open(filex[0])
+       mjdstart = Time(sp[2].header['date-obs'],format='fits')   
+       mjdend = Time(sp[2].header['date-end'],format='fits')   
+       mjdmid = 0.5*(mjdstart.mjd+mjdend.mjd)
        result =  get_continuum_values(
-          (sp[2].header['tstart']-tstart)/daynorm,
+          # 2023/07/19 changed to MJD
+          mjdmid,
           sp[2].data['lambda'],
           sp[2].data['flux'],
           sp[2].data['quality'],
@@ -1472,7 +1484,100 @@ def get_continuum(phafiles,regions=[],qlimit=1,tstart=0,daily=True,
         k+=1            
     if full:
        return w,t, allbands, records
+    else:
+       return w,t
+       
+def get_continuum1(phafile, regions=[ [1700,1730],[1830,1860],[1950,1970],[2010,2040],\
+        [2170,2210],[2350,2400],[2680,2710],[2930,2990],[3230,3250],[3520,3600],\
+        [3700,3750],[4000,4040],[4220,4280],[4750,4810],[5130,5170],[5700,5750],\
+        [6280,6350],[6700,6800] ], qlimit=1, chatter=0):
+    '''
+    given a single UGRISM PHA spectrum file and a list of (continuum)
+    regions, extract the mean flux and error in the 
+    (continuum) regions. Then do a spline fit. 
     
+    Remove continuum regions that show a large (2x median) increase in the red.
+    
+    parameters
+    ----------
+    regions : list
+      a list of [start, stop] wavelengths where the continuum is 
+      
+    qlimit : int
+       if qlimit = 1 only quality 0 is used
+       
+    returns
+    -------
+    wavelength, flux, continuumFlux, inverse_flux_norm
+    '''   
+    import numpy as np
+    from astropy.io import fits
+    from astropy.table import Table
+    from scipy.interpolate import splrep, splev 
+
+    w = []
+    for r in regions:
+       w.append(np.asarray(r,dtype=float).mean())
+    w = np.array(w,dtype=float)
+    n = len(w)
+    if chatter > 1: print("reading ",filex)
+    try:
+        sp = fits.open(phafile)
+    except:   
+        sp = fits.open(phafile[0])
+    fnorm = 1e13
+    wave = sp[2].data['lambda']
+    flux13 = sp[2].data['flux']*fnorm
+    result =  get_continuum_values(  0.0, wave, flux13, sp[2].data['quality'],
+        cont_regions=regions,qlimit=qlimit )
+    sp.close()
+    a = np.array(result[1:])
+    q = np.isfinite(a[:,0]) & np.isfinite(a[:,1]) & np.isfinite(a[:,2])
+    ww = a[q,0]
+    flx = a[q,1]
+    err = a[q,2]
+    q = flx < flx.mean() * 2.5
+    tck = splrep(ww[q],flx[q],1./(err[q]+1e-5),s=10)
+    cont13 = splev(wave,tck)    
+    return wave, flux13, cont13, fnorm            
+  
+def peakfinder(phafile,std_mult=2,chatter=0):
+    """
+    Find the peaks (lines) in a uvot spectrum below 4000A
+       The results above 4000A are not reliable.
+       
+    phafile : path
+        input spectrum (uvot)
+        
+    pha_mult : float
+        The resulting peaks are limited to those above std*std_factor
+        where std is the noise above the continuum in the 1800-4000A region.    
+    
+    method: smooth spectrum, look for major peaks using scipy.signal
+    
+    return list of wavelengths of peaks
+    
+    """
+    smooth = 3 # 3 pix is close to the actual independent data size - could be binned
+    from scipy.signal import find_peaks
+    from stsci.convolve import boxcar
+    from astropy.io import ascii,fits
+
+    wave, flux13, cont13, fnorm = get_continuum1(phafile)
+    q = np.isfinite(flux13)
+    wave = wave[q]
+    flux13 = flux13[q]
+    cont13 = cont13[q]
+    #lolim = 1.0 #np.median(flux) #+flux.std()
+    #peaks, properties = find_peaks(flux13, height=cont13, prominence=(lolim, None), wlen=20)
+    peaks = find_peaks(flux13, height=cont13)
+    # select peaks that are 2 standard noise deviations above the continuum
+    q = (wave>1800) & (wave < 4000)
+    std = (flux13[q]-cont13[q]).std()
+    bb = peaks[0][peaks[1]['peak_heights'] - cont13[peaks[0]] > std*std_mult]
+    wpeaks = wave[bb]
+    fpeaks = flux13[bb] 
+    return wave, flux13, cont13, wpeaks, fpeaks, peaks 
     
     
 def plot_spectrum(ax,spectrumfile,
