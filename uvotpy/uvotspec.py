@@ -1577,9 +1577,25 @@ def peakfinder(phafile,std_mult=2,chatter=0):
     bb = peaks[0][peaks[1]['peak_heights'] - cont13[peaks[0]] > std*std_mult]
     wpeaks = wave[bb]
     fpeaks = flux13[bb] 
-    return wave, flux13, cont13, wpeaks, fpeaks, peaks 
+    cpeaks = cont13[bb]
+    return wpeaks, fpeaks, cpeaks,  wave, flux13, cont13, fnorm , peaks 
     
-    
+def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
+    wpeak,fpeak,cpeak,  wave,flux13,cont13,fnorm, peaks = peakfinder(phafile,
+        std_mult=std_mult,chatter=chatter)
+    from matplotlib import pyplot as plt
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    ax.plot(wave, flux13-cont13,)
+    ax.set_ylabel(f"normalised flux in {1./fnorm:.0e} erg/cm$^2$/s/$\AA$")    
+    ax.plot(wpeak,fpeak-cpeak,'xk')
+    ax.set_xlabel("wavelength in $\AA$")
+    ax.set_ylim(-1,np.max(fpeak-cpeak)*1.1)
+    ax.hlines(0,1700,5100)
+    ax.set_xlim(1700,5100)
+    for a,b in zip (wpeak,fpeak-cpeak):
+        ax.text(a,1.2*b,f"{a:.0f}",rotation='vertical',ha='center',fontsize='small')
+
 def plot_spectrum(ax,spectrumfile,
         errbars=False, errhaze=False, hazecolor='grey', hazealpha=0.2, 
         flag='all',
