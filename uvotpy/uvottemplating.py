@@ -40,6 +40,7 @@ from uvotpy import uvotspec, uvotgetspec
 
 # get uvotSpec processed parameters dictionary:
 uvotgetspec.give_new_result=True
+uvotgetspec.trackwidth=1.5
 
 class withTemplateBackground(object):
     """
@@ -54,7 +55,7 @@ class withTemplateBackground(object):
     
     """
     def __init__(self, spectra=[], templates=[], pos=None, extsp=1, obsidsp="",
-        obsidtempl="", exttempl=1, chatter=1):
+        obsidtempl="", exttempl=1, redshift=None, chatter=1):
         # input parameters, note all spectra, templates to be PHA files
         self.spectra = spectra
         self.templates = templates
@@ -64,6 +65,7 @@ class withTemplateBackground(object):
         self.extsp = extsp
         self.exttempl = exttempl
         self.indir = "./"
+        self.redshift = redshift
         self.chatter=chatter
         # process variables, parameters
         self.spResult=None
@@ -85,6 +87,8 @@ class withTemplateBackground(object):
         self.anchor_templimg=[]
         self.anchor_specimg=[]
         self.movexy=0,0 # return from manual alignment
+        self.yloc_sp = 100
+        self.widthsp = 15  # pix width for optimal extraction
         #self.specimg_aligned=None
         #self.templimg_aligned=None
         # spectral extraction parameters 
@@ -120,36 +124,85 @@ class withTemplateBackground(object):
         self.scale_template()
         self.embed_template() # match with spimg size
         # now extract the spectrum with the template as background:
-        self.Y = uvotgetspec.curved_extraction(
-           self.spimg, self.tmplResult['ank_c'], 
-           anchor1, 
-           wheelpos, expmap=None, offset=0., 
+        self.yloc_spectrum() # find the y-coordinate of the spectrum
+        # for the following, set uvotgetspec.trackwidth using the width of the spectrum
+        # from yloc_spectrum
+        self.Y = uvotgetspec.curved_extraction(        # quick draft
+           self.spimg[:,self.dimsp[0]:self.dimsp[1]], 
+           self.tmplResult['ank_c'], 
+           self.spResult['ank_c']-self.dimsp[0], 
+           self.spResult['wheelpos'], 
+           expmap=self.spResult['exposure'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
-           offsetlimit=None,  
+           offsetlimit=[self.yloc_sp,0.2],  
            background_lower=[None,None], 
            background_upper=[None,None],
-           background_template=None,
+           background_template=self.template,
            trackonly=False, 
-           trackfull=False, 
+           trackfull=False,  
            caldefault=True, 
            curved="noupdate", \
            poly_1=None,poly_2=None,poly_3=None, 
            set_offset=False, 
            composite_fit=True, 
            test=None, chatter=0, 
-           skip_field_sources=False,\
-           predict_second_order=True, 
+           skip_field_sources=True,\
+           predict_second_order=False, 
            ZOpos=None,
-           outfull=False, 
+           outfull=True,   # check what is needed by I/O module
            msg='',
-           fit_second=True,
-           fit_third=True,
-           C_1=None,C_2=None,dist12=None,
+           fit_second=False,
+           fit_third=False,
+           C_1=self.spResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
+        fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first, bg_second,bg_third), \
+        (borderup,borderdown), apercorr, expospec, msg, curved = self.Y   
+        # write output
+        # first update fitourder in "Yout, etc..." in spResult ,spResult['eff_area1'] should be populated.
+        outfile = "uvottemplating.output.pha"
+        F = uvotio.writeSpectrum(RA,DEC,filestub,
+              self.extsp, self.Y,  
+              fileoutstub=outfile, 
+              arf1=None, arf2=None, 
+              fit_second=False, 
+              write_rmffile=False, fileversion=2,
+              used_lenticular=use_lenticular_image,
+              history=self.spResult['msg'], 
+              calibration_mode=uvotgetspec.calmode, 
+              chatter=self.chatter, 
+              clobber=self.clobber ) 
+
         #xx = self.extract_spectrum(background_template=self.template,wr_outfile=True,
         #    interactive=True, plotit=True) does not work, requires whole image
-        return self.template, Y 
-        
+         
+    
+    def yloc_spectrum(self):
+        """
+        quick draft
+        This is input to curved_extraction of spimg, using template after matching, scaling, etc.
+        """
+        net = self.spimg - self.template
+        # define range where spectrum is 
+        if self.redshift == None:
+            x1 = self.spResult['ank_c'][1] - self.dimsp[0]
+            x2 = np.min([ self.dimsp[1], 600+x1])
+            x1 = np.max([x1-200, 0 ])
+        else:
+            # find where spectrum starts
+            wbreak = 912.*(1+self.redshift)
+            disp = self.spResult['C_1']
+            x1 = uvotgetspec.def pix_from_wave( disp, wbreak)
+            # and ends
+            x2 = self.dimsp[1]
+        fsum = net[:,x1:x2].sum(1)
+        # now find the  y-peak in fsum 
+        from scipy.signal import find_peaks
+        cont = fsum.std()
+        peaks = find_peaks(fsum,cont)
+        # this needs testing... 
+        self.yloc_sp = 100 # placeholder (see uvotspec.peakfinder
+        self.widthsp = 15  # pix width for optimal extraction
+    
     def embed_template(self,):
         sbgimg = self.spec_bkg
         sanky,sankx,sxstart,sxend = self.spResult['ank_c']
