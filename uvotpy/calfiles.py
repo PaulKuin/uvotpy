@@ -41,6 +41,7 @@ from __future__ import absolute_import
 
 # 2015-08-04 start with copy of "getCalData()"
 # 2019-02-26 continue coding/testing 
+# bug in interpolation: index outside array, add if to 1008 block 
  
 from builtins import str
 from builtins import range
@@ -51,10 +52,9 @@ from astropy.io import ascii,fits
 from astropy import units
 
 
-__version__ = '0.2 20200905'  
+__version__ = '0.4 2023-10-27'  
 
 typeNone = type(None)
-
 
 class Caldb(object):
 
@@ -982,14 +982,16 @@ class WaveCal(Caldb):
    
        requirement: x1a[i] is increasing with i 
                 x2a[j] is increasing with j
-       20080303 NPMK        
+       20080303 NPMK   
+       20231026 NPMK fixed bug when point outside array      
        '''
        import numpy as np
-   
+       
        # check that the arrays are numpy arrays
        x1a = np.asarray(x1a)
        x2a = np.asarray(x2a)
-      
+       if self.chatter > 4: print (f"input {x1},{x2},{x1a},{x2a}, ")
+       
        #  find the index for sorting the arrays
        n1 = len(x1a)
        n2 = len(x2a)
@@ -1001,29 +1003,58 @@ class WaveCal(Caldb):
        x2as = x2a.copy()[x2a_ind]
    
        # find indices i,j for the square containing (x1, x2)
-       k1s = x1as.searchsorted(x1)-1
-       k2s = x2as.searchsorted(x2)-1
-   
-       #  find the indices of the four points in the original array
-       ki = x1a_ind[k1s]
-       kip1 = x1a_ind[k1s+1]
-       kj = x2a_ind[k2s]
-       kjp1 = x2a_ind[k2s+1]
-       if self.chatter > 3:
-           print('FIND solution in (x,y) = (',x1,x2,')')
-           print('array x1a[k-5 .. k+5] ',x1a[ki-5:ki+5])
-           print('array x2a[k-5 .. k+5] ',x2a[kj-5:kj+5])
-           print('length x1a=',n1,'   x2a=',n2)
-           print('indices in sorted arrays = (',k1s,',',k2s,')')
-           print('indices in array x1a: ',ki, kip1)
-           print('indices in array x2a: ',kj, kjp1)
+       k1r = x1as.searchsorted(x1,side='left')
+       k2r = x2as.searchsorted(x2,side='left')
+       k1s = x1as.searchsorted(x1,side='right')
+       k2s = x2as.searchsorted(x2,side='right')
+       if self.chatter > 3: print (f"1009 data indices k1s={k1s}, k1r={k1r}, k2s={k2s}, k2r={k2r}")
+       if not ((k1r == n1) ^ (k1s == 0) ^ (k2s == 0) ^ (k2r == n2)): 
+
+       #  exception when point outside boundaries, return is either 0,0 or N,N
+         try:
+           if k1r == n1: 
+               ki = x1a_ind[n1-1]
+               kip1 = x1a_ind[n1-1]
+           else:
+               ki = x1a_ind[k1s]
+               kip1 = x1a_ind[k1r]
+           if k2r == n2:    
+               kj = x2a_ind[n2-1]
+               kjp1 = x2a_ind[n2-1]
+           else:
+               kj = x2a_ind[k2s]
+               kjp1 = x2a_ind[k2r]
+           if k1s == 0: 
+               ki = x1a_ind[0]
+               kip1 = x1a_ind[0]
+           else:
+               ki = x1a_ind[k1s]
+               kip1 = x1a_ind[k1r]
+           if k2s == 0:    
+               kj = x2a_ind[0]
+               kjp1 = x2a_ind[0]
+           else:
+               kj = x2a_ind[k2s]
+               kjp1 = x2a_ind[k2r]
+               
+           if self.chatter > 3:
+              print (f"array indices ki={ki}, kip1={kip1}, kj={kj}, kjp1={kjp1}")
+              print('FIND solution in (x,y) = (',x1,x2,')')
+              #print('array x1a[k-5 .. k+5] ',x1a[ki-5:ki+5])
+              #print('array x2a[k-5 .. k+5] ',x2a[kj-5:kj+5])
+              print('length x1a=',n1,'   x2a=',n2)
+              print('indices in sorted arrays = (',k1s,',',k2s,')')
+              print('indices in array x1a: ',ki, kip1)
+              print('indices in array x2a: ',kj, kjp1)
+         except:
+              print (f"try-problem 1027 k1s={k1s}\nk2s={k2s}\nx1a_ind={x1a_ind}\nx2a_ind={x2a_ind}")
       
        #  exception at border:
-       if ((k1s+1 >= n1) ^ (k2s+1 >= n2) ^ (k1s < 0) ^ (k2s < 0) ):
+       else:
            if self.chatter > 3: print('bilinear. point outside grid x - use nearest neighbor ')
-           if ki + 1 > len(x1a) : ki = len(x1a) - 1
+           if ki + 1 >= len(x1a) : ki = len(x1a) - 1
            if ki < 0 : ki = 0
-           if kj + 1 > len(x2a) : kj = len(x2a) - 1
+           if kj + 1 >= len(x2a) : kj = len(x2a) - 1
            if kj < 0 : kj = 0
            return f[ki, kj]
   
