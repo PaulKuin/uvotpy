@@ -52,7 +52,7 @@ CALDB = os.getenv('CALDB')
     Paul Kuin
     
     '''
-__version__ = "0.6 2023-11-14"   
+__version__ = "0.7 2024-01-29"   
 
 print ("uvot_event version",__version__)
     
@@ -190,7 +190,7 @@ def split_eventlist_to_images(eventfile,times=[],dt=10.0, specfile='usnob1.spec'
    if filtername.lower() == 'uvw2': filtervv = 'w2'    
    if filtername.lower() == 'white': filtervv = 'wh'   
     
-   teldef = _make_hdr_patch(tstart_all, filtername=filtername,outfile='hdr.patch')
+   teldefinfo = _make_hdr_patch(tstart_all, filtername=filtername,outfile='hdr.patch')
    
    # assuming filename is close to convention do an autopsy 
    eventfilename = eventfile.split('/')[-1]
@@ -243,11 +243,11 @@ def split_eventlist_to_images(eventfile,times=[],dt=10.0, specfile='usnob1.spec'
             print ("*** time range to do next: %12.1f,%12.1f ")
             make_img_slice(eventdir,eventfilename,tstart,tstop,outfile="./timeslice.evt",chatter=chatter)
             
-            teldef = _make_hdr_patch(tstart, filtername=filtername,outfile='hdr.patch')
+            teldefinfo = _make_hdr_patch(tstart, filtername=filtername,outfile='hdr.patch')
 
             command = "uvotrawevtimg eventfile=timeslice.evt attfile="+attfile+" outfile=rawfile.img "+\
                    " x0=0 y0=0 dx=2048 dy=2048 trel="+str(tstart).split('.')[0]+" t1="+str(tstart)+\
-                   " t2="+str(tstop)+" teldeffile="+teldef+" clobber=yes chatter="+str(chatter)
+                   " t2="+str(tstop)+" teldeffile="+teldefinfo+" clobber=yes chatter="+str(chatter)
             status = os.system(command)
             print (command, status)
          
@@ -357,72 +357,6 @@ def _make_times(fitsext,dt):
       times = []
    return times     
      
-   
-def _position_shift_event_list(evtfile, time, delta_ra, delta_dec, 
-     delta_t=10, chatter=0, clobber=True):
-   ''' for version 1.0 & is under development 2023-12-13
-   
-   Parameters
-      evtfile: path
-         the event file to correct
-      time, delta_ra,delta_dec: float   
-         the amount to correct RA and Dec at the given times
-      delta_t : float
-         the time step for each bin   
-         
-   Notes:
-     Call the Simon/Mat/Sam code first to get the shift to apply in ra,dec 
-     
-     This is also done in the program
-     
-     WARNING: This does not work the same way as making the sub-images and 
-     aligning those with uvot_shift. The resulting eventfile is not corrected 
-     properly! The difference may be the use of attjumpcorr or coordinator? 
-     
-     For now this has been diabled (2023-12-18 npmk)
-   
-   '''
-   import os
-   from astropy.io import fits
-   
-   if evtfile.split('.')[-1] == 'gz':
-       gzipped = True
-       evtfn = evtfile.rsplit(".gz")[0]
-       os.system(f"gunzip {evtfile}")
-   else: 
-       gzipped = False 
-       evtfn = evtfile   
-
-   # update the event file
-   with fits.open(evtfn,mode='update') as evt:
-       # extract the time, RA, DEC
-       T = evt['EVENTS'].data['TIME']
-       X = evt['EVENTS'].data['X']
-       Y = evt['EVENTS'].data['Y']
-       # select the items that need changing
-       if np.isscalar(delta_t):
-          dt = delta_t * np.ones( len(time) )
-       for t_,dt_,dra,dde in zip(time,dt,delta_ra,delta_dec):
-           if chatter > 1: print (f"event updates for {t_} +- {dt_} , deltas = {dra},{dde}")
-           qt = (T >= t_ - dt_) & (T <= t_ + dt_) 
-           X[qt] -= np.int(dra+0.5)
-           Y[qt] -= np.int(dde+0.5)
-           # unsure of sign correction..
-
-       evt['EVENTS'].data['Y'] = Y
-       evt['EVENTS'].header['COMMENT'] = f"updated X,Y for TIME={time[0]-dt[0]}-{time[-1]+dt[-1]}"
-       evt.flush()
-       evt.close()
-       print (f"tried to update new event file {evtfn}")
-   if gzipped: 
-       if clobber:
-          os.system(f"gzip -f {evtfn}") 
-          print (f"gzipped {evtfn}")
-       else:   
-          os.system(f"gzip {evtfn}") 
-          print (f"gzipped {evtfn}")
-   if chatter > 1: return (X,Y)       
-
 
 def process_image(evtfile, dt, 
     attfile=None, drada=15, drb=30,
@@ -535,7 +469,7 @@ def process_image(evtfile, dt,
     from uvotpy import uvotmisc
     from astropy.table import Table
     
-    __version__ = "0.2 20170611"
+    __version__ = "0.5 20240101"
 
     if clobber: sclobber = 'yes'
     logf = open(logfile,'w')
@@ -570,9 +504,9 @@ def process_image(evtfile, dt,
     if not 'WINDOW' in evt:  raise IOError(
       "when recreate_newGTItable: WINDOW extension not found in evtfile %s"%(evtfile)) 
     band = evt[0].header['filter']
-    fkey = {'UVW2':'w2','UVM2':'m2','UVW1':'w1','U':'uu','B':'bb','V':'vv','WHITE':'wh','WH':'wh'}
+    fkey = {'UVW2':'w2','UVM2':'m2','UVW1':'w1','U':'uu','B':'bb','V':'vv','WHITE':'wh','WH':'wh','UGRISM':'gu'}
     UVOTPY = os.getenv('UVOTPY')+"/calfiles/"
-    minmatch = {'UVW2':'3','UVM2':'3','UVW1':'3','U':'10','B':'10','V':'10','WHITE':'10','WH':'10'}
+    minmatch = {'UVW2':'3','UVM2':'3','UVW1':'3','U':'10','B':'10','V':'10','WHITE':'10','WH':'10','UGRISM':'6'}
     noatt = False
     uat1 = attfile 
           
@@ -587,7 +521,7 @@ def process_image(evtfile, dt,
         ra_ = str(evt['window'].header['ra_pnt'])
         dec_ = str(evt['window'].header['dec_pnt'])
         
-        # convert  position to sexagesimal         
+        #convert  position to sexagesimal         
         c = SkyCoord(ra_,dec_, unit="deg")  # defaults to ICRS frame
         ras = c.ra.to_string(sep=':',unit='hour')+'  '
         decs = c.dec.to_string(sep=':')
@@ -821,7 +755,7 @@ def process_image(evtfile, dt,
         
     # now create an update to the WINDOW extension including 
     # each new gti
-    # loop over the new gti
+    #loop over the new gti
     # filter out times without original GTI
     
     for t1,t2 in zip(ts1,ts2): 
@@ -962,7 +896,7 @@ def process_image(evtfile, dt,
     if chatter > 1: logf.write (command +'\n')   
     if os.system(command): logf.write("could not update final sky file name\n")
                                        
-    # convert pointing position to sexagesimal         
+    #convert pointing position to sexagesimal         
     c = SkyCoord(evt['window'].header['ra_pnt'],evt['window'].header['dec_pnt'] , unit="deg")  # defaults to ICRS frame
     ras = c.ra.to_string(sep=':',unit='hour')+'  '
     decs = c.dec.to_string(sep=':')
@@ -1021,15 +955,612 @@ def process_image(evtfile, dt,
             os.system(command)
             
     logf.close() 
-    if evtgzip: 
-        print (f"applying gzip {outfile}:")
-        os.system(f"gzip {outfile}")   
+    #if evtgzip: 
+    #    print (f"applying gzip {outfile}:")
+    #    os.system(f"gzip {outfile}")   
     print (f"for light curve next, run:\nuvotmaghist infile={skyfile}_shifted srcreg=src.reg bkgreg=bg.reg outfile=phot.fits exclude=NONE,1")      
     #print (f"alternatively use the updated eventlist file with the uvotevtlc ftool.")
     print (f"for photometry, use {shiftedf}")
     if chatter > 1: return Z
 
+"""   
+def _position_shift_event_list(evtfile, time, delta_ra, delta_dec, 
+     delta_t=10, chatter=0, clobber=True):
+   ''' for version 1.0 & is under development 2023-12-13
+   
+   Parameters
+      evtfile: path
+         the event file to correct
+      time, delta_ra,delta_dec: float   
+         the amount to correct RA and Dec at the given times
+      delta_t : float
+         the time step for each bin   
+         
+   Notes:
+     Call the Simon/Mat/Sam code first to get the shift to apply in ra,dec 
+     
+     This is also done in the program
+     
+     WARNING: This does not work the same way as making the sub-images and 
+     aligning those with uvot_shift. The resulting eventfile is not corrected 
+     properly! The difference may be the use of attjumpcorr or coordinator? 
+     
+     For now this has been diabled (2023-12-18 npmk)
+   
+   '''
+   import os
+   from astropy.io import fits
+   
+   if evtfile.split('.')[-1] == 'gz':
+       gzipped = True
+       evtfn = evtfile.rsplit(".gz")[0]
+       os.system(f"gunzip {evtfile}")
+   else: 
+       gzipped = False 
+       evtfn = evtfile   
 
+   # update the event file
+   with fits.open(evtfn,mode='update') as evt:
+       # extract the time, RA, DEC
+       T = evt['EVENTS'].data['TIME']
+       X = evt['EVENTS'].data['X']
+       Y = evt['EVENTS'].data['Y']
+       # select the items that need changing
+       if np.isscalar(delta_t):
+          dt = delta_t * np.ones( len(time) )
+       for t_,dt_,dra,dde in zip(time,dt,delta_ra,delta_dec):
+           if chatter > 1: print (f"event updates for {t_} +- {dt_} , deltas = {dra},{dde}")
+           qt = (T >= t_ - dt_) & (T <= t_ + dt_) 
+           X[qt] -= np.int(dra+0.5)
+           Y[qt] -= np.int(dde+0.5)
+           # unsure of sign correction..
+
+       evt['EVENTS'].data['Y'] = Y
+       evt['EVENTS'].header['COMMENT'] = f"updated X,Y for TIME={time[0]-dt[0]}-{time[-1]+dt[-1]}"
+       evt.flush()
+       evt.close()
+       print (f"tried to update new event file {evtfn}")
+   if gzipped: 
+       if clobber:
+          os.system(f"gzip -f {evtfn}") 
+          print (f"gzipped {evtfn}")
+       else:   
+          os.system(f"gzip {evtfn}") 
+          print (f"gzipped {evtfn}")
+   if chatter > 1: return (X,Y)       
+"""
+
+
+def process_jittered_grism(evtfile, dt, 
+    attfile=None, saofile=None,  
+    logfile='process_grism_image.log',
+    cleanup=True,clobber=True,
+    chatter=1):
+    """
+
+    take a grism event file with GTI's and replace the GTI's with smaller 
+    time slices according to the input, but retaining the original 
+    times as outer boundaries. 
+    
+    Parameters
+    ==========
+    file : path
+       event file
+    dt : float, list
+       if one value, split GTIs into smaller slices using dt value, e.g., 20 
+       if list, all elements of dt must be a list of start,stop times
+          in swifttime (seconds since Jan 1 2005, 00:00:00.0) 
+    attfile : path (optional)
+       path to attitude file to create an image file with the new 
+       GTIs, e.g., sw<obsid>pat.fits.gz    
+    saofile: path 
+       path to the sw<obsid>sao.fits.gz auxiliary file for uvotscreen
+    
+    output
+    ======
+    file_new_uf.evt : path 
+       output file name based on the event file name with _new_ added
+       and placed in local directory
+    fileuxx_rw.img, fileuxx_dt.img, fileuxx_sk.img : path (optional)
+       output raw image and sky image files when attitude file is given.
+       if this option is not used, the likely command needed is printed on 
+       output.      
+    attfile will be updated
+       
+    method
+    =======
+    (1) apply attjumpcorr, not yet coordinator
+    (2) apply uvotscreen or xselect 
+    (3) split the event list for the grism image
+       grab the GTI's. There should be one summary and then for each time 
+       slice a new one. Copy the old GTIs to a file; remove them from the 
+       event file. Create a new summary GTI and extra GTIs for each time 
+       slice. Add to the event file.
+    (4) create a raw image using uvotrawevtimg on each GTI (test w uvotimage)
+    (5) align on the point sources and spectra using FFT's to register pairs 
+    (6) process to a det image & aspect correct using uvotgraspcorr
+    
+    ... uvotgraspcorr does not align the time-sliced images! 
+    Do we need to hack Mat/Simon/Sam's code, 
+    
+    Example
+    =======
+    In [3]: evtfile='sw00034849012uguw1po_uf.evt'
+
+    In [4]: uvot_event.process_jittered_grism(evtfile,dt=10.0,\
+            attfile='../../auxil/sw00034849012pat.fits',\
+            skip_attcorr=False, chatter=2)
+    
+    History: 
+    2024-01-03 NPMK write pipe for grism event data; using uvot_shift does 
+       not work. Probably the fortran code needs to be set to select 
+       elengated sources only. Using uvotgraspcorr for now.
+     
+    """
+    import os,sys
+    import numpy as np
+    from astropy.io import fits, ascii as ioascii
+    #from astropy.coordinates import SkyCoord  # High-level coordinates
+    #from astropy.coordinates import ICRS, Galactic, FK4, FK5  # Low-level frames
+    #from astropy.coordinates import Angle, Latitude, Longitude  # Angles
+    #import astropy.units as units
+    from uvotpy import uvotmisc, uvotwcs
+    from astropy.table import Table
+    
+    __version__ = "0.1 20240107"
+
+    if clobber > 0: 
+       sclobber = 'yes'
+    logf = open(logfile,'w')
+    if not os.access(evtfile,os.F_OK): raise IOError(
+        "process_image: event file %s not found"%(evtfile)) 
+    
+    # check if evt file has .gz extension; decompress
+    if evtfile.rsplit(".")[-1] == "gz":
+       evtgzip = True
+       if os.system(f"gunzip {evtfile}"): raise RuntimeError (f"ERROR : unzipping {evtfile} failed.")
+       evtfile = evtfile[:-3]
+    else: evtgzip = False    
+    #  
+    # define some names
+    #
+    evtpath = evtfile.split('sw0')[0]
+    outfile_ = "evtgrism.tmp"
+    outfroot = evtfile.split('/')[-1].split("_uf.evt")[0]
+    outfile = evtfile.split('/')[-1].split("_uf.evt")[0]+"_new_uf.evt"
+    detfile = outfroot[:16]+"_dt.img"
+    detfile2 = outfroot[:16]+"_dt.2.img"
+    rawfile = outfroot[:16]+"_rw.img"
+    rawtmp = outfroot[:16]+"_rw.tmp"
+    skyfile = outfroot[:16]+"_sk.img"
+    distfile   = "/sciencesoft/CALDB/data/swift/uvota/bcf/grism/swugrdist20041120v001.fits"
+    specfile = "/Users/kuin/specfiles/usnob1.spec"
+    aspcorr = "aspcorr.fit"
+    attfile2 = "attfile_corrected.fits"
+    alignfile = "CALDB"
+    history = "YES"
+    uat1 = attfile 
+    
+    # copy the original event list 
+    if os.system("cp "+evtfile+" "+outfile): raise IOError("copy event file failed")
+    try: 
+        os.system(f"gzip {evtfile}")
+    except: pass    
+    
+    evt = fits.open(outfile,)
+    if not 'EVENTS' in evt:  raise IOError(
+      "when recreate_newGTItable: EVENTS extension not found in evtfile %s"%(evtfile)) 
+    if not 'STDGTI' in evt:  raise IOError(
+      "when recreate_newGTItable: STDGTI extension not found in evtfile %s"%(evtfile)) 
+    if not 'WINDOW' in evt:  raise IOError(
+      "when recreate_newGTItable: WINDOW extension not found in evtfile %s"%(evtfile)) 
+      
+    stdgti = evt['STDGTI']
+    window = evt['WINDOW']
+    dataheader = evt['EVENTS'].header
+    framtime = evt['EVENTS'].header['framtime']
+    band = evt[0].header['filter']
+    fkey = {'UVW2':'w2','UVM2':'m2','UVW1':'w1','U':'uu','B':'bb','V':'vv',
+           'WHITE':'wh','WH':'wh','UGRISM':'gu','VGRISM':'gv'}
+    UVOTPY = os.getenv('UVOTPY')+"/calfiles/"
+          
+    ra_ = str(evt['window'].header['ra_pnt'])
+    dec_ = str(evt['window'].header['dec_pnt'])
+    roll = str(evt['window'].header['pa_pnt'])        
+        
+    # (1) apply attjumpcorr first to correct settling jumps in attitude file data
+    command=f"attjumpcorr {attfile} {attfile}.2"
+    if not os.system(command):
+        os.system(f"mv {attfile} {attfile}.ori;mv {attfile}.2 {attfile}" )
+        logf.write( f"Ran attjumpcoor ftool on attitude file; original is now in {attfile}.2\n")
+            
+    # need to screen the event list now & populate RA, DEC columns in evt file
+    command =  "coordinator eventfile="+outfile+" eventext=EVENTS attfile="+uat1+\
+               " aberration=n randomize=y seed=1411 ra="+ra_+\
+               " dec="+dec_+" teldef=CALDB"
+    if chatter > 1: 
+        logf.write(command +'\n')  
+        print (command,'\n') 
+    if os.system(command): logf.write(
+        "\nproblem with coordinator (initial)\n"+\
+        "this is often due to the clock correction file being outdated\n"+\
+        "update the CALDB mis\n" )
+    print (f"1187 - after coordinator")     
+    #command = "prefilter outname=prefilter.tmp columns=ALL orbname={orbitfile} attname={attfile} ... "     
+            
+    command = 'uvotscreen infile={outfile} attorbfile={saofile} outfile= {outfile_} '+\
+        'badpixfile="CALDB" aoexpr="ELV > 10. && SAA == 0" '+\
+        'evexpr="QUALITY.eq.0.or.QUALITY.eq.256" chatter=0 clobber=yes '
+    if chatter > 1: logf.write(command+'\n' )   
+    if os.system(command): logf.write( "uvotscreen failed (initial)\n")
+    if cleanup:
+        if os.system("mv "+outfile_+" "+outfile): print ("move of screened outfile failed")
+    else:
+        if os.system("cp "+outfile_+" "+outfile): print ("copy of screened outfile failed")
+    print ("1201 after uvotscreen (initial)")
+
+    # split the event list
+    
+    framtime = evt['EVENTS'].header['framtime']
+    # init last GTIn number (starts at 1)
+    gti_n = 0
+    # number of original GTIs
+    gti_number = evt['window'].header['naxis2']
+    
+    # iterate over each existing GTI and create new WINDOW extension with the desired gti
+    new_tstart = []
+    new_tstop  = []
+    deadtimecorr = []
+    windx0=[]
+    windy0=[]
+    winddx=[]
+    winddy=[]
+    tossloss = []
+    blocloss= []
+    stalloss = []
+    # set up times for the new GTI's
+    if type(dt) == list: 
+        if chatter > 4: logf.write("dt is list\n")
+        ts1 = []   # start time bins
+        ts2 = []   # stop  time bins
+        for r in dt: 
+            # check range is within the existing GTIs
+            in_range = False
+            for rec in stdgti.data:
+               if (r[0] >= rec[0]) & (r[1] <= rec[1]): in_range = True
+            if in_range: 
+               ts1.append(r[0])
+               ts2.append(r[1])  
+            else:
+               sys.stdout.write("The following requested period is not allowed: %s\n",r)    
+        ts1 = np.asarray(ts1)
+        ts2 = np.asarray(ts2)    
+    elif np.isscalar(dt):   # assume dt is a number 
+        if chatter > 4: logf.write( "dt is a scalar\n")
+        ts1 = []
+        ts2 = []
+        for utstart,utstop in stdgti.data:
+           tt = np.arange(utstart,utstop,dt)
+           for t in tt:
+               ts1.append(t)
+               if t+dt < utstop:  # 2023-11-12 modified. 
+                  ts2.append(t+dt)
+               else: 
+                  ts2.append(utstop)
+    if chatter > 3: 
+        for a,b in zip(ts1,ts2):
+            logf.write("new gti: %f, %f\n"%(a,b))
+    print ("1254 after defining new time slices")
+    
+    wstart = []
+    wstop = []
+    wrec = []
+    # grab the old start/stop times from the WINDOW data
+    for rec in evt['window'].data:
+        wstart.append(rec[8])
+        wstop.append(rec[9])
+        wrec.append(rec)
+        
+    # now create an update to the WINDOW extension including 
+    # each new gti
+    #loop over the new gti
+    # filter out times without original GTI
+    
+    for t1,t2 in zip(ts1,ts2): 
+        
+        # find index wrec:
+        i_wrec = -1
+        for k in range(len(wrec)):
+            if (t1 >= wstart[k]) & (t1 <= wstop[k]):
+                i_wrec = k
+        if i_wrec > -1: 
+            rec = wrec[i_wrec]
+            new_tstart.append(t1)
+            new_tstop.append(t2)
+            deadtimecorr.append(rec[14] )
+            windx0.append(rec[4] )
+            windy0.append(rec[5] )
+            winddx.append(rec[6] )
+            winddy.append(rec[7] )
+            tossloss.append(rec[15] )  # this needs to be replaced by a HK value for times t1 - t2
+            blocloss.append(rec[16] )
+            stalloss.append(rec[17] )
+    # change list to numpy arrays        
+    new_tstart = np.asarray(new_tstart)
+    new_tstop = np.asarray(new_tstop) 
+    print ("1292 after creating keyword lists for WINDOW")
+     
+    # now I have lists for the start, stop and dead time correction and can make new 
+    # extensions ; write a new file
+    hdulist = [evt[0]]
+    # (update keywords: creator, checksum
+    events_hdu = evt['events'] 
+    hdulist.append(events_hdu)
+    
+    stdgti_hdr = evt['stdgti'].header 
+    gti_hdu= evt['gti1']
+    gti_hdu.add_checksum()
+    # needs update of extname,  tstart,tstop date-obs date-end telapse ontime 
+    #     origin creator date expid ??attflag?? seqpnum checksum utcfinit datasum 
+            
+    # create new and write stdgti to hdulist
+    # update the STDGTI #
+    cola = fits.Column(name='START',format='D',array=new_tstart,unit='s')
+    colb = fits.Column(name='STOP',format='D',array=new_tstop,unit='s')
+    cols = fits.ColDefs([cola,colb])
+    stdgti_hdu= fits.BinTableHDU.from_columns(cols,header=stdgti_hdr)
+    stdgti_hdu.add_checksum()
+    hdulist.append(stdgti_hdu)
+    if chatter > 3: logf.write ("new stdgti data %s\n"%stdgti_hdu.data)
+    if chatter > 3: logf.write ("added stdgti hdu\n" )
+    
+    # write gti(n) to hdulist
+    print ("1319 start writing gti(n) to hdulist")
+    gtilist = []
+    tstartlist = new_tstart
+    tstoplist = new_tstop
+    for s1,s2 in zip(new_tstart,new_tstop):
+        if chatter > 3: logf.write ("gti times %f - %f\n"%(s1,s2))
+        gti_n += 1
+        gtilist.append(f"GTI{gti_n}")
+        gti_hdu.header['START'] = s1
+        gti_hdu.header['STOP'] = s2
+        gti_hdu.header['EXTNAME'] = 'GTI'+str(gti_n)
+        gti_hdu.header['TELAPSE'] = s2-s1
+        gti_hdu.header['ONTIME'] = s2-s1
+        gti_hdu.data['START'] = s1
+        gti_hdu.data['STOP'] = s2 
+        gti_hdu.header['DATE-OBS'] = uvotmisc.swtime2JD(s1)[3]
+        gti_hdu.header['DATE-END'] = uvotmisc.swtime2JD(s2)[3]
+        #gti_hdu.header['UTCFINIT'] = "" -- keep the value 
+        gti_hdu.header['EXPID'] = np.int(s1) 
+        gti_hdu.add_checksum()
+        hdulist.append(gti_hdu.copy())
+        if chatter > 3: logf.write ("gti data%s\n"%gti_hdu.data)
+        if chatter > 3: logf.write ("added gti hdu number GTI"+str(gti_n)+'\n')
+        
+    # write new WINDOW GTI to hdulist  
+    # print ("1344 start WINDOW ")
+    window_hdr = evt['window'].header
+    windx0 = np.array(windx0)
+    windy0 = np.array(windy0)
+    winddx = np.array(winddx)
+    winddy = np.array(winddy)
+    deadtimecorr = np.array(deadtimecorr)
+    tossloss = np.asarray(tossloss)
+    blocloss = np.asarray(blocloss)
+    stalloss = np.asarray(stalloss,dtype=np.int)
+    elapsed = new_tstop-new_tstart
+    col1 = fits.Column(name='START',   format='D',array=new_tstart,unit='s')
+    col2 = fits.Column(name='EXPID',   format='J',array=np.array(new_tstart,dtype=np.long),)
+    col3 = fits.Column(name='EXPREF',  format='I',array=np.arange(1,gti_n+1,1),)
+    col4 = fits.Column(name='IMAGEEXT',format='I',array=np.arange(1,gti_n+1,1))
+    col5 = fits.Column(name='WINDOWX0',format='J',array=windx0,unit='pixel')
+    col6 = fits.Column(name='WINDOWY0',format='J',array=windy0,unit='pixel')
+    col7 = fits.Column(name='WINDOWDX',format='J',array=winddx,unit='pixel')
+    col8 = fits.Column(name='WINDOWDY',format='J',array=winddy,unit='pixel')
+    col9 = fits.Column(name='UTSTART', format='D',array=new_tstart,unit='s')
+    col10= fits.Column(name='UTSTOP',  format='D',array=new_tstop,unit='s')
+    col11= fits.Column(name='UTELAPSE',format='D',array=elapsed,unit='s')
+    col12= fits.Column(name='UONTIME', format='D',array=elapsed,unit='s') # simplification
+    col13= fits.Column(name='ULIVETIM',format='D',array=elapsed*deadtimecorr,unit='s')
+    col14= fits.Column(name='UEXPOSUR',format='D',array=elapsed*deadtimecorr,unit='s')
+    col15= fits.Column(name='UDEADC',  format='D',array=deadtimecorr,)
+    col16= fits.Column(name='UTOSSL',  format='D',array=tossloss,)
+    col17= fits.Column(name='UBLOCL',  format='D',array=blocloss,)
+    col18= fits.Column(name='USTALL',  format='D',array=stalloss,)
+    cols = fits.ColDefs([col1,col2,col3,col4,col5,col6,col7,col8,col9,
+             col10,col11,col12,col13,col14,col15,col16,col17,col18])
+    window_hdu= fits.BinTableHDU.from_columns(cols,header=window_hdr) 
+    hdulist.append(window_hdu)
+    if chatter > 3: logf.write("hdu list with new GTI complete\n")
+    
+    # create the new event mode file with the GTIs for small timesteps
+    fitsout = fits.HDUList(hdulist)
+    fitsout.verify()
+    
+    if chatter > 0: logf.write ("writing event file with updated GTI list, named "+outfile+'\n')
+    fitsout.writeto(outfile, overwrite=clobber,checksum=True)       
+    evt.close()
+    fitsout.close()
+    
+    logf.write(f"event file {outfile} with new GTIs created: {gtilist} \n")
+    
+    # now that the event file has been updated with GTIs, create the raw image files from it
+    
+    """
+    # make raw image from event file - ISSUE: does this process all the GTIs or not? 
+    # alternatively, using tstart,tstop with evtfile[gtifilter] can process slice by slice
+    #  i.e., without first writing the detailed GTI extension 
+    # see lines 246 and further. Changing here to run uvotimage
+    #write main fits
+    evt = fits.open(outfile,)
+    primary = evt['Primary']
+    detnam = primary.header['DETNAM'].strip()
+    filter = primary.header['FILTER'].strip()
+    primary.writeto(rawtmp,overwrite=clobber,checksum=True)
+    evt.close()
+    if chatter > 1 : print(f"initialised  {rawfile}")
+    detnam2str = {"160":"0160","200":"0200","955":"0955","1000":"1000"}
+    filtername = filter+detnam2str[detnam]
+    # loop over GTI's 
+    for gti_n,tstart,tstop in zip(gtilist,new_tstart,new_tstop):
+    # - get start from GTI
+    # - create header patch file -> teldeffile
+        teldeffile = _make_hdr_patch(tstart, filtername=filtername,outfile='hdr.patch')
+        if chatter > 1: logf.write(command+'\n')    
+        if os.system(command): logf.write( "could not create hdr.patch image file for {gti_n}\n")
+    # - make raw img file
+        command = f"uvotrawevtimg eventfile={outfile}[gtifilter\('{gti_n}'\)] attfile={attfile} \
+               outfile={rawtmp}_x x0=0 y0=0 dx=2048 dy=2048 \
+               trel={str(tstart)} t1="+str(tstart)+" t2="+str(tstop)+ \
+               f" teldeffile={teldeffile} clobber=yes chatter={str(chatter)} "
+        if chatter > 1: logf.write(command+'\n')    
+        if os.system(command): logf.write( "could not create {rawfile} file from evt for {gti_n}\n")
+    # - apply header patch
+        command = f"fthedit {rawtmp}_x @hdr.patch"
+        if chatter > 1: logf.write(command+'\n')    
+        if os.system(command): logf.write( "could not edit hdr in {rawtmp}_x file for {gti_n}\n")
+    # - append timesslice {rawtmp}_x file to {rawtmp}
+        command = f"fappend {rawtmp}_x] {rawtmp};rm {rawtmp}_x" 
+        if chatter > 1: logf.write(command+'\n')    
+        if os.system(command): logf.write( "could not append to {rawtmp} image file for {gti_n}\n")
+    """
+    #    
+    command = f"uvotimage infile={outfile} prefix=sky1 attfile={uat1} "+\
+                " teldeffile='CALDB' alignfile='CALDB' mod8corr=no "+\
+                f" ra={ra_}  dec={dec_} roll={roll} clobber={clobber} chatter={chatter}"
+    infile = 'sky1ugu_rw.img'  # adjust when using uvotrawevtimg 
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( "could not create sky1 image file\n")
+    dataheader = fits.getheader(infile, ext=1)
+    
+    print (f"\n{command}\n Done uvotrawevtimg ;NEXT: align raw images \n\n")  #swiftxform\n\n ")
+ 
+    import coregister
+    rawimg, imgs, shifts, shft2 = coregister.with_scipy(infile)
+    
+    # create new raw file with rawimg
+    evt = fits.open(outfile,)
+    primary = evt['Primary']
+    hdulist = [primary]
+    detnam = primary.header['DETNAM'].strip()
+    filter = primary.header['FILTER'].strip()
+    hdulist.append( fits.ImageHDU(header=dataheader,data=rawimg) )
+    fitsout = fits.HDUList(hdus=hdulist)
+    fitsout.verify()
+    fitsout.writeto(rawfile,overwrite=True,checksum=True)
+    fitsout.close()
+    evt.close()
+    
+    """
+    # now append one of the rawtmp extensions, but replace the data part
+    command = f"fappend '{rawtmp}[1]' {rawfile} "
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( "could not append to {rawtmp}[1] to rawfile\n")
+    # edit this extension 
+    f = fits.open(rawfile,mode='update')
+    f[1].data = rawimg
+    f[1].header = dataheader
+    f.flush()
+    """
+    
+    infile = rawfile  
+    # process this   
+    #if chatter > 1: print ("run grismpipe now...")
+    #if os.system(f"grismpipe {rawfile} {uat1} {specfile}"): print ("")
+    # not making the bad pixels list
+    #command = "uvotbadpix infile=$raw_file badpixlist=$badpixlist outfile=$bp_file compress=YES clobber=$clobber history=$history chatter=$chatter"
+    # not making the mod8 map
+    #command = "uvotmodmap infile=$raw_file badpixfile=$bp_file outfile=$md_file mod8prod=NO mod8file=$modmap nsig=3 ncell=16 subimage=NO xmin=0 xmax=2047 ymin=0 ymax=2047 clobber=$clobber history=$history chatter=$chatter"
+    # transform to detector coordinates - first pass
+    #$distfile = "CALDB" unless ( -e $distfile );
+    print (f"SwiftXform {infile} next")
+    command = f"swiftxform ra={ra_} dec={dec_} roll={roll} infile={infile} "+\
+              f"outfile={detfile} to=DET attfile={uat1} teldeffile=CALDB "+\
+              f"method=AREA bitpix=-32 aberration=n seed=1 copyall=n cleanup={cleanup} "+\
+              f"chatter={chatter} history={history} clobber={clobber}"
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( f"Error executing {command}\n")
+
+    print (f"\n UVOTGRASPCORR first pass \n\n")
+
+    # graspcorr first pass  
+    command = f"uvotgraspcorr infile={detfile} catspec={specfile} distfile={distfile} "+\
+        f"outfile={aspcorr} chatter=5 cleanup=False history={history} clobber={clobber} "+\
+        f" starid='matchtol=5 poscorr=150'"
+    #command = f"uvotgraspcorr infile={detfile} catspec={specfile} distfile={distfile} "+\
+    #    f"outfile={aspcorr} chatter={chatter} cleanup={cleanup} history={history} clobber={clobber}"
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( f"Error executing {command}\n")
+    
+    print (f"\nUVOTATTCOOR NEXT\n{command}\n")
+    if os.access(aspcorr,os.F_OK): 
+       # correct attfile
+       command = f"uvotattcorr attfile={uat1} outfile={attfile2} corrfile={aspcorr} clobber={clobber}"
+       if chatter > 1: logf.write(command+'\n')    
+       if os.system(command): logf.write( f"Error executing {command}\n")
+    else:
+       os.system(f"cp {attfile} {attfile2}")
+    
+    print (f"\nswiftxform raw-> det next")
+    
+    # reprocess the raw file to det coordinates (pass 2)
+    command = f"swiftxform ra={ra_} dec={dec_} roll={roll} infile={infile} "+\
+        f"outfile={detfile2} to=DET attfile={attfile2} teldeffile=CALDB "+\
+        f"method=AREA bitpix=-32 aberration=n seed=1 copyall=n cleanup={cleanup}"+\
+        f" chatter={chatter} history={history} clobber={clobber}"
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( f"Error executing {command}\n")
+    
+    print (f"SECOND PASS uvotgraspcorr")
+    
+    # second pass graspcorr
+    command = f"uvotgraspcorr infile={detfile2} catspec={specfile} distfile={distfile} "+\
+        f"outfile={aspcorr}  chatter={chatter} cleanup={cleanup} history={history} clobber=YES"
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( f"Error executing {command}\n")
+    
+    print (f"next: swiftxform DET->SKY ")
+    
+    # transform to sky
+    command = f"swiftxform infile={detfile} outfile={skyfile} attfile={uat1} "+\
+        f"alignfile={alignfile} method=AREA to=SKY ra={ra_} dec={dec_} roll={roll} "+\
+        f"teldeffile=CALDB bitpix=-32 zeronulls=NO aberration=NO seed=-1956 "+\
+        f"copyall=NO extempty=YES allempty=NO history={history} clobber={clobber} "+\
+        f"cleanup={cleanup} chatter={chatter}"
+    if chatter > 1: logf.write(command+'\n')    
+    if os.system(command): logf.write( f"Error executing {command}\n")
+    
+    if os.access(aspcorr,os.F_OK): 
+        print (f"next correct attfile")
+        # correct attfile
+        command = f"uvotattcorr attfile={uat1} outfile={attfile2} corrfile={aspcorr} clobber={clobber}"
+        if chatter > 1: logf.write(command+'\n')    
+        if os.system(command): logf.write( f"Error executing {command}\n")
+    
+    print (f"NEXT: rerun coordinator to update event file")
+    
+    # recreate sky coord in event file
+    command =  f"coordinator eventfile={outfile} eventext=EVENTS attfile={uat1} "+\
+               f" aberration=n randomize=y seed=1411 ra={ra_} "+\
+               f" dec={dec_} teldef=CALDB"
+    if chatter > 1: logf.write(command +'\n')   
+    if os.system(command): logf.write("problem with coordinator (final)\n")
+
+        
+    # finally
+    if cleanup:
+            command =f"rm sky1* hdr.patch "
+            logf.write(command+'\n')
+            os.system(command)
+            
+    logf.close() 
+    if evtgzip: 
+        print (f"applying gzip {outfile}:")
+        os.system(f"gzip -f {outfile}")
+        
+    #===== end grism event processing =====
 
 ''' 
 NOTES: (update 2017-05-21) 
@@ -1129,18 +1660,6 @@ uvotscreen infile=sw00033000021um2w1po_uf.evt
     
     Then, check that you don't have trailed image slices.
     
-*********
- 
-Sam: Using Mat's uvot_shift to update the event file position (ra,dec)?. - Check her 
-perl program. I would expect some kind of interpolation after vetting the output 
-from uvot_shift. (I do not have Sam's program) :/
-
-This makes more sense then updating the attitude file, because the 
-attitude should be dominated by the startrackers.  However, if we 
-would get a better attitude which would also help the XRT, then it 
-would make sense to update the attitude file. However, I think that 
-the spatial resolution of the XRT is worse and it doesn't matter.
-
 '''
 
 #
@@ -1245,7 +1764,7 @@ def get_target_position(file):
    return interpolate.interp1d(swifttime,ra,kind='linear'), interpolate.interp1d(swifttime,dec,kind='linear')
 
 #
-#  processing event data
+#  processing event data (using xselect)
 #
 def make_img_slice(eventdir,eventfile,tstart,tstop,outfile="./timeslice.evt",
        type='event', chatter=0): 
@@ -1279,13 +1798,15 @@ def make_img_slice(eventdir,eventfile,tstart,tstop,outfile="./timeslice.evt",
    
 def _make_hdr_patch(tstart,filtername=None,outfile='../work/patch.hdr',chatter=1):
    """
-   Write the text file to patch the header of the xselect filtered file
+   - Write the text file to patch the header of the xselect filtered file
+   - Return the full path of the required teldef file
    
    Parameters
    ----------
    tstart : int
-      start time (swift time) s
-   filtername: {"UGRISM0160"|"UGRISM0200"|"VGRISM0955"|"VGRISM1000"|"WHITE"|"V"|"B"|"U"|"W1"|"M2"|"W2"}
+      start time (swift time) s which is needed to look up the TELDEF file
+   filtername: str
+      one of {"UGRISM0160"|"UGRISM0200"|"VGRISM0955"|"VGRISM1000"|"WHITE"|"V"|"B"|"U"|"W1"|"M2"|"W2"}
        
    Note
    ----
@@ -1390,7 +1911,7 @@ def _make_hdr_patch(tstart,filtername=None,outfile='../work/patch.hdr',chatter=1
    f.close() 
    return DTELDEF+UTELDEF
    
-def process_grism_events(eventfile,horizonsfile,delta_t=30,phafiledir="../spectra",chatter=1):   
+def process_grism_event_horizons(eventfile,horizonsfile,delta_t=30,phafiledir="../spectra",chatter=1):   
    ''' For processing a grism event file:
    
    outline:
@@ -1568,7 +2089,7 @@ def split_eventlist_simple(eventfile,times=[],dt=10.0, specfile='usnob1.spec',
       obsid = file1[0][2:13]
       filtername = file1[0][14:16] 
    else:  # substitute some typical values
-      obsid = '0099909001'
+      obsid = '9999909001'
       filtername='zz'
    if attfile == None: attfile="../../auxil/sw"+obsid+"pat.fits"
    
