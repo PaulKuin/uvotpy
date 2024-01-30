@@ -1034,6 +1034,7 @@ def _position_shift_event_list(evtfile, time, delta_ra, delta_dec,
 def process_jittered_grism(evtfile, dt, 
     attfile=None, saofile=None,  
     logfile='process_grism_image.log',
+    matchtol=5,
     cleanup=True,clobber=True,
     chatter=1):
     """
@@ -1055,6 +1056,8 @@ def process_jittered_grism(evtfile, dt,
        GTIs, e.g., sw<obsid>pat.fits.gz    
     saofile: path 
        path to the sw<obsid>sao.fits.gz auxiliary file for uvotscreen
+    matchtol: int
+       tristarid parameter that gives the tolerance in arcsec for the position   
     
     output
     ======
@@ -1085,16 +1088,18 @@ def process_jittered_grism(evtfile, dt,
     
     Example
     =======
-    In [3]: evtfile='sw00034849012uguw1po_uf.evt'
+    evtfile='sw00034849012uguw1po_uf.evt'
 
-    In [4]: uvot_event.process_jittered_grism(evtfile,dt=10.0,\
-            attfile='../../auxil/sw00034849012pat.fits',\
-            skip_attcorr=False, chatter=2)
+    uvot_event.process_jittered_grism(file,30., \
+       attfile="../../auxil/sw00945521028pat.fits", \
+       saofile='../../auxil/sw00945521028sao.fits.gz', \
+       cleanup=True,chatter=0)
     
     History: 
-    2024-01-03 NPMK write pipe for grism event data; using uvot_shift does 
-       not work. Probably the fortran code needs to be set to select 
-       elengated sources only. Using uvotgraspcorr for now.
+    2024-01-30 NPMK Grism: used coregistration of time-sliced images to make a good 
+    raw image which is then further processed to det and sky coordinates.
+    2024-01-03 NPMK pipe for grism event data not yet; using uvot_shift does 
+       not work. Using uvotgraspcorr for now.
      
     """
     import os,sys
@@ -1107,7 +1112,7 @@ def process_jittered_grism(evtfile, dt,
     from uvotpy import uvotmisc, uvotwcs
     from astropy.table import Table
     
-    __version__ = "0.1 20240107"
+    __version__ = "0.1 20240130"
 
     if clobber > 0: 
        sclobber = 'yes'
@@ -1139,6 +1144,22 @@ def process_jittered_grism(evtfile, dt,
     attfile2 = "attfile_corrected.fits"
     alignfile = "CALDB"
     history = "YES"
+    
+    # attitude and orbit files
+    if attfile == None:
+       attfile = f"{evtpath}../../auxil/{outfroot[:13]}pat.fits"
+       if not os.access(attfile,os.F_OK): 
+          attfile = attfile+".gz"
+       if not os.access(attfile,os.F_OK):
+          raise IOError(f"Cannot located the attitude file, please provide. Tried {attfile}")   
+    if saofile == None:
+       saofile = f"{evtpath}../../auxil/{outfroot[:13]}sao.fits"
+       if not os.access(saofile,os.F_OK): 
+          saofile = saofile+".gz"
+       if not os.access(saofile,os.F_OK):
+          raise IOError(f"Cannot located the attitude/orbit file, please provide. Tried {saofile}")
+    if chatter > 1: 
+        print (f"attfile={attfile}\nsaofile={saofile}\n")         
     uat1 = attfile 
     
     # copy the original event list 
@@ -1175,9 +1196,8 @@ def process_jittered_grism(evtfile, dt,
         logf.write( f"Ran attjumpcoor ftool on attitude file; original is now in {attfile}.2\n")
             
     # need to screen the event list now & populate RA, DEC columns in evt file
-    command =  "coordinator eventfile="+outfile+" eventext=EVENTS attfile="+uat1+\
-               " aberration=n randomize=y seed=1411 ra="+ra_+\
-               " dec="+dec_+" teldef=CALDB"
+    command =  f"coordinator eventfile={outfile} eventext=EVENTS attfile={uat1}"+\
+               " aberration=n randomize=y seed=1411 ra={ra_} dec={dec_} teldef=CALDB"
     if chatter > 1: 
         logf.write(command +'\n')  
         print (command,'\n') 
@@ -1185,7 +1205,7 @@ def process_jittered_grism(evtfile, dt,
         "\nproblem with coordinator (initial)\n"+\
         "this is often due to the clock correction file being outdated\n"+\
         "update the CALDB mis\n" )
-    print (f"1187 - after coordinator")     
+    #print (f"1187 - after coordinator")     
     #command = "prefilter outname=prefilter.tmp columns=ALL orbname={orbitfile} attname={attfile} ... "     
             
     command = 'uvotscreen infile={outfile} attorbfile={saofile} outfile= {outfile_} '+\
@@ -1197,7 +1217,7 @@ def process_jittered_grism(evtfile, dt,
         if os.system("mv "+outfile_+" "+outfile): print ("move of screened outfile failed")
     else:
         if os.system("cp "+outfile_+" "+outfile): print ("copy of screened outfile failed")
-    print ("1201 after uvotscreen (initial)")
+    #print ("1201 after uvotscreen (initial)")
 
     # split the event list
     
@@ -1250,7 +1270,7 @@ def process_jittered_grism(evtfile, dt,
     if chatter > 3: 
         for a,b in zip(ts1,ts2):
             logf.write("new gti: %f, %f\n"%(a,b))
-    print ("1254 after defining new time slices")
+    #print ("1254 after defining new time slices")
     
     wstart = []
     wstop = []
@@ -1288,7 +1308,7 @@ def process_jittered_grism(evtfile, dt,
     # change list to numpy arrays        
     new_tstart = np.asarray(new_tstart)
     new_tstop = np.asarray(new_tstop) 
-    print ("1292 after creating keyword lists for WINDOW")
+    #print ("1292 after creating keyword lists for WINDOW")
      
     # now I have lists for the start, stop and dead time correction and can make new 
     # extensions ; write a new file
@@ -1315,7 +1335,7 @@ def process_jittered_grism(evtfile, dt,
     if chatter > 3: logf.write ("added stdgti hdu\n" )
     
     # write gti(n) to hdulist
-    print ("1319 start writing gti(n) to hdulist")
+    #print ("1319 start writing gti(n) to hdulist")
     gtilist = []
     tstartlist = new_tstart
     tstoplist = new_tstop
@@ -1389,6 +1409,7 @@ def process_jittered_grism(evtfile, dt,
     # now that the event file has been updated with GTIs, create the raw image files from it
     
     """
+    
     # make raw image from event file - ISSUE: does this process all the GTIs or not? 
     # alternatively, using tstart,tstop with evtfile[gtifilter] can process slice by slice
     #  i.e., without first writing the detailed GTI extension 
@@ -1426,7 +1447,7 @@ def process_jittered_grism(evtfile, dt,
         if chatter > 1: logf.write(command+'\n')    
         if os.system(command): logf.write( "could not append to {rawtmp} image file for {gti_n}\n")
     """
-    #    
+    # this processes to an uncorrected sky image    
     command = f"uvotimage infile={outfile} prefix=sky1 attfile={uat1} "+\
                 " teldeffile='CALDB' alignfile='CALDB' mod8corr=no "+\
                 f" ra={ra_}  dec={dec_} roll={roll} clobber={clobber} chatter={chatter}"
@@ -1435,10 +1456,10 @@ def process_jittered_grism(evtfile, dt,
     if os.system(command): logf.write( "could not create sky1 image file\n")
     dataheader = fits.getheader(infile, ext=1)
     
-    print (f"\n{command}\n Done uvotrawevtimg ;NEXT: align raw images \n\n")  #swiftxform\n\n ")
+    #print (f"\n{command}\n Done uvotrawevtimg ;NEXT: align raw images \n\n")  #swiftxform\n\n ")
  
     import coregister
-    rawimg, imgs, shifts, shft2 = coregister.with_scipy(infile)
+    rawimg = coregister.with_scipy(infile,skip=True)
     
     # create new raw file with rawimg
     evt = fits.open(outfile,)
@@ -1453,29 +1474,15 @@ def process_jittered_grism(evtfile, dt,
     fitsout.close()
     evt.close()
     
-    """
-    # now append one of the rawtmp extensions, but replace the data part
-    command = f"fappend '{rawtmp}[1]' {rawfile} "
-    if chatter > 1: logf.write(command+'\n')    
-    if os.system(command): logf.write( "could not append to {rawtmp}[1] to rawfile\n")
-    # edit this extension 
-    f = fits.open(rawfile,mode='update')
-    f[1].data = rawimg
-    f[1].header = dataheader
-    f.flush()
-    """
-    
     infile = rawfile  
     # process this   
-    #if chatter > 1: print ("run grismpipe now...")
-    #if os.system(f"grismpipe {rawfile} {uat1} {specfile}"): print ("")
     # not making the bad pixels list
     #command = "uvotbadpix infile=$raw_file badpixlist=$badpixlist outfile=$bp_file compress=YES clobber=$clobber history=$history chatter=$chatter"
     # not making the mod8 map
     #command = "uvotmodmap infile=$raw_file badpixfile=$bp_file outfile=$md_file mod8prod=NO mod8file=$modmap nsig=3 ncell=16 subimage=NO xmin=0 xmax=2047 ymin=0 ymax=2047 clobber=$clobber history=$history chatter=$chatter"
     # transform to detector coordinates - first pass
     #$distfile = "CALDB" unless ( -e $distfile );
-    print (f"SwiftXform {infile} next")
+    if chatter > 1: print (f"SwiftXform {infile} next")
     command = f"swiftxform ra={ra_} dec={dec_} roll={roll} infile={infile} "+\
               f"outfile={detfile} to=DET attfile={uat1} teldeffile=CALDB "+\
               f"method=AREA bitpix=-32 aberration=n seed=1 copyall=n cleanup={cleanup} "+\
@@ -1483,18 +1490,20 @@ def process_jittered_grism(evtfile, dt,
     if chatter > 1: logf.write(command+'\n')    
     if os.system(command): logf.write( f"Error executing {command}\n")
 
-    print (f"\n UVOTGRASPCORR first pass \n\n")
+    if chatter > 1: print (f"\n UVOTGRASPCORR first pass \n\n")
 
-    # graspcorr first pass  
+    # graspcorr first pass 
+    # the tristarid parameter matchtol may need to be large enough if the drift in pointing
+    #    was large
     command = f"uvotgraspcorr infile={detfile} catspec={specfile} distfile={distfile} "+\
         f"outfile={aspcorr} chatter=5 cleanup=False history={history} clobber={clobber} "+\
-        f" starid='matchtol=5 poscorr=150'"
+        f" starid='matchtol={matchtol} poscorr=150'"
     #command = f"uvotgraspcorr infile={detfile} catspec={specfile} distfile={distfile} "+\
     #    f"outfile={aspcorr} chatter={chatter} cleanup={cleanup} history={history} clobber={clobber}"
     if chatter > 1: logf.write(command+'\n')    
     if os.system(command): logf.write( f"Error executing {command}\n")
     
-    print (f"\nUVOTATTCOOR NEXT\n{command}\n")
+    if chatter > 1: print (f"\nUVOTATTCOOR NEXT\n{command}\n")
     if os.access(aspcorr,os.F_OK): 
        # correct attfile
        command = f"uvotattcorr attfile={uat1} outfile={attfile2} corrfile={aspcorr} clobber={clobber}"
@@ -1503,7 +1512,7 @@ def process_jittered_grism(evtfile, dt,
     else:
        os.system(f"cp {attfile} {attfile2}")
     
-    print (f"\nswiftxform raw-> det next")
+    if chatter > 1: print (f"\nswiftxform raw-> det next")
     
     # reprocess the raw file to det coordinates (pass 2)
     command = f"swiftxform ra={ra_} dec={dec_} roll={roll} infile={infile} "+\
@@ -1513,7 +1522,7 @@ def process_jittered_grism(evtfile, dt,
     if chatter > 1: logf.write(command+'\n')    
     if os.system(command): logf.write( f"Error executing {command}\n")
     
-    print (f"SECOND PASS uvotgraspcorr")
+    if chatter > 1: print (f"SECOND PASS uvotgraspcorr")
     
     # second pass graspcorr
     command = f"uvotgraspcorr infile={detfile2} catspec={specfile} distfile={distfile} "+\
@@ -1521,7 +1530,7 @@ def process_jittered_grism(evtfile, dt,
     if chatter > 1: logf.write(command+'\n')    
     if os.system(command): logf.write( f"Error executing {command}\n")
     
-    print (f"next: swiftxform DET->SKY ")
+    if chatter > 1: print (f"next: swiftxform DET->SKY ")
     
     # transform to sky
     command = f"swiftxform infile={detfile} outfile={skyfile} attfile={uat1} "+\
@@ -1533,32 +1542,37 @@ def process_jittered_grism(evtfile, dt,
     if os.system(command): logf.write( f"Error executing {command}\n")
     
     if os.access(aspcorr,os.F_OK): 
-        print (f"next correct attfile")
+        print (f"There are indications uvotgraspcorr did not get a good solution. You "+\
+        "may consider rerunning with the parameter matchtol set larger.")
+        if chatter > 1: 
+            print (f"next correct attfile")
         # correct attfile
         command = f"uvotattcorr attfile={uat1} outfile={attfile2} corrfile={aspcorr} clobber={clobber}"
         if chatter > 1: logf.write(command+'\n')    
         if os.system(command): logf.write( f"Error executing {command}\n")
     
-    print (f"NEXT: rerun coordinator to update event file")
+        print (f"NEXT: rerun coordinator to update event file")
     
-    # recreate sky coord in event file
-    command =  f"coordinator eventfile={outfile} eventext=EVENTS attfile={uat1} "+\
+        # recreate sky coord in event file
+        command =  f"coordinator eventfile={outfile} eventext=EVENTS attfile={uat1} "+\
                f" aberration=n randomize=y seed=1411 ra={ra_} "+\
                f" dec={dec_} teldef=CALDB"
-    if chatter > 1: logf.write(command +'\n')   
-    if os.system(command): logf.write("problem with coordinator (final)\n")
-
-        
+        if chatter > 1: logf.write(command +'\n')   
+        if os.system(command): logf.write("problem with coordinator (final)\n")
+    else:
+        os.system(f"rm {outfile}")    
+        if evtgzip: 
+            if chatter > 1: print (f"applying gzip {outfile}:")
+            os.system(f"gzip -f {outfile}")
+    
     # finally
     if cleanup:
-            command =f"rm sky1* hdr.patch "
-            logf.write(command+'\n')
-            os.system(command)
+         command =f"rm sky1* hdr.patch xy.*.txt sky.*.txt fthedit.*.key detfilt.* "+\
+            "scout.* obs.* catalog.* starid.* srclist.* detect.*"
+         logf.write(command+'\n')
+         os.system(command)
             
     logf.close() 
-    if evtgzip: 
-        print (f"applying gzip {outfile}:")
-        os.system(f"gzip -f {outfile}")
         
     #===== end grism event processing =====
 
