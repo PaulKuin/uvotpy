@@ -65,7 +65,7 @@ from matplotlib.lines import Line2D
         find the best fit solution       
 '''
 
-__version__ = '20190304-1.0.0'
+__version__ = '20240522-1.1.0'
 
 v = sys.version
 if v[0] == '2': 
@@ -93,6 +93,8 @@ spdata = {
 {'name':'O VI' ,'transition':'','wavevac':1037.6,     'label':r'O VI + CII'},
 #{'name':'C II' ,'transition':'','wavevac':1036.337,     'label':r'CII'},
 #{'name':'C II' ,'transition':'','wavevac':1037.018,     'label':r'CII'},
+#{'name':'Mg I' ,'transition':'','wavevac':1048.74,     'label':r'Mg I'},
+#{'name':'Mg I' ,'transition':'','wavevac':1050.17,     'label':r'Mg I'},
 #{'name':'P V'  ,'transition': '2S-2Po','wavevac':1117.98, 'label':'P V'}, 
 #{'name':'P V'  ,'transition': '2S-2Po','wavevac':1128.01, 'label':'P V'},
 {'name':'O VIII*'  ,'transition': '5p 2D- 6d 2Fo','wavevac':1164, 'label':'O VIII ?'}, 
@@ -112,6 +114,9 @@ spdata = {
 {'name':'Ly-alpha' ,'transition':'1s-2' ,'wavevac':1215.67,   'label':r'Ly$\alpha$'},
 {'name':'Ly-beta'  ,'transition':'1s-3' ,'wavevac':1025.722,  'label':r'Ly$\beta$'},
 {'name':'Ly-gamma' ,'transition':'1s-4' ,'wavevac':972.537,   'label':r'Ly$\gamma$'},
+{'name':'Ly-delta' ,'transition':'1s-5' ,'wavevac':949.74,    'label':r'Ly$\delta$'},
+{'name':'Ly-epsilon''transition':'1s-6' ,'wavevac':937.81,    'label':r'Ly$\epsilon$'},
+{'name':'Ly-6'     ,'transition':'1s-7' ,'wavevac':930.75,    'label':r'Ly-6'},
 {'name':'Ly-limit' ,'transition':'1s-40','wavevac':912.3,     'label':r'Ly-limit'},
 {'name':'H-alpha'  ,'transition':'2-3'  ,'wavevac':6564.63,   'label':r'H$\alpha$'},
 {'name':'H-beta'   ,'transition':'2-4'  ,'wavevac':4862.69,   'label':r'H$\beta$'},
@@ -190,11 +195,13 @@ spdata = {
 'nova':[ # add also H, HeI, HeII 
 # 
 #{'transition':'','wavevac':1213.81, 'label':u'[O V]'},
-#{'transition':'1S-3Po3869/3968','wavevac':1218.344, 'label':u'O V'},
+#{'transition':'1S-3Po3869/3968','wavevac':1218.344, 'label':u'O V'}, #iso-el w. N IV 1720?
 {'transition':'','wavevac':1750 , 'label':u'N III]'},
 {'transition':"",'wavevac':1810 , 'label':'Si II'},
 {'transition':'','wavevac':1862.3  , 'label':u'Al III]'},
 {'transition':'','wavevac':1908.7, 'label':u'C III]'},
+#{'transition':'','wavevac':1975, 'label':u'[P X]'}, #372.3eV
+#{'transition':'','wavevac':2070, 'label':u'P XII'}, #479.4eV
 {'transition':'','wavevac':2143  , 'label':u'N II]'},
 #{'transition':'','wavevac':2151.0, 'label':u'N IV]'},
 {'transition':'','wavevac':2297  , 'label':u'C III'},
@@ -203,8 +210,12 @@ spdata = {
 #{'transition':'','wavevac':2326.1, 'label':u'C II'},
 {'transition':'','wavevac':2332.1, 'label':u'[O III]'},
 {'transition':'','wavevac':2471.0, 'label':u'O II]'},
+#{'transition':'','wavevac':2486.0, 'label':u'[P IX]'}, # 309.6eV
 #{'transition':'5D-3D','wavevac':2473, 'label':u'Ni IV]'},
 #{'transition':'5D-3D','wavevac':2522.5, 'label':u'Ni IV]'},
+#{'transition':'','wavevac':2522.7, 'label':u'[P IX]'}, # doublet w/2486.0
+#{'transition':'','wavevac':2630, 'label':u'Ne IV'},
+#{'transition':'','wavevac':2674, 'label':u'S XV'},
 {'transition':'','wavevac':2796.4, 'label':u'Mg II'},
 {'transition':'','wavevac':2803.5, 'label':u'Mg II'},
 {'transition':'','wavevac':2937.4, 'label':u'Mg II*'},
@@ -214,7 +225,9 @@ spdata = {
 {'transition':'','wavevac':3727  , 'label':u'[O III]'},
 {'transition':'','wavevac':3869, 'label':u'[Ne III]'},
 {'transition':'','wavevac':3968, 'label':u'[Ne III]'},
+#{'transition':'','wavevac':4087, 'label':u'[P XIII]'}, # 560.62eV
 {'transition':'','wavevac':4363  , 'label':u'[O III]'},
+#{'transition':'','wavevac':4520, 'label':u'[P XIII]'},
 {'transition':'','wavevac':4636  , 'label':u'N III*'},
 {'transition':'','wavevac':4643  , 'label':u'N III*'},
 {'transition':'','wavevac':4648.7, 'label':u'C III*'},
@@ -222,7 +235,7 @@ spdata = {
 {'transition':'','wavevac':4959  , 'label':u'[O III]'},
 {'transition':'','wavevac':5007  , 'label':u'[O III]'},
 {'transition':'','wavevac':5755  , 'label':u'[N II]'},
-#{'transition':'','wavevac':.0, 'label':u''}
+#{'transition':'','wavevac':6375.51, 'label':u'[Fe X]'}
 #{'transition':'','wavevac':.0, 'label':u''}
   ],
 }
@@ -266,7 +279,7 @@ spdata2 = {
 {'transition':'','wavevac':2937.4, 'label':u'Mg II*'},
 #{'transition':'','wavevac':2949, 'label':u'Mg V]'},
 # unsure of this one {'transition':'','wavevac':2990, 'label':u'Ni VII]'},
-{'transition':u'2s2 2p(2P°)3p 3S 1-2s2 2p(2P°)3d 3P° 2','wavevac':3133.77, 'label':u'O III*'},
+{'transition':u'2s2 2p(2P*)3p 3S 1-2s2 2p(2P*)3d 3P* 2','wavevac':3133.77, 'label':u'O III*'},
 {'transition':'','wavevac':3287.5, 'label':u'C III 1909(2)'},
 #{'transition':'','wavevac':.0, 'label':u''}
 #{'transition':'','wavevac':3132, 'label':u'?Be II ?Fe II '},
@@ -410,8 +423,11 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
      [3530,3580],[3580,3630],[3930,3960],[4030,4050],
      [4170,4200],[4430,4460],[4750,4800]],
      phafiles=[]):
+     """
+     regions  is list of lists of regions to use for background
+     phafiles is input parameter - list of pha files
+     """
     import numpy as np
-    #phafiles = rdTab('list_phafiles_g.txt') input parameter
 
     z = get_continuum(phafiles,regions=regions, tstart=398093612.4,)
     wave=z[0]
@@ -852,6 +868,75 @@ def adjust_wavelength_manually(file=None,openfile=None,openplot=None,
         ax.figure.canvas.draw()
     return fig, ax, spectrum, f
 
+def apply_shift0(file,delwav,recalculate=False):
+    """apply a given wavelength shift in A"""
+    from uvotpy import uvotmisc
+    f = fits.open(file,mode='update')
+    # check type of file
+    getspecoutput = False
+    for ff in f: 
+        if 'CALSPEC' in ff.header: getspecoutput = True
+    if getspecoutput:    
+        delwav0 = 0
+        if 'WAVSHFT' in f['CALSPEC'].header:
+            delwav0 = f['CALSPEC'].header['WAVSHFT']+delwav
+        if recalculate:
+            if 'PIXSHFT' in f['CALSPEC'].header: 
+                pixshift0 = f['CALSPEC'].header['PIXSHFT']
+            else: 
+                pixshift0 = 0    
+            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+            delpix = int(round(delwav / C_1[-2]))
+            pixno  = f['CALSPEC'].data['pixno']  +delpix
+            f['CALSPEC'].data['pixno'] = pixno  
+            f['CALSPEC'].data['lambda'] = np.polyval(C_1,pixno)
+            f['CALSPEC'].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            h = f['SPECTRUM'].header['history']
+            dist12 = float(uvotmisc.get_keyword_from_history(h,'DIST12'))
+            if 'PIXNO2' in  f['CALSPEC'].header:
+               pixno2 = f['CALSPEC'].data['pixno2'] +delpix   
+               f['CALSPEC'].data['pixno2'] = pixno2  
+               f['CALSPEC'].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+               f['CALSPEC'].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+        else:       
+            f['CALSPEC'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f['CALSPEC'].data['LAMBDA'] = f['CALSPEC'].data['LAMBDA'] + delwav    
+            f['SPECTRUM'].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+        f.verify()
+        f.flush()
+    else:
+        extname = 'SUMMED_SPECTRUM'
+        print ("currently this program cannot recalculate the dispersion")
+        f.verify()
+        f.flush()
+        return
+        delwav0 = 0
+        if 'WAVSHFT' in f[extname].header:
+            delwav0 = f[extname].header['WAVSHFT']+delwav
+        if recalculate:
+            if 'PIXSHFT' in f[extname].header: 
+                pixshift0 = f[extname].header['PIXSHFT']
+            else: 
+                pixshift0 = 0    
+            C_1 = uvotmisc.get_dispersion_from_header(f[1].header)
+            C_2 = uvotmisc.get_dispersion_from_header(f[1].header,order=2)
+            delpix = int(round(delwav / C_1[-2]))
+            pixno  = f[extname].data['pixno']  +delpix
+            f[extname].data['pixno'] = pixno  
+            f[extname].data['lambda'] = np.polyval(C_1,pixno)
+            f[extname].header['PIXSHFT'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+            if 'PIXNO2' in  f[extname].header:
+               pixno2 = f[extname].data['pixno2'] +delpix   
+               f[extname].data['pixno2'] = pixno2  
+               f[extname].header['PIXSHFT2'] = (delpix+pixshift0, "pixno shift + recalc lambda from disp")
+               f[extname].data['lambda2'] = np.polyval(C_2,pixno2-dist12)
+        else:       
+            f[extname].header['WAVSHFT'] = (delwav+delwav0, "manual wavelength shift applied")
+            f[extname].data['LAMBDA'] = f[extname].data['LAMBDA'] + delwav    
+        f.verify()
+        f.flush()
+                
 def apply_shift(file,delwav,recalculate=False,chatter=0):
    """apply a given wavelength shift in A
        2023-07-22 updated 
@@ -863,7 +948,7 @@ def apply_shift(file,delwav,recalculate=False,chatter=0):
     # check type of file
     if chatter > 0:
        f.info()
-    # check if CALSPEC extension present   
+    # check if CALSPEC extension present   
     getspecoutput = False
     for k in range(1,len(f)): 
         if 'CALSPEC' == f[k].header['EXTNAME']: 
@@ -872,7 +957,7 @@ def apply_shift(file,delwav,recalculate=False,chatter=0):
             
     if getspecoutput:  
         if chatter > 1: print ("processing PHA file") 
-        # regular PHA type files from uvotgetspec.getSpec() 
+        # regular PHA type files from uvotgetspec.getSpec() 
         delwav0 = 0
         if 'WAVSHFT' in f['CALSPEC'].header:
             delwav0 = f['CALSPEC'].header['WAVSHFT']
@@ -921,6 +1006,8 @@ def apply_shift(file,delwav,recalculate=False,chatter=0):
         f.flush()
         f.close()
         return
+
+
 
 class SelectBadRegions(object):
     """Select the bad regions on a spectrum interactively"""
@@ -1419,7 +1506,8 @@ def get_continuum_values(date,wave,flux,quality,cont_regions=[],qlimit=1):
        #   result.append([np.NaN,np.NaN,np.NaN])   
     return result
     
-def get_continuum(phafiles,regions=[],qlimit=1,full=True,chatter=0):
+def get_continuum(phafiles,regions=[],qlimit=1,tstart=0, #daily=True,
+    full=True,chatter=0):
     '''
     given a list of PHA spectra files and a list of (continuum)
     regions, extract the mean flux and error in the 
@@ -1437,7 +1525,7 @@ def get_continuum(phafiles,regions=[],qlimit=1,full=True,chatter=0):
     
     returns
     -------
-    wavelength, mean flux, error in each region as an astropy table
+    wavelength, mean flux+error in each region as an astropy table
     '''   
     import numpy as np
     from astropy.io import ascii,fits
@@ -1484,7 +1572,7 @@ def get_continuum(phafiles,regions=[],qlimit=1,full=True,chatter=0):
        return w,t, allbands, records
     else:
        return w,t
-       
+        
 def get_continuum1(phafile, regions=[ [1700,1730],[1830,1860],[1950,1970],[2010,2040],\
         [2170,2210],[2350,2400],[2680,2710],[2930,2990],[3230,3250],[3520,3600],\
         [3700,3750],[4000,4040],[4220,4280],[4750,4810],[5130,5170],[5700,5750],\
@@ -1623,6 +1711,8 @@ def pickfix2800(phafile, std_mult=1.5,wref=2800.,wtol=5,chatter=0):
     else: 
         print (f"required shift {wshft} is too small or too large")    
 
+   
+    
 def plot_spectrum(ax,spectrumfile,
         errbars=False, errhaze=False, hazecolor='grey', hazealpha=0.2, 
         flag='all',
