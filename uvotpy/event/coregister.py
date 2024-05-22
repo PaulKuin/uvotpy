@@ -31,7 +31,7 @@ def image_registration(im1, im2):
     shift_values = np.unravel_index(np.argmax(np.abs(cross_correlation)), cross_correlation.shape)
     return shift_values
 
-def with_scipy(file,max_shift=20):
+def with_scipy(file,max_shift=20,skip=True):
     """
     
     PROBLEM: aligns on the MOD8 and the Diffraction pattern from the fit to the distortion
@@ -56,10 +56,10 @@ def with_scipy(file,max_shift=20):
         im[q] = med
         bkg.append(np.median(im) )
     bkg = np.asarray(bkg)   
-    print (f"background {bkg}")
+    #print (f"background {bkg}")
 
     for i in np.arange(n-1,1,-1):
-        print (f"processing image number {i} to match previous one {i-1}")
+        #print (f"processing image number {i} to match previous one {i-1}")
         im_ori_1 = f[i-1].data.copy()
         im_ori_2 = f[i].data.copy()
         # smooth the images with 5x5 boxcar
@@ -74,7 +74,7 @@ def with_scipy(file,max_shift=20):
         
         # stack it onto the previous 
         if i == n-1: 
-            print (f"stacking number {i}(shifted) tp {i-1} ")
+            #print (f"stacking number {i}(shifted) tp {i-1} ")
             refimg = im_ori_1 + im2_shifted
         else:
             # refimg was consistent with im2 so needs also to be shifted
@@ -82,10 +82,15 @@ def with_scipy(file,max_shift=20):
             refimg = refimg_shifted + im2_shifted        
         imgs.append(im2_shifted)
         shifts.append(shift_values)
-        print (f"images {i},{i-1} shift = {shift_values} ")
+        #print (f"images {i},{i-1} shift = {shift_values} ")
     f.close()
-    
+    if skip:
+        return refimg
+        
     # get the shifts for updating the fits grism image headers order is from last to first
+    """ for some reason the imgs do not align properly, so this part of the code is 
+        only accessible with parameter skip = False.
+    """
     shft2 = []
     for a,b in shifts:
         if abs(a - refimg.shape[0]) < max_shift: a = a-refimg.shape[0]
@@ -132,7 +137,7 @@ def with_scipy(file,max_shift=20):
 """     
 
 """
-# alternative:
+# alternative way to align images:
 
 # pip install opencv-python
 import cv2

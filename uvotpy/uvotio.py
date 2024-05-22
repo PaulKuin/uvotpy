@@ -2673,7 +2673,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       hdu4.header['FILETAG']=(filetag,'unique set id')
       hdulist.append(hdu4)
    try:   
-     hdulist.writeto(outfile1,clobber=clobber)
+     hdulist.writeto(outfile1,overwrite=clobber)
    except:
       print("WARNING : NO OUTPUT FILE CREATED.  "+outfile1+" EXISTS and CLOBBER not set") 
       pass  
@@ -2802,7 +2802,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
      tbhdu1.header['CAL_REF']=('2015MNRAS.449.2514K','CDS Bibcode grism calibration')                          
      hdulist.append(tbhdu1)
      try:
-        hdulist.writeto(outfile2nd,clobber=clobber)
+        hdulist.writeto(outfile2nd,overwrite=clobber)
      except:
         print("WARNING : NO OUTPUT FILE CREATED.  "+outfile2nd+" EXISTS and CLOBBER not set") 
         pass  
@@ -2928,7 +2928,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
        tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
        hdulist.append(tbhdu1)
        try:
-          hdulist.writeto(backfile1,clobber=clobber)
+          hdulist.writeto(backfile1,overwrite=clobber)
        except:
             print("WARNING : NO OUTPUT FILE CREATED.  "+backfile1+" EXISTS and CLOBBER not set") 
             pass  
@@ -3046,7 +3046,7 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
           tbhdu1.header['ZERODETY']=(zeroxy[1],'zeroth order position on image')   
           hdulist.append(tbhdu1)
           try:
-             hdulist.writeto(backfile2,clobber=clobber)
+             hdulist.writeto(backfile2,overwrite=clobber)
           except:
              print("WARNING : NO OUTPUT FILE CREATED.  "+backfile2+" EXISTS and CLOBBER not set") 
              pass  
@@ -3896,7 +3896,7 @@ def write_rmf_file (rmffilename, wave, wheelpos, disp,
    tbhdu2.header['TLMAX1']  =(NN, 'Last legal channel number')                              
    tbhdu2.header['DATE']    =(now.isoformat(), 'File creation date')                           
    hdulist.append(tbhdu2)     
-   hdulist.writeto(rmffilename,clobber=clobber)
+   hdulist.writeto(rmffilename,overwrite=clobber)
 
 
 
@@ -3998,3 +3998,10 @@ def write_spectrum_textfile(fitsfile,targetname="",overwr=True):
     datetime=f[1].header['tstart']/86400.+51910.0
     ascfile=fitsfile.split('.pha')[0]+"_"+targetname+"_"+str(datetime)[:10]+'.txt'
     ioascii.write([w[q],flx[q],err[q]], output=ascfile, names=colnames, formats={'#wave':'%9.1f','flam':'%12.3e','err':'%12.3e'},overwrite=overwr)
+    
+def wave_from_iraf_hdr(header):
+    """
+    code snippet to get wavelength array for IRAF 1D spectrum from fits header
+    """
+    import numpy as np
+    return header['CRVAL1'] + header['CD1_1'] * (np.arange(header['NAXIS1']) - header['CRPIX1'])                                  

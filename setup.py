@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='uvotpy',
-      version='2.4.0',
+      version='2.4.1',
       description='Swift UVOT grism spectral processing software',
       long_description="""
       This software was written to extract astronomical spectra from grism images
@@ -33,13 +33,12 @@ setup(name='uvotpy',
       BIBCODE 2015MNRAS.449.2514K ; Kuin et al. 2015, Monthly Notices of the 
       Royal Astronomical Society, Vol. 449, p2514. 
                        """,
-      author='Paul Kuin',
+      author='N Paul Kuin',
       author_email='npkuin@gmail.com',
       url='http://www.mssl.ucl.ac.uk/www_astro/uvot/',
       platforms=['MacOS X 10.6.8+','linux Debian'],
       license='Releases under a 3-clause BSD style license',
       packages = ['uvotpy'],
-      package_dir  = {'' : ''}, 
       package_data = {'uvotpy' : [ 'licence/licence.txt',
                              'calfiles/usnob1.spec',
                              'calfiles/uvw1_dummy.img',
@@ -53,7 +52,6 @@ setup(name='uvotpy',
 			     'doc/*']}, 			      
       requires = ['numpy','matplotlib','scipy','astropy','stsci.convolve',
          'stsci.imagestats','future','astroquery'],
-      # futurize? 
       classifiers=[ 'Programming Language :: Python ::3.5'],
       # requires HEADAS, WCStools, internet connection
       # environment setup  requires UVOTPY to point to the installed uvotpy library and calfiles.
