@@ -824,7 +824,7 @@ def _read_readout_streak_output(obses,inp='results.txt',
       ext_data.append( dict(ext=ext, column=-1, SN=-1,cr=-1,err=-1))         
    if chatter > 3: 
       print ("\n  ext_meta: ",ext_meta,"\n  ext_data : ",ext_data,"\n")         
-   for m in range(n_ext): 
+   for m in range(len(tstart)): 
       streak_col_SN_CR_ERR=[]
       streak_id=[]
       goodstreak=[] 
