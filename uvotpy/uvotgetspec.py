@@ -579,7 +579,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
       hdr = pyfits.getheader(specfile,int(ext))
-      Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})
+      #Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})
+      term1 = f"{grismfile}={specfile.split('/')[-1]}[{str(ext)}]" 
+      Yout.update({'grismfile':term1})
       if chatter > -1:
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
