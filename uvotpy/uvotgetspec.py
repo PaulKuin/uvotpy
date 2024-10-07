@@ -102,7 +102,7 @@ if __name__ != '__main__':
       background_smoothing = [50,7]   # 'boxcar' default smoothing in dispersion and across dispersion in pix
       background_interpolation = 'linear'
       trackcentroiding = True # default (= False will disable track y-centroiding) 
-      if os.getenv("TRACKWIDTH",default=2.5)
+      os.getenv("TRACKWIDTH",default=2.5)
       #trackwidth = 2.5  # width of extraction region in sigma  (alternative default = 1.0) 2.5 was used for flux calibration.
       bluetrackwidth = 1.3 # multiplier width of non-order-overlapped extraction region [not yet active]
       write_RMF = False
