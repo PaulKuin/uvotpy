@@ -102,7 +102,8 @@ if __name__ != '__main__':
       background_smoothing = [50,7]   # 'boxcar' default smoothing in dispersion and across dispersion in pix
       background_interpolation = 'linear'
       trackcentroiding = True # default (= False will disable track y-centroiding) 
-      trackwidth = 2.5  # width of extraction region in sigma  (alternative default = 1.0) 2.5 was used for flux calibration.
+      if os.getenv("TRACKWIDTH",default=2.5)
+      #trackwidth = 2.5  # width of extraction region in sigma  (alternative default = 1.0) 2.5 was used for flux calibration.
       bluetrackwidth = 1.3 # multiplier width of non-order-overlapped extraction region [not yet active]
       write_RMF = False
       background_source_mag = 18.0
@@ -426,6 +427,11 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
    if type(offsetlimit) == list:
        if len(offsetlimit) != 2:
            raise IOError("offsetlimit list must be [center, distance from center] in pixels")
+
+   obsid = str(obsid)
+   ext = int(ext)
+   if ext > 999 :
+      raise IOError("Error: the obsid and ext fields seem reversed.")
            
    get_curve_filename = None
    
@@ -573,6 +579,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
       hdr = pyfits.getheader(specfile,int(ext))
+      Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})
       if chatter > -1:
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
