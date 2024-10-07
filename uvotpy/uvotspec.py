@@ -115,7 +115,7 @@ spdata = {
 {'name':'Ly-beta'  ,'transition':'1s-3' ,'wavevac':1025.722,  'label':r'Ly$\beta$'},
 {'name':'Ly-gamma' ,'transition':'1s-4' ,'wavevac':972.537,   'label':r'Ly$\gamma$'},
 {'name':'Ly-delta' ,'transition':'1s-5' ,'wavevac':949.74,    'label':r'Ly$\delta$'},
-{'name':'Ly-epsilon''transition':'1s-6' ,'wavevac':937.81,    'label':r'Ly$\epsilon$'},
+{'name':'Ly-epsilon','transition':'1s-6' ,'wavevac':937.81,    'label':r'Ly$\epsilon$'},
 {'name':'Ly-6'     ,'transition':'1s-7' ,'wavevac':930.75,    'label':r'Ly-6'},
 {'name':'Ly-limit' ,'transition':'1s-40','wavevac':912.3,     'label':r'Ly-limit'},
 {'name':'H-alpha'  ,'transition':'2-3'  ,'wavevac':6564.63,   'label':r'H$\alpha$'},
@@ -423,10 +423,10 @@ def continuum_nova_del_lc(regions = [[2010,2040],[2600,2700],
      [3530,3580],[3580,3630],[3930,3960],[4030,4050],
      [4170,4200],[4430,4460],[4750,4800]],
      phafiles=[]):
-     """
+    """
      regions  is list of lists of regions to use for background
      phafiles is input parameter - list of pha files
-     """
+    """
     import numpy as np
 
     z = get_continuum(phafiles,regions=regions, tstart=398093612.4,)
@@ -1665,7 +1665,7 @@ def peakfinder(phafile,std_mult=2,chatter=0):
     fpeaks = flux13[bb] 
     cpeaks = cont13[bb]
     # limit wpeaks to > 1720A - too noisy 
-    q = wpeaks > 1720.
+    q = (wpeaks > 1720.) & (wpeaks < 4000.)
     return wpeaks[q], fpeaks[q], cpeaks[q],  wave, flux13, cont13, fnorm , peaks 
     
 def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
@@ -1692,6 +1692,110 @@ def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
     ymn = np.min(flux13[(wave > 1800) & (wave < 4400)])*0.9
     axins.set_ylim(ymn,ymx)
     ax.set_title(f"{phafile}")
+
+def _tcrb_continua(dir='/Users/data/novae/TCrB/'):
+    import summary_phase as sphase
+    from uvotpy import uvotspec
+    from astropy import coordinates as coord
+    import os
+    from astropy.table import Table
+    
+    pos = coord.SkyCoord.from_name('T CrB')
+    os.chdir(dir+"uvot")
+    tcrb  = sphase.SummaryPhase()
+    tcrb.make_summary()
+    t = Table.read( tcrb.summaryfile(), format='ascii')
+    tgrism = t[t['filter'] == 'UGRISM']
+    MJD = tgrism['MJD']
+    phase = tgrism['phase']
+    files = tgrism['filename+ext']
+    
+    os.chdir(dir+"spectra")
+    continua = []
+    for mjd, ph, x in zip(MJD,phase,files):
+       ext = x.split('+')[1]
+       xfile = f"{x[:17]}1ord_{ext}_f.pha"
+       #print (xfile)
+       if not os.access(xfile,os.F_OK):
+          xfile = f"{x[:17]}1ord_{ext}_g.pha"
+          #print (f"          {xfile}")
+          if not os.access(xfile,os.F_OK):
+              raise IOError(f"pha file not found from {x} : {xfile} ")
+       x = xfile       
+    
+       continua.append([mjd, ph, uvotspec.get_continuum1( xfile,)] )
+    return continua, files
+    
+def _tcrb_line(line=[2770.,2830]):
+    """
+    get flux in a line
+    """
+    continua, files = _tcrb_continua()
+    MJD   = []
+    phase = []
+    for x in continua: MJD.append(x[0])
+    for x in continua: phase.append(x[1])
+    wave = []
+    tot=[]
+    cont=[]
+    net=[]
+    for i in range(len(continua)):
+        
+        w9   =continua[i][2][0]
+        flx9 =continua[i][2][1]
+        cnt9 =continua[i][2][2]
+        q = (w9 > line[0]) & (w9 < line[1])
+        wave.append(w9[q])
+        tot.append (flx9[q])
+        cont.append(cnt9[q])
+        net.append ( flx9[q]-cnt9[q] )
+
+    return MJD, phase, net, cont, tot
+
+def _tcrb_peakratio():
+    """
+    find the ratio of the peak intensities of 1893 and 1909 blended lines
+    
+    find the peaks :
+    lower peak is assumed to be Si III] 1893
+    higher peak is assumed to be C III] 1909
+    
+    return ratio (and peak data)
+    """
+    import summary_phase as sphase
+    from uvotpy import uvotspec
+    from astropy import coordinates as coord
+    import os
+    from astropy.table import Table
+    
+    pos = coord.SkyCoord.from_name('T CrB')
+    os.chdir(dir+"uvot")
+    tcrb  = sphase.SummaryPhase()
+    tcrb.make_summary()
+    t = Table.read( tcrb.summaryfile(), format='ascii')
+    tgrism = t[t['filter'] == 'UGRISM']
+    MJD = tgrism['MJD']
+    phase = tgrism['phase']
+    files = tgrism['filename+ext']
+    
+    os.chdir(dir+"spectra")
+    peak1 = []
+    peak2 = []
+    for mjd, ph, x in zip(MJD,phase,files):
+       ext = x.split('+')[1]
+       xfile = f"{x[:17]}1ord_{ext}_f.pha"
+       #print (xfile)
+       if not os.access(xfile,os.F_OK):
+          xfile = f"{x[:17]}1ord_{ext}_g.pha"
+          #print (f"          {xfile}")
+          if not os.access(xfile,os.F_OK):
+              raise IOError(f"pha file not found from {x} : {xfile} ")
+            
+       wpeaks[q], fpeaks[q], cpeaks[q],  wave, flux13, cont13, fnorm , peaks = \
+           peakfinder(xfile,std_mult=2,chatter=0)
+           
+           
+    
 
 def pickfix2800(phafile, std_mult=1.5,wref=2800.,wtol=5,chatter=0):
     """
