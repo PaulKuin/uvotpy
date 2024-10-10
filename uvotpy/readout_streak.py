@@ -556,6 +556,11 @@ def photometry(obsid,
                       raise RuntimeError("Failed to write result to file.\n")      
                   magff = _mag_to_fitsout(magff, obj['band'], mag, err,tsta, datobs[0:16],\
                       obsid,ext,extnam,MJD,lss,syserr,chatter=chatter)
+               """       
+               print (magff.info())
+               print (Table(magff[1].data))
+               print (35*'-.')
+               """
 
    magfh.close()
    #try:
@@ -1135,7 +1140,7 @@ def fitsBinTable_add_nrows(BinTableHDU,nrows=60):
         c = cols.columns[i]
         c.array = data
         newdata.append(c)
-    return fits.BintableHDU.from_columns(columns=newcata,header=hdr)    
+    return fits.BinTableHDU.from_columns(columns=newdata,header=hdr)    
   
 def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,syserr,chatter=0):
     # 
@@ -1147,8 +1152,12 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     # fill a row of data, update COLSUSED record +1
     t = magff[1].data
     n = magff[1].header['COLSUSED']
+    #if n == t.size[0]: 
+    #     print (f"ERROR in _mag_to_fitsout: COLUSED keyword too large. Old file present before run? ")
+    #     return magfF
+    #if chatter > 2: print (f"in _mag_to_fitsout n={n};\nt = {Table(t)}")
     if chatter > 3:
-       print (f"older data = {Table(t[:n+1])}")
+       #print (f"older data = {Table(t[:n+1])}")
        print (f"inputs _mag_to_fitsout : {band} {mag} {err} \n "+
        f"tstart {tstart} {dateobs} \n {obsid} {ext} {extname} MJD {MJD} {lss} \n")
        print (f"colused parameter = {n}\n")
@@ -1174,7 +1183,7 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
     magff[1].data = t
     magff[1].header['COLSUSED'] = n+1
     if chatter > 3:
-       print (f"new data={Table(t[:n+2])}")
+       print #(f"new data={Table(t[:n+2])}")
        print (f"new colsused parameter = {magff[1].header['COLSUSED']}\n")
     magff.flush()
     return magff    
