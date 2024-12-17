@@ -34,7 +34,7 @@
 #
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2014, see Licence  
+# (c) 2009-2024, see Licence  
 
 from __future__ import division
 from __future__ import print_function
@@ -45,7 +45,7 @@ from builtins import object
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from stsci.convolve import boxcar
+from .uvotmisc import boxcarsmooth as boxcar
 from astropy.io import fits
 from matplotlib.lines import Line2D
 
@@ -65,7 +65,7 @@ from matplotlib.lines import Line2D
         find the best fit solution       
 '''
 
-__version__ = '20240522-1.1.0'
+__version__ = '20241217-1.2.0'
 
 v = sys.version
 if v[0] == '2': 
@@ -1627,7 +1627,7 @@ def get_continuum1(phafile, regions=[ [1700,1730],[1830,1860],[1950,1970],[2010,
     cont13 = splev(wave,tck)    
     return wave, flux13, cont13, fnorm            
   
-def peakfinder(phafile,std_mult=2,chatter=0):
+def peakfinder(phafile,std_mult=2,wpeakmax=4000.,chatter=0):
     """
     Find the peaks (lines) in a uvot spectrum below 4000A
        The results above 4000A are not reliable.
@@ -1646,7 +1646,7 @@ def peakfinder(phafile,std_mult=2,chatter=0):
     """
     smooth = 3 # 3 pix is close to the actual independent data size - could be binned
     from scipy.signal import find_peaks
-    from stsci.convolve import boxcar
+    from .uvotmisc import boxcarsmooth as boxcar
     from astropy.io import ascii,fits
 
     wave, flux13, cont13, fnorm = get_continuum1(phafile)
@@ -1658,14 +1658,14 @@ def peakfinder(phafile,std_mult=2,chatter=0):
     #peaks, properties = find_peaks(flux13, height=cont13, prominence=(lolim, None), wlen=20)
     peaks = find_peaks(flux13, height=cont13)
     # select peaks that are 2 standard noise deviations above the continuum
-    q = (wave>1800) & (wave < 4000)
+    q = (wave>1800) & (wave < wpeakmax)
     std = (flux13[q]-cont13[q]).std()
     bb = peaks[0][peaks[1]['peak_heights'] - cont13[peaks[0]] > std*std_mult]
     wpeaks = wave[bb]
     fpeaks = flux13[bb] 
     cpeaks = cont13[bb]
     # limit wpeaks to > 1720A - too noisy 
-    q = (wpeaks > 1720.) & (wpeaks < 4000.)
+    q = (wpeaks > 1720.) & (wpeaks < wpeakmax)
     return wpeaks[q], fpeaks[q], cpeaks[q],  wave, flux13, cont13, fnorm , peaks 
     
 def plot_normalised_spectrum(phafile,std_mult=1.5,chatter=0):
@@ -1895,7 +1895,7 @@ def plot_spectrum(ax,spectrumfile,
     
     """
     import numpy as np
-    from stsci.convolve import boxcar
+    from .uvotmisc import boxcarsmooth as boxcar
     try:
        from photometry2 import Cardelli, Pei
     except: pass
