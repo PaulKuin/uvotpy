@@ -43,7 +43,7 @@ from future.builtins import str
 from future.builtins import input
 from future.builtins import range
 
-__version__ = '2.10.0 20210610'
+__version__ = '2.11.0 20241217'
 
  
 import sys
@@ -64,7 +64,7 @@ except:
 import scipy
 from scipy import interpolate
 from scipy.ndimage import convolve
-from scipy.signal import boxcar
+from .uvotmisc import boxcarsmooth as boxcar
 from scipy.optimize import leastsq
 from numpy import polyfit, polyval
 try:
@@ -120,7 +120,7 @@ senscorr = True # do sensitivity correction
 
 print(66*"=")
 print("uvotpy module uvotgetspec version=",__version__)
-print("N.P.M. Kuin (c) 2009-2021, see uvotpy licence.") 
+print("N.P.M. Kuin (c) 2009-2024, see uvotpy licence.") 
 print("please use reference provided at http://github.com/PaulKuin/uvotpy")
 print(66*"=","\n")
 
@@ -368,7 +368,9 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
      Version 2014-08-04 NPMK(MSSL/UCL): expanded offsetlimit parameter with list option to specify y-range.  
      Version 2015-12-03 NPMK(MSSL/UCL): change input parameter 'get_curve' to accept a file name with coefficients
      Version 2016-01-16 NPMK(MSSL/UCL): added options for background; disable automated centroiding of spectrum
-
+     Version 2024-10-31 NPMK : dropped stsci.convolve.boxcar in favor of uvotmisc.boxcarsmooth 
+     Version 2024-12-17 NPMK : modifications to fix change in Python API 
+     
    Example
    -------
    from uvotpy.uvotgetspec import getSpec
@@ -579,7 +581,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
       hdr = pyfits.getheader(specfile,int(ext))
-      #Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})
+      #Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})   
       term1 = f"{grismfile}={specfile.split('/')[-1]}[{str(ext)}]" 
       Yout.update({'grismfile':term1})
       if chatter > -1:
@@ -2065,13 +2067,9 @@ def findBackground(extimg,background_lower=[None,None], background_upper=[None,N
    -  30 Sep 2014: background fails in visible grism e.g., 57977004+1 nearby bright spectrum 
           new method added (4x slower processing) to screen the image using sigma clipping      
       '''
-   import sys   
-   import numpy as np   
-   try:
-     from convolve import boxcar
-   except:
-     from stsci.convolve import boxcar
-   from scipy import interpolate  
+   import sys
+   import numpy as np
+   from scipy import interpolate
    import stsci.imagestats as imagestats    
      
    # initialize parameters
@@ -3366,7 +3364,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
          2016-01-17 trackcentroiding parameter added to disable centroiding         
    '''
    import pylab as plt
-   from numpy import array,arange,where, zeros,ones, asarray, abs, int
+   from numpy import array,arange,where, zeros,ones, asarray
    from .uvotplot import plot_ellipsoid_regions
    from . import uvotmisc
    
@@ -3548,7 +3546,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
        offsetset = False    
        if type(offsetlimit) == list: 
            offsetval = offsetlimit[0]
-           delpix = array([abs(offsetlimit[1]),1],dtype=int).max() # at least 1
+           delpix = array([np.abs(offsetlimit[1]),1],dtype=int).max() # at least 1
            if offsetlimit[1] < 1.:
                offsetset = True
            else:           
@@ -3889,7 +3887,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
             Xpos = arange(i-4,i+5)
             sigmas = array([sig1coef[0], sig2coef[0], sig3coef[0]])
             if chatter > 3: print('+++++ third order Xpos:',Xpos,'  Ypos: ', Ypos,' * * * 3 3 3 3 3 * * *')
-            width = abs( polyval(array([2.0e-05, 0.034, -70]),(anchor2[1]-1200.)))+5.0 # rough limits
+            width = np.abs( polyval(array([2.0e-05, 0.034, -70]),(anchor2[1]-1200.)))+5.0 # rough limits
             
             try:
                Z = get_components(Xpos,spimg,Ypos,wheelpos,chatter=chatter,width=width,\
@@ -4044,7 +4042,7 @@ def x_aperture_correction(k1,k2,sigcoef,x,norder=None, mode='best', coi=None, wh
                  apercf4 = interp1d(aper_1000_low['sig'],aper_1000_low['ape'],)
                  apercorr = renormal / apercf4(xx)                       
       else: 
-       # when xx<4.5, mode !gaussian, wheelpos==None use the following
+       # when xx<4.5, mode !gaussian, wheelpos==None use the following
        # 2012-02-21 PSF best fit at 3500 from cal_psf aper05+aper08 valid for 0.5 < xx < 4.5  
        # the function does not rise as steeply so has more prominent wings
         tck = (np.array([ 0. ,  0. ,  0. ,  0. ,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,
@@ -4127,7 +4125,7 @@ def clipmask(f,sigclip=2.5,fpos=False):
    
    while (bad & (n > 0)):
       n -= 1
-      mask = abs(f - f[mask].mean()) < sigclip * f[mask].std()   
+      mask = np.abs(f - f[mask].mean()) < sigclip * f[mask].std()   
       m = len(np.where(mask)[0])
       if m == m0: bad = False
       else: m0 = m
@@ -4180,10 +4178,6 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
    '''
    import numpy
    from numpy import array, arange,transpose, where, abs, min, zeros, atleast_1d, atleast_2d, sqrt
-   try:
-      from convolve import boxcar
-   except:
-      from stsci.convolve import boxcar
    
    xpos = atleast_1d(xpos)
    ori_img = atleast_2d(ori_img)
@@ -4908,7 +4902,6 @@ def pix_from_wave( disp, wave,spectralorder=1 ):
    '''    
    from scipy import interpolate
    import numpy as np
-   from stsci.convolve import boxcar
    
    wave = np.asarray( wave )
    wave = np.atleast_1d(wave)
@@ -5006,7 +4999,7 @@ def predict_second_order(dis,spnet,C_1,C_2,d12,qual,dismin,dismax,wheelpos):
 
    '''   
    import numpy as np
-   from numpy import where, searchsorted, int
+   from numpy import where, searchsorted
    
    dis   = np.asarray(1.0*dis)  # ensure floating point array
    spnet = np.asarray(spnet)
@@ -6385,10 +6378,6 @@ def get_initspectrum(net,var,fitorder, wheelpos, anchor, C_1=None,C_2=None,dist1
     """ wrapper for call 
         boxcar smooth image over -nave- pixels 
     """
-    try:
-       from convolve import boxcar
-    except:
-       from stsci.convolve import boxcar   
     return splitspectrum(boxcar(net,(nave,)),boxcar(var,(nave,)),fitorder,wheelpos,
      anchor, C_1=C_1, C_2=C_2, dist12=dist12,
      xrange=xrange,predict2nd=predict2nd, chatter=chatter)
@@ -7453,13 +7442,9 @@ def rebin(binin,func,binout, mode='interpolate',N=20):
      'redistribute' the func values to the new bins (conserve the integral)
    or 
      'interpolate'  the func to the the new bins
-   
-   
-   '''  
-   try:
-      from convolve import boxcar
-   except:
-      from stsci.convolve import boxcar
+    
+   17dec2024: call uvotmisc.boxcarsmooth instead as boxcar in head
+   '''   
          
    if mode == 'interpolate':
       f = boxcar(func,(N,)) 
@@ -8503,14 +8488,7 @@ def oldcoi_func(pixno,wave,countrate,bkgrate,sig1coef=[3.2],option=1,
    '''   
    import uvotmisc
    import numpy as np
-   #try:
-   #  from uvotpy import uvotgetspec as uvotgrism
-   #except:  
-   #  import uvotgrism
-   try:
-      from convolve import boxcar
-   except:
-      from stsci.convolve import boxcar   
+    
    from scipy import interpolate
     
    if not do_coi_correction:   # global - use when old CALDB used for fluxes.
@@ -8745,14 +8723,6 @@ def coi_func(pixno,wave,countrate,bkgrate,
    import sys
    from . import uvotmisc
    import numpy as np
-   #try:
-   #  from uvotpy import uvotgetspec as uvotgrism
-   #except:  
-   #  import uvotgrism
-   try:
-      from convolve import boxcar
-   except:
-      from stsci.convolve import boxcar   
    from scipy import interpolate
    
    # backwards compatibility for testing
@@ -8797,7 +8767,7 @@ def coi_func(pixno,wave,countrate,bkgrate,
    else: 
        tot_cpf = None   
        
-   bkg_cpf = bkg_countsperframe = bkgrate * frametime   # background was already smoothed
+   bkg_cpf = bkg_countsperframe = bkgrate * frametime   #background was already smoothed
    
    if chatter > 3: 
        sys.stderr.write("alpha  = %f\nnumber of data points %i  printing every 25th"%
@@ -9045,4 +9015,4 @@ def _write_catspecfile(
 
 
                  
-# end uvotgetspec.py  See Copyright notice in README file [when missing, copyright NPM Kuin, 2013, applies]. 
+# end uvotgetspec.py  See Copyright notice in README file [when missing, copyright NPM Kuin, 2024, applies]. 
