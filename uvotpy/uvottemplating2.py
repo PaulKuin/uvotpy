@@ -129,6 +129,7 @@ class withTemplateBackground(object):
         self.template=None
         self.anchor_templimg=[]
         self.anchor_specimg=[]
+        self.ank_c = None
         self.movexy=0,0 # return from manual alignment
         self.yloc_sp = 100
         self.widthsp = 15  # pix width for optimal extraction
@@ -141,6 +142,11 @@ class withTemplateBackground(object):
         # Prep so that there is just one spectrum and one teplate PHA file
         self.c = None # contour
         self.cval = -1.0123456789
+        self.delx = 0 # interactive offset between template contour and spectrum image
+        self.dely = 0
+        self.stdx = 0
+        self.stdy = 0
+        #self.test_templ_shift=None
         
     def auto_template(self,):    
         """
@@ -210,22 +216,24 @@ class withTemplateBackground(object):
         self.rotate_tmpl()
         # find initial transform template => spectrum
         self.match_slice()
-        self.dragit(spimg=self.spimg[self.dimsp[0]:self.dimsp[1]],
-              tempimg=self.templimg[self.dimtempl[0]:self.dimtempl[1]])
         
+        self.SelectShift(spimg=self.spimg[:,self.dimsp[0]:self.dimsp[1]],
+              tempimg1=self.templimg[:,self.dimtempl[0]:self.dimtempl[1]])
         # now that we got the offset between spectrum and template, we 
         # first extract the spectrum properly, and then extract the spectrum 
         # for the template at a location to match that of the original spectrum.
         
+        offsp = self.spResult['ank_c'] # the y-offset of the spectrum
+        uvotgetspec.trackcentroiding = True        
         self.Ysp = uvotgetspec.curved_extraction(        # quick draft
            self.spimg[:,self.dimsp[0]:self.dimsp[1]], 
            self.spResult['ank_c'], 
            self.spResult['ank_c']-self.dimsp[0], # anker?? 
            self.spResult['wheelpos'], 
-           expmap=self.spResult['exposure'], offset=0., 
+           expmap=self.spResult['expmap'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
            #offsetlimit=[self.yloc_sp,0.2],  <= perhaps we need this extra step for high z
-           offsetlimit=[100,5],  
+           offsetlimit=[offsp,0.5],  
            background_lower=[None,None], 
            background_upper=[None,None],
            background_template=None, #self.template,
@@ -248,6 +256,7 @@ class withTemplateBackground(object):
            dropout_mask=None)
            
         # extract the template spectrum for the correct area
+        uvotgetspec.trackcentroiding = False
         self.Ytmpl = uvotgetspec.curved_extraction(        # quick draft
            self.tmplimg[:,self.dimtmpl[0]:self.dimtmpl[1]], 
            self.tmplResult['ank_c'], 
@@ -255,8 +264,7 @@ class withTemplateBackground(object):
            self.tmplResult['wheelpos'], 
            expmap=self.tmplResult['exposure'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
-           #offsetlimit=[self.yloc_sp,0.2],  <= perhaps we need this extra step for high z
-           offsetlimit=[100,5],  
+           offsetlimit=[offsp+self.dely,0.5],   
            background_lower=[None,None], 
            background_upper=[None,None],
            background_template=None, #self.template,
@@ -277,7 +285,7 @@ class withTemplateBackground(object):
            fit_third=False,
            C_1=self.tmplResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
-        
+        uvotgetspec.trackcentroiding = True
         
            
         # now get the count rate spectrum   
@@ -520,14 +528,20 @@ class withTemplateBackground(object):
         self.dimsp = start,end
         self.dimtempl = start,end
         if self.chatter>0: print (f"the extracted spectrum and template match in range {start}:{end}")
-        
-    def dragit(self,figno=42,spimg=None, tempimg=None):
+
+
+    def SelectShift(self,figno=42,spimg=None, tempimg1=None):
         """
-        An interactive method to improve alignment
+        An *interactive* method to improve alignment of zeroth orders
         
         first run extract_*, match_slice
+        
+        The approach is to plot the spectrum with contours of the template zeroth orders.
+        The user needs to point and click a zeroth order in the template contour and then 
+        the corresponding one in the image. That gives a shift. Do this for three sets and
+        then replot with the template shifted to judge overlap. 
     
-        delxy, tempimg = dragit(figno=42,spimg=<path>,tempimg=<path>)
+        delxy, tempimg = SelectShift(figno=42,spimg=<path>,tempimg=<path>)
     
         The output gives the shift in pixels between the initial sp_img and 
         the template_img, and returns the aligned tempimg 
@@ -539,14 +553,17 @@ class withTemplateBackground(object):
         if self.chatter>-1: 
             print(f"Now manually try to match the spectrum and template to overlap. \n"+\
         "This will give the offset to use.\nMatch zeroth orders of some sources as good as you can.\n")
-        
+            
+
         # work arrays limited to the X-offset 
         if isinstance(self.spimg, np.ndarray):
             spimg=self.spimg[:,self.dimsp[0]:self.dimsp[1]]
         if isinstance(self.templimg, np.ndarray): 
             tempimg=self.templimg[:,self.dimtempl[0]:self.dimtempl[1]]
+        else:
+            templimg = tempimg1[:,self.dimtempl[0]:self.dimtempl[1]].copy()
             
-        fig = plt.figure(figno,figsize=[10,3])
+        fig = plt.figure(figno,figsize=[8,1.3])
         fig.clf()
         fig.set_facecolor('lightgreen')
         ax = fig.add_axes([0.03,0.1,0.94,0.87],)
@@ -555,50 +572,81 @@ class withTemplateBackground(object):
         sp =  ax.imshow ( np.log(spimg-np.median(spimg)+0.01),alpha=1.0,cmap='gist_rainbow'  ) # ax.imshow(spimg)
         self.c = cont =  ax.contour( np.log(tempimg-np.median(tempimg)*2+0.06),colors='k',lw=0.5)# ax.contour(tempimg) 
         fig.show()
-        newsp = DraggableContour(ax,cont)
-        fig.show()
         delxy = 0,0
-        try:
-            ans1 = input("Do you want to adjust ? (Y/N) ").upper()
-            print("answer read = ", ans1," length = ", len(ans1))
-            if len(ans1) > 0:
-              if ans1.upper().strip()[0] == 'Y':
-                 done = False
-                 while not done:
-                    print('drag the contour spectrum until match and happy')
-                    ax.set_title(f"... when done press key ...")   
-                    newsp.connect()
-                    print ("connected")
-                    print ("draw now black contour to corresponding blue feature, then answer ")
-                    #delxy += newsp.out_delxy()
-                    ans = input("update contour?\n\n")
-                    if ans.upper().strip()[0] == 'Y':
-                        # update templimg
-                        newsp.disconnect()
-                        ax.cla()
-                        delxy += newsp.out_delxy()
-                        print(f"The selected shift is {newsp.delx},{newsp.dely} and will be applied when done. ") 
-                        tempimg = np.roll(tempimg,int(newsp.delx),axis=1)
-                        tempimg = np.roll(tempimg,int(newsp.dely),axis=0)
-                        print (f"changed templ img with shifts {tempimg.shape}; now plottting")
-                        sp =  ax.imshow ( np.log(spimg-np.median(spimg)+0.01),alpha=1.0,cmap='gist_rainbow'  ) # ax.imshow(spimg)
-                        self.c = ax.contour( np.log(tempimg-np.median(tempimg)*2+0.01),alpha=0.9,colors='k')
-                        ax.set_title("done")
-                        ax.show()
-                        done = True
-                 newsp.disconnect()
-              elif ans1.upper().strip()[0] == 'N': 
-                 done = True
-              else: print(" answer Y or N ")
-        except:
-            sys.stderr.write(f"drag error: {delxy} ")
-            newsp.disconnect()
-        # roll the array elements of tempimg to make them line up with the spimg (wrap-arounds)
-        # print update 
+        done = False
+        itry = 0
+        delxs=[]
+        delys=[]
+        nover=9
+        while (itry < 3) & (nover>1) : # collect three differences    
+            nover -=1    
+            itry += 1
+            print ("\nzoom to select region with 3 zeroth order sets then press button to continue ")
+            fig.waitforbuttonpress() #timeout=20)
+            while True:
+                pts = []
+                while (len(pts) < 2):
+                    print (f'put cursor in image; then select 2 points with mouse, points number={itry} out of 3')
+                    pt1 = fig.ginput(1, timeout=-1)[0]
+                    ax.plot(pt1[0],pt1[1],'x',color='orangered',ms=15,mew=3)
+                    ax.plot(pt1[0],pt1[1],'x',color='r',ms=15,mew=1)
+                    fig.show()
+                    print (f"template point {pt1}")
+                    pt2 = fig.ginput(1, timeout=-1)[0]
+                    ax.plot(pt2[0],pt2[1],'x',color='gold',ms=15,mew=3)  
+                    ax.plot(pt2[0],pt2[1],'x',color='r',ms=15,mew=1)
+                    fig.show()
+                    print (f"spectrum point {pt2}")
+                    pts = np.asarray([pt1,pt2])
+                ans = input (f"#={itry} - the selected values are \n{pts};\n correct ? (N mean break,Q=quit)")
+                if (ans.strip() != ""):
+                   if (ans.upper().strip()[0] == "N"): 
+                       redo=True  
+                   elif (ans.upper().strip() == 'Q'):
+                       break
+                       break               
+                #print ("passed selection of a points")  
+                dx = pts[0][0]-pts[1][0]
+                dy = pts[0][1]-pts[1][1]
+                delxs.append(dx)     
+                delys.append(dy)
+                print (f"dx={dx}, dy={dy}\n") 
+                break
+            
+        print (f"three points collected delxs,delys: \n{delxs}\n{delys}")            
+        if 1==1:    
+                 delxs=np.asarray(delxs)
+                 delys=np.asarray(delys)
+                 delx = delxs.mean()
+                 dely = delys.mean()
+                 stdx = delxs.std()
+                 stdy = delys.std()
+                 if self.chatter > 2 : print ("measured offsets",delxs,delys)
+                 print (f"the offset is {delx}+-{stdx},{dely}+-{stdy}")
+                 print ("redrawing figure")
+                 fig2=plt.figure(figsize=[8,1.3])
+                 ax1 = fig2.add_axes([0.03,0.1,0.94,0.87],)
+                 sp1 = ax1.imshow( np.log(spimg-np.median(spimg)+0.01),alpha=1.0,cmap='gist_rainbow'  ) # ax.imshow(spimg)
+                 tempimg = np.roll(tempimg,-int(delx),axis=1)
+                 tempimg = np.roll(tempimg,-int(dely),axis=0)
+                 print (f"shifted template; now plottting contours")
+                 self.c = ax1.contour( np.log(tempimg-np.median(tempimg)*2+0.01),alpha=0.7,colors='k')
+                 ax1.set_title("--- with measured shift ---")
+                 fig2.show()
+                 self.delx = delx
+                 self.dely = dely
+                 self.stdx = stdx
+                 self.stdy = stdy
+
+        #except:
+        #    sys.stderr.write(f"some kind of error in process: #{itry} delxy={delxy} all={delxys} ")
+        #    roll the array elements of tempimg to make them line up with the spimg (wrap-arounds)
         #   self.template = tempimg
         # document the shift
-        self.movexy = newsp.delx, newsp.dely
-        if self.chatter>0: print (f"Great! the offset found is {self.movexy}\nIf this seems wrong, retry.")
+        #self.movexy = newsp.delx, newsp.dely
+        #self.test_templ_shift=tempimg
+        self.templimg=tempimg
+        #if self.chatter>0: print (f"Great! the offset found is {self.movexy}\nIf this seems wrong, retry.")
         
     def set_parameter(self,parametername,value): 
         # eval() or exec() ?   
@@ -609,7 +657,7 @@ class withTemplateBackground(object):
     def embed_template(self,):   # obsoleted Aug 2024
         sbgimg = self.spec_bkg
         sanky,sankx,sxstart,sxend = self.spResult['ank_c']
-        tanky,tankx,txstart,txend = ank_c= self.spResult['ank_c']
+        tanky,tankx,txstart,txend = self.tmplResult['ank_c']
         sdim = self.dimsp #should be same as:
         tdim = self.dimtempl
         # match anchors - this should have been done alraidy 
@@ -626,38 +674,27 @@ class withTemplateBackground(object):
         self.template=sbgimg  
                 
         
-
 class DraggableContour(object):
     """
     Drag contour img1 on image img2 until correctly lined up 
     return shifts in x, y
     
     """
-    import matplotlib as mpl
+    import matplotlib.pyplot as mpl
+    #from uvotpy.uvotspec import DraggableSpectrum
+
     
     def __init__(self, ax, contour):
         self.img1 = contour  # move contour over image
         self.press = None
-        self.delx = 0.0
-        self.dely = 0.0
-        self.incx = 0.0
-        self.incy = 0.0
         self.ax = ax
         self.cidpress = None
-        self.cidrelease = None
-        self.cidmotion = None
         self.cidkey = None
-        self.startpos = [0,0]
-        self.endpos = [0,0]
 
     def connect(self):
         'connect to all the events we need'
         self.cidpress = self.img1.axes.figure.canvas.mpl_connect(
             'button_press_event', self.on_press)
-        self.cidrelease = self.img1.axes.figure.canvas.mpl_connect(
-            'button_release_event', self.on_release)
-        self.cidmotion = self.img1.axes.figure.canvas.mpl_connect(
-            'motion_notify_event', self.on_motion)
         self.cidkey = self.img1.axes.figure.canvas.mpl_connect(
             'key_press_event', self.on_key)
         print("active")    
@@ -668,6 +705,7 @@ class DraggableContour(object):
         self.press = event.x, event.y, event.xdata, event.ydata #, self.img1.get_xdata(), self.img1.get_ydata()
         print("on_press start position (%f,%e)"%(event.xdata,event.ydata))
         self.startpos = [event.xdata,event.ydata]
+        return self.press  
 
     def on_motion(self, event):
         'on motion we will move the spectrum if the mouse is over us'
@@ -680,29 +718,6 @@ class DraggableContour(object):
         self.incx = dx
         self.incy = dy
         #self.img1.set_xdata(xdata+dx) 
-        '''
-        # the following tried to modify the data arrays in the contour thing, 
-        # but seems to fail to update...
-        #
-        xx = self.img1.collections
-        nx = len(xx)
-        for k in np.arange(nx):  # loop over collections
-            xy = xx.pop() #xx[k]
-            xz = xy.properties()['segments']
-            ns = len(xz)
-            for gs in np.arange(ns): # loop over segments
-                y = xz[gs]
-                y[:,0] += dx
-                y[:,1] += dy
-            a = xy.properties
-            a().update({'segments':xz})
-            # update xy 
-            xy.properties = a
-            xx.append(xy)
-        # now we have replaced the data array with the +dx,+dy values.    
-        self.img1.collections = xx
-        self.img1.changed()   # this should do the update
-        '''
         self.ax.figure.canvas.draw()
 
     def on_release(self, event):
@@ -718,19 +733,14 @@ class DraggableContour(object):
     def on_key(self,event):
         'on press outside canvas disconnect '       
         print("you pushed the |%s| key"%event.key)
-        print("ignoring ...")
-        # retrieve out_delxy and then execute *.disconnect()
+        if event.inaxes != self.img1.axes: return
 
     def disconnect(self):
-        print (f"position start = {self.startpos}, end = {self.endpos}")
-        print (f"movement dx={self.startpos[0]-self.endpos[0]}, dy={self.startpos[1]-self.endpos[1]}")
         'disconnect all the stored connection ids'
         self.img1.axes.figure.canvas.mpl_disconnect(self.cidpress)
-        self.img1.axes.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.img1.axes.figure.canvas.mpl_disconnect(self.cidmotion)
         self.img1.axes.figure.canvas.mpl_disconnect(self.cidkey)
         print("disconnected")
         
-    def out_delxy(self):
-        return self.delx,self.dely
+    def out_pos(self):
+        return self.cidpress
       
