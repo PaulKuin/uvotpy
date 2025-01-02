@@ -12,6 +12,40 @@ __version__ = '20140501-0.5.0'
 
 import numpy as N
 
+def boxcarsmooth(data, filterthing, cval=0.0, mode="symm"):
+   from scipy import signal
+   import numpy as np
+   
+   # 2024-12-16 npmk
+   # note, I am not sure if the 'mode' in the convolve2d call is the same as in the 
+   #  stsci.convolve call. At the moment I am not passing the parameter. Let's assume
+   #  mode="reflect" is the same as boundary="symm" in convolve2d
+   mode2="symm"
+   if mode=="reflect": mode2="symm"
+   
+   try: # first try the original smoothing method from STScI convolve
+      from stsci.convolve import boxcar
+      return boxcar(data, filterthing, mode=mode, cval=cval)
+   except: pass
+   
+   nx = filterthing[0]
+   if len(filterthing) == 1:   # 1-dimensional
+       if nx > 1: 
+          boxcar = np.ones(nx)/nx 
+       else: 
+          ny = filterthing[1]
+          boxcar = np.ones(ny)/ny
+       out = signal.convolve(data,boxcar, mode='same', method='direct')
+       return out
+           
+   elif len(filterthing) == 2:  # 2-dimensional
+       ny = filterthing[1]
+   else: 
+       raise IOError("boxcar dimensions should be 1 or 2")   
+   boxcar =  np.outer( np.ones(nx)/nx, np.ones(ny)/ny)
+   out = signal.convolve2d(data,boxcar,mode='same',boundary=mode2, fillvalue=cval) 
+   return out  
+
 def rdTab(file, symb=' ', commentsymb='#',get_comments=False):
    '''RdTab will read in a table of numerical values
    provided every record has the same number of fields.

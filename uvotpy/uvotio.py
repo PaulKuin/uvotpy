@@ -3444,7 +3444,6 @@ def updateResponseMatrix(rmffile, C_1, clobber=True, lsffile='zemaxlsf', chatter
    import numpy as np
    import os
    from scipy.ndimage import convolve
-   #from convolve import boxcar
    from . import uvotio
    from . import uvotgetspec
    from scipy import interpolate

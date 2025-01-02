@@ -581,9 +581,8 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
          #msg2 += "optimal extraction "+str(optimal_extraction)+'\n'
       
       hdr = pyfits.getheader(specfile,int(ext))
-      #Yout.update({'grismfile':grismfile=specfile.split('/')[-1]+'['+str(ext)+']'})   
-      term1 = f"{grismfile}={specfile.split('/')[-1]}[{str(ext)}]" 
-      Yout.update({'grismfile':term1})
+      grismfile=specfile.split('/')[-1]+'['+str(ext)+']'  
+      Yout.update({'grismfile':specfile.split('/')[-1]+'['+str(ext)+']'})   
       if chatter > -1:
            msg += '\nuvotgetspec version : '+__version__+'\n'
            msg += ' Position RA,DEC  : '+str(RA)+' '+str(DEC)+'\n'
@@ -3533,6 +3532,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    x3 = x[q3]
    if present3:  y3[q3] += polyval(coef3,x[q3])
    
+   cp2 = None
    if trackcentroiding:   # global (default = True)
        if chatter > 3 : print ("DEBUG 3522 centroid track")
        # refine the offset by determining where the peak in the 
@@ -3667,7 +3667,8 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
               y3,dlim3L,dlim3U,sig3coef,sp_third,co_third  ),(
               x,xstart,xend,sp_all,quality,co_back)  = fitorder2
               
-          # update the anchor y-coordinate            
+          # update the anchor y-coordinate   
+          print (f"3670 ank_c ={ank_c} and y1 = {y1}")         
           ank_c[0] = y1[ank_c[1]]             
         #except:
         #  msg += "WARNING: fit order curvature update has failed\n"
@@ -4241,7 +4242,8 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
             sig0 = sigmaas[0]
             p0  = Ypositions[0]
             a0  = max(f_meas)
-            f_mask[p0-4*sig0:p0+4*sig0] = True 
+            if chatter > 2: print (f"4244 type(p0)={type(p0)}\ntype)(sig0)={type(sig0)}\np0-4*sig0:{p0-4*sig0}")
+            f_mask[int(p0-4*sig0):int(p0+4*sig0)] = True 
                
             Z = runfit1(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,\
                        fixsig=fixsig,fixpos=fixpos)
@@ -4260,8 +4262,8 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
             p0, p1  = Ypositions
             a0  = 0.9 * max(f_meas)
             a1 = 0.5*a0 
-            f_mask[p0-4*sig0:p0+4*sig0] = True 
-            f_mask[p1-4*sig1:p1+4*sig1] = True 
+            f_mask[int(p0-4*sig0):int(p0+4*sig0)] = True 
+            f_mask[int(p1-4*sig1):int(p1+4*sig1)] = True 
             Z = runfit2(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,\
                        fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
             flag[5] = Z.status
@@ -4276,8 +4278,8 @@ def get_components(xpos,ori_img,Ypositions,wheelpos,chatter=0,caldefault=False,\
             a0  = 0.9* max(f_meas)
             a1 = a0 
             a2 = a1 
-            f_mask[p0-4*sig0:p0+4*sig0] = True 
-            f_mask[p2-4*sig2:p2+4*sig2] = True 
+            f_mask[int(p0-4*sig0):int(p0+4*sig0)] = True 
+            f_mask[int(p2-4*sig2):int(p2+4*sig2)] = True 
             Z = runfit3(y[f_mask],f_meas[f_mask],f_err[f_mask],bg,a0,p0,sig0,a1,p1,sig1,a2,p2,sig2,\
                    fixsig=fixsig,fixpos=fixpos,amp2lim=amp2lim)
             flag[5] = Z.status

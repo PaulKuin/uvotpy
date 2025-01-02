@@ -223,12 +223,14 @@ class withTemplateBackground(object):
         # first extract the spectrum properly, and then extract the spectrum 
         # for the template at a location to match that of the original spectrum.
         
-        offsp = self.spResult['ank_c'] # the y-offset of the spectrum
+        offsp = self.spResult['ank_c'][2] # the y-offset of the spectrum
+        print (f"offsp={offsp}")
+        trcmem = uvotgetspec.trackcentroiding
         uvotgetspec.trackcentroiding = True        
         self.Ysp = uvotgetspec.curved_extraction(        # quick draft
-           self.spimg[:,self.dimsp[0]:self.dimsp[1]], 
-           self.spResult['ank_c'], 
-           self.spResult['ank_c']-self.dimsp[0], # anker?? 
+           self.spimg[:,self.dimspx[0]:self.dimspx[1]], 
+           self.spResult['ank_c']-self.dimspx[0], 
+           self.spResult['ank_c']-self.dimspx[0], # anker?? 
            self.spResult['wheelpos'], 
            expmap=self.spResult['expmap'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
@@ -254,15 +256,18 @@ class withTemplateBackground(object):
            fit_third=False,
            C_1=self.spResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
+        uvotgetspec.trackcentroiding = trcmem   
            
         # extract the template spectrum for the correct area
+        trcmem = uvotgetspec.trackcentroiding
         uvotgetspec.trackcentroiding = False
+        #tmplHdr=self.tmplResult['hdr']
         self.Ytmpl = uvotgetspec.curved_extraction(        # quick draft
-           self.tmplimg[:,self.dimtmpl[0]:self.dimtmpl[1]], 
-           self.tmplResult['ank_c'], 
-           self.tmplResult['ank_c']-self.dimtmpl[0], # anker??
+           self.templimg[:,self.dimtemplx[0]:self.dimtemplx[1]], 
+           self.tmplResult['ank_c']-self.dimtemplx[0], 
+           self.tmplResult['ank_c']-self.dimtemplx[0], # anker??
            self.tmplResult['wheelpos'], 
-           expmap=self.tmplResult['exposure'], offset=0., 
+           expmap=self.tmplResult['expmap'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
            offsetlimit=[offsp+self.dely,0.5],   
            background_lower=[None,None], 
@@ -285,23 +290,40 @@ class withTemplateBackground(object):
            fit_third=False,
            C_1=self.tmplResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
-        uvotgetspec.trackcentroiding = True
+        uvotgetspec.trackcentroiding = trcmem   
         
            
-        # now get the count rate spectrum   
-        fitorder, cp2, (coef0,coef1,coef2,coef3), (bg_zeroth,bg_first, bg_second,bg_third), \
-        (borderup,borderdown), apercorr, expospec, msg, curved = self.Y   
+        # now get the count rate spectra
+        fitorder_S, cp2_S, (coef0_S,coef1_S,coef2_S,coef3_S), \
+        (bg_zeroth_S, bg_first_S, bg_second_S, bg_third_S), \
+        (borderup_S,borderdown_S), apercorr_S, expospec_S, msg_S, curved_S = self.Ysp 
+  
+        fitorder_t, cp2_t, (coef0_t,coef1_t,coef2_t,coef3_t), (bg_zeroth_t,bg_first_t, bg_second_t,bg_third_t), \
+        (borderup_t,borderdown_t), apercorr_t, expospec_t, msg_t, curved_t = self.Ytmpl   
         # write output
         # first update fitourder in "Yout, etc..." in spResult ,spResult['eff_area1'] should be populated.
-        outfile = "uvottemplating.output.pha"
+        outfile = "uvottemplating_S.output.pha"
         F = uvotio.writeSpectrum(RA,DEC,filestub,
-              self.extsp, self.Y,  
+              self.extsp, self.Ysp,  
               fileoutstub=outfile, 
               arf1=None, arf2=None, 
               fit_second=False, 
               write_rmffile=False, fileversion=2,
               used_lenticular=use_lenticular_image,
-              history=self.spResult['msg'], 
+              history=self.spResult['msg_S'], 
+              calibration_mode=uvotgetspec.calmode, 
+              chatter=self.chatter, 
+              clobber=self.clobber ) 
+              
+        outfile = "uvottemplating_t.output.pha"
+        F = uvotio.writeSpectrum(RA,DEC,filestub,
+              self.exttempl, self.Ytmpl,  
+              fileoutstub=outfile, 
+              arf1=None, arf2=None, 
+              fit_second=False, 
+              write_rmffile=False, fileversion=2,
+              used_lenticular=use_lenticular_image,
+              history=self.spResult['msg_t'], 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
               clobber=self.clobber ) 
@@ -525,8 +547,8 @@ class withTemplateBackground(object):
         # 
         start = np.max([sp1,tm1])
         end = np.min([sp2,tm2])
-        self.dimsp = start,end
-        self.dimtempl = start,end
+        self.dimspx = start,end
+        self.dimtemplx = start,end
         if self.chatter>0: print (f"the extracted spectrum and template match in range {start}:{end}")
 
 
@@ -548,7 +570,8 @@ class withTemplateBackground(object):
     
         """
         import matplotlib.pyplot as plt
-        import sys
+        import sys, time
+        
         
         if self.chatter>-1: 
             print(f"Now manually try to match the spectrum and template to overlap. \n"+\
@@ -574,13 +597,13 @@ class withTemplateBackground(object):
         fig.show()
         delxy = 0,0
         done = False
-        itry = 0
+        itry = 1
         delxs=[]
         delys=[]
         nover=9
-        while (itry < 3) & (nover>1) : # collect three differences    
+        while (itry < 4) & (nover>1) : # collect three differences    
             nover -=1    
-            itry += 1
+ #           itry += 1
             print ("\nzoom to select region with 3 zeroth order sets then press button to continue ")
             fig.waitforbuttonpress() #timeout=20)
             while True:
@@ -597,6 +620,7 @@ class withTemplateBackground(object):
                     ax.plot(pt2[0],pt2[1],'x',color='r',ms=15,mew=1)
                     fig.show()
                     print (f"spectrum point {pt2}")
+                    time.sleep(1.5)
                     pts = np.asarray([pt1,pt2])
                 ans = input (f"#={itry} - the selected values are \n{pts};\n correct ? (N mean break,Q=quit)")
                 if (ans.strip() != ""):
@@ -604,15 +628,17 @@ class withTemplateBackground(object):
                        redo=True  
                    elif (ans.upper().strip() == 'Q'):
                        break
+                   else:  
+                       itry += 1
+                       #print ("passed selection of a points")  
+                       dx = pts[0][0]-pts[1][0]
+                       dy = pts[0][1]-pts[1][1]
+                       delxs.append(dx)     
+                       delys.append(dy)
+                       print (f"dx={dx}, dy={dy}\n") 
                        break               
-                #print ("passed selection of a points")  
-                dx = pts[0][0]-pts[1][0]
-                dy = pts[0][1]-pts[1][1]
-                delxs.append(dx)     
-                delys.append(dy)
-                print (f"dx={dx}, dy={dy}\n") 
                 break
-            
+                
         print (f"three points collected delxs,delys: \n{delxs}\n{delys}")            
         if 1==1:    
                  delxs=np.asarray(delxs)
