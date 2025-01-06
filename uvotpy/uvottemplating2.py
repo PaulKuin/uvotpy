@@ -45,7 +45,7 @@
 # detector and this method avoids this problem also. 
 
 import numpy as np
-from uvotpy import uvotspec, uvotgetspec
+from uvotpy import uvotspec, uvotgetspec, uvotio
 from astropy.io import fits, ascii as ioascii
 
 __version__ = 2 # 2024-12-19
@@ -117,26 +117,35 @@ class withTemplateBackground(object):
         #self.summed_templ = False  # ditto, for spectrum, template
         self.specimg=None
         self.templimg=None
+        self.tximg=None  # reduced specimg to overlap wrt anker
+        self.sximg=None  # reduced templimg to overlap wrt anker
         self.spec_exp=50.
         self.templ_exp=0.
         self.spec_bkg=0.    # background found in first order
         self.templ_bkg=0.
         self.dimsp = (-400,1150)
+        self.dimspx = (-400,1150)
         self.dimtempl = (-400,1150)
+        self.dimtemplx = (-400,1150)
+        self.spAnker = [980,1020]  # first guess
         self.bkg_scale=1.   # ratio backgrounds [-400,800] zero at anchor (interp1d)
         #self.ZO_scale=1.    # ratio exposure times
         #self.spectrum=None
         self.template=None
         self.anchor_templimg=[]
         self.anchor_specimg=[]
+        self.anchor_teimg=[]
+        self.anchor_spimg=[]
         self.ank_c = None
+        self.ank_c_sximg = None
+        self.ank_c_tximg = None
         self.movexy=0,0 # return from manual alignment
-        self.yloc_sp = 100
+        self.yloc_sp = 100  # the Y location of the spectrum in spimg
         self.widthsp = 15  # pix width for optimal extraction
         #self.specimg_aligned=None
         #self.templimg_aligned=None
         # spectral extraction parameters 
-        self.offsetlimit=[97,2]    # this may not work and at some point needs to match both
+        self.offsetlimit=[97,6]    # this may not work and at some point needs to match both
         self.background_lower=[None,None]
         self.background_upper=[None,None]
         # Prep so that there is just one spectrum and one teplate PHA file
@@ -212,32 +221,34 @@ class withTemplateBackground(object):
         self.extract_spectrum()
         # find anchor for the template (in self.Ytmpl['anker'])
         self.extract_template()
+        # now we got the img slice and anchor
         # find difference in roll angle and rotate template to spectrum 
         self.rotate_tmpl()
+        # the templimg slice has been rotated around its anker
         # find initial transform template => spectrum
         self.match_slice()
+        # find the overlap in the spectrum and templ images centred on ankers
         
-        self.SelectShift(spimg=self.spimg[:,self.dimsp[0]:self.dimsp[1]],
-              tempimg1=self.templimg[:,self.dimtempl[0]:self.dimtempl[1]])
+        self.SelectShift(spimg=self.sximg, tempimg1=self.tximg)
         # now that we got the offset between spectrum and template, we 
         # first extract the spectrum properly, and then extract the spectrum 
         # for the template at a location to match that of the original spectrum.
-        
-        offsp = self.spResult['ank_c'][2] # the y-offset of the spectrum
-        print (f"offsp={offsp}")
+                
+        offsp = self.ank_c_sximg[0]
+        bglo=[50-self.dely,90-self.dely]
+        bghi=[50,90]        
         trcmem = uvotgetspec.trackcentroiding
         uvotgetspec.trackcentroiding = True        
         self.Ysp = uvotgetspec.curved_extraction(        # quick draft
-           self.spimg[:,self.dimspx[0]:self.dimspx[1]], 
-           self.spResult['ank_c']-self.dimspx[0], 
-           self.spResult['ank_c']-self.dimspx[0], # anker?? 
+           self.sximg, # from match_slice
+           self.ank_c_sximg, # from match_slice
+           self.spAnker, # from match_slice
            self.spResult['wheelpos'], 
            expmap=self.spResult['expmap'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
-           #offsetlimit=[self.yloc_sp,0.2],  <= perhaps we need this extra step for high z
-           offsetlimit=[offsp,0.5],  
-           background_lower=[None,None], 
-           background_upper=[None,None],
+           offsetlimit=[offsp,0.5],  # this will centroid - find the y-offset of the spectrum
+           background_lower=bglo, # normal extraction - perhaps match to templ one? 
+           background_upper=bghi,
            background_template=None, #self.template,
            trackonly=False, 
            trackfull=False,  
@@ -257,21 +268,34 @@ class withTemplateBackground(object):
            C_1=self.spResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
         uvotgetspec.trackcentroiding = trcmem   
-           
-        # extract the template spectrum for the correct area
+
+        # now get the count rate spectra
+        fitorder_S, cp2_S, (coef0_S,coef1_S,coef2_S,coef3_S), \
+        (bg_zeroth_S, bg_first_S, bg_second_S, bg_third_S), \
+        (borderup_S,borderdown_S), apercorr_S, expospec_S, msg_S, curved_S = self.Ysp 
+        
+        self.yloc_sp=fitorder_S[2][0][0]
+        if self.chatter > 2: 
+            print(f"from fitorder_S:yloc={self.yloc_sp}  \n from anchor ={self.ank_c_sximg}\n same ???") 
+        offsp = self.yloc_sp  # update      
+        # extract the template spectrum using the matched image tximg
         trcmem = uvotgetspec.trackcentroiding
         uvotgetspec.trackcentroiding = False
-        #tmplHdr=self.tmplResult['hdr']
+        
+        #  We could now use the Ysp parameters to directly extract the counts for tximg
+        #  but here we rerun curved_extraction which should have the same parameters 
+        #  like borderup/down
+        
         self.Ytmpl = uvotgetspec.curved_extraction(        # quick draft
-           self.templimg[:,self.dimtemplx[0]:self.dimtemplx[1]], 
-           self.tmplResult['ank_c']-self.dimtemplx[0], 
-           self.tmplResult['ank_c']-self.dimtemplx[0], # anker??
+           self.tximg, 
+           self.ank_c_tximg, 
+           self.spAnker, # anker position on det to retrieve coefficients for track
            self.tmplResult['wheelpos'], 
            expmap=self.tmplResult['expmap'], offset=0., 
            anker0=None, anker2=None, anker3=None, angle=None, 
-           offsetlimit=[offsp+self.dely,0.5],   
-           background_lower=[None,None], 
-           background_upper=[None,None],
+           offsetlimit=[offsp,0.5],   # match to sximg extraction offset
+           background_lower=bglo, 
+           background_upper=bghi,
            background_template=None, #self.template,
            trackonly=False, 
            trackfull=False,  
@@ -293,37 +317,34 @@ class withTemplateBackground(object):
         uvotgetspec.trackcentroiding = trcmem   
         
            
-        # now get the count rate spectra
-        fitorder_S, cp2_S, (coef0_S,coef1_S,coef2_S,coef3_S), \
-        (bg_zeroth_S, bg_first_S, bg_second_S, bg_third_S), \
-        (borderup_S,borderdown_S), apercorr_S, expospec_S, msg_S, curved_S = self.Ysp 
-  
         fitorder_t, cp2_t, (coef0_t,coef1_t,coef2_t,coef3_t), (bg_zeroth_t,bg_first_t, bg_second_t,bg_third_t), \
         (borderup_t,borderdown_t), apercorr_t, expospec_t, msg_t, curved_t = self.Ytmpl   
+        
         # write output
         # first update fitourder in "Yout, etc..." in spResult ,spResult['eff_area1'] should be populated.
-        outfile = "uvottemplating_S.output.pha"
-        F = uvotio.writeSpectrum(RA,DEC,filestub,
+        filestub=outfile = "uvottemplating_spect.output"
+        use_lenticular_image=True
+        F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,filestub,
               self.extsp, self.Ysp,  
               fileoutstub=outfile, 
               arf1=None, arf2=None, 
               fit_second=False, 
               write_rmffile=False, fileversion=2,
               used_lenticular=use_lenticular_image,
-              history=self.spResult['msg_S'], 
+              history='msg_S', 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
               clobber=self.clobber ) 
               
-        outfile = "uvottemplating_t.output.pha"
-        F = uvotio.writeSpectrum(RA,DEC,filestub,
+        outfile = "uvottemplating_templ.output"
+        F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile,
               self.exttempl, self.Ytmpl,  
               fileoutstub=outfile, 
               arf1=None, arf2=None, 
               fit_second=False, 
               write_rmffile=False, fileversion=2,
               used_lenticular=use_lenticular_image,
-              history=self.spResult['msg_t'], 
+              history='msg_t', 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
               clobber=self.clobber ) 
@@ -344,8 +365,9 @@ class withTemplateBackground(object):
         if self.chatter > 2:
            print (f"copied original {self.templates[self.spectrum_number]} to {self.templates[self.spectrum_number]}_ori")
            print (f"opening {self.templates[self.spectrum_number]}")
+           
         with fits.open(f"{self.templates[self.spectrum_number]}",update=True) as ft:
-        # check if updated roll angle difference already
+        # check if updated roll angle difference already done earlier (pa_update)
            hdr = ft[self.exttempl].header
            cval = self.cval
            try: 
@@ -354,8 +376,9 @@ class withTemplateBackground(object):
            except:
               pa_update = 0.
               if self.chatter > 1: print (f"problem reading pa_update from header: set to zero")
+              
            # rotate img
-           if self.chatter > 1: print (f"rotating template ")
+           if self.chatter > 1: print (f"rotating template - pivot over anker")
            img = ft[self.exttempl].data   
         
            s1 = 0.5*img.shape[0]
@@ -451,12 +474,14 @@ class withTemplateBackground(object):
           uvotgraspcorr_on=True, update_pnt=True, clobber=False, chatter=self.chatter ) 
            
         self.spimg=self.spResult['extimg']
+        self.spAnker = self.spResult['anker']
         self.spfilename=self.spResult['grismfile'] 
         hdr=self.spResult["hdr"]
         self.spec_exp= hdr['exposure']
         self.spec_roll= hdr['PA_PNT']
         anky,ankx,xstart,xend = ank_c= self.spResult['ank_c']
         self.anchor_specimg = [ankx,anky]
+        # now find the uv first order start and end locations -> dimsp
         self.dimsp = dimL,dimu = self.set_dims(xstart,xend)
         
         bg, bg1, bg2, bgsig, bgimg, bg_limits, \
@@ -498,7 +523,9 @@ class withTemplateBackground(object):
         self.templ_exp = hdr['exposure']
         anky,ankx,xstart,xend = ank_c= self.tmplResult['ank_c']
         self.anchor_templimg = [ankx, anky]
+        # now find the uv first order start and end locations -> dimtempl
         self.dimtempl = dimL,dimu = self.set_dims(xstart,xend)
+        
         bg, bg1, bg2, bgsig, bgimg, bg_limits, \
           (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
            = uvotgetspec.findBackground(extimg,background_lower=[None,None], 
@@ -526,30 +553,28 @@ class withTemplateBackground(object):
         
     def match_slice(self):  
         """
-        operates on the extracted spectral slice
+        operates on the extracted spectral slices 
         
-        now determine where the spec and templ overlap (in x)
+        now determine where the spec and templ overlap (in x) with reference to their 
+        anchors
         
         first run extract_spectrum and extract_template
         
         """
         # [x ,y] anchors 
-        asp = self.anchor_specimg
+        asp = self.anchor_specimg   # anker x, y
         atp = self.anchor_templimg
-        
-        # shift templimg along x-axis so that anchors match < removed shift
-        #    self.templimg = np.roll(self.templimg,int(asp[0]-atp[0]),axis=1)
-        
-        #dimensions in x
-        sp1,sp2 = self.dimsp
-        tm1,tm2 = self.dimtempl
-        # ignore the wrap from the "roll" operation
-        # 
-        start = np.max([sp1,tm1])
-        end = np.min([sp2,tm2])
-        self.dimspx = start,end
-        self.dimtemplx = start,end
-        if self.chatter>0: print (f"the extracted spectrum and template match in range {start}:{end}")
+        blue = np.min([asp[0],atp[0]])  
+        redsp = self.spimg.shape[1]-asp[0]
+        redtm = self.templimg.shape[1]-atp[0]
+        red = np.min([redsp,redtm])
+        self.dimsp    = int(asp[0]-blue), int(asp[0]+red)
+        self.dimtempl = int(atp[0]-blue), int(atp[0]+red)
+        self.tximg = self.templimg[:,self.dimtempl[0]:self.dimtempl[1]]
+        self.sximg = self.spimg [:,self.dimsp[0]   :self.dimsp[1]   ]
+        self.ank_c_tximg=[asp[1], atp[0]-self.dimtempl[0], 0, self.dimtempl[1]-self.dimtempl[0] ]
+        self.ank_c_sximg=[asp[1], asp[0]-self.dimsp[0],    0, self.dimsp[1]   -self.dimsp[0] ]        
+        if self.chatter>0: print (f"the extracted spectrum and template match sp:{self.dimsp} and templ:{self.dimtempl}")
 
 
     def SelectShift(self,figno=42,spimg=None, tempimg1=None):
@@ -659,6 +684,7 @@ class withTemplateBackground(object):
                  self.c = ax1.contour( np.log(tempimg-np.median(tempimg)*2+0.01),alpha=0.7,colors='k')
                  ax1.set_title("--- with measured shift ---")
                  fig2.show()
+                 # the change in templ anker position due to the shift/roll: 
                  self.delx = delx
                  self.dely = dely
                  self.stdx = stdx
