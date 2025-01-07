@@ -37,13 +37,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 # Developed by N.P.M. Kuin (MSSL/UCL) 
 # uvotpy 
-# (c) 2009-2021, see Licence  
+# (c) 2009-2024, see Licence  
 
 from future.builtins import str
 from future.builtins import input
 from future.builtins import range
 
-__version__ = '2.11.0 20241217'
+__version__ = '2.12.0 20250103'
 
  
 import sys
@@ -3344,6 +3344,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
       
       background_template - if provided, the background will be based on this 
       dropout_mask from extractSpecImg 
+      
       override curvature polynomial coefficients with poly_1,poly_2,poly_3
       i.e., after a call to updateFitorder()
 
@@ -3368,7 +3369,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    from . import uvotmisc
    
    anky,ankx,xstart,xend = ank_c
-   xstart -= ankx
+   xstart -= ankx       # now relative to anchor position
    xend   -= ankx
    anchor2 = anchor1
    
@@ -6018,6 +6019,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    #            and fix deleted second lenticular filter 
    # 2015-07-16 changeover to astropy.wcs from ftools 
    # 2010-07-11 added code to move existing uvw1 raw and sky files out of the way and cleanup afterwards.
+   # 2025-01-07 problem with WCS processing
    # npkuin@gmail.com
 
    import numpy as np
@@ -6035,7 +6037,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    lenticular_anchors = {}
    
    if (chatter > 1):
-      print("uvotgetspec.getSpec(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
+      print("uvotgetspec.findInputAngle(",RA,DEC,filestub, ext, wheelpos, lfilter, lfilter_ext, \
        lfilt2,    lfilt2_ext, method, attfile, catspec, chatter,')')
    
    if ( (wheelpos == 160) ^ (wheelpos == 200) ): 
@@ -6043,7 +6045,7 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    elif ( (wheelpos == 955) ^ (wheelpos == 1000) ): 
       gfile = indir+'/'+filestub+'ugv_dt.img'
    else: 
-      sys.stderr.write("uvotgetspec.findInputAngle: \n\tThe wheelpos=%s is wrong! \n"+\
+      raise IOError("uvotgetspec.findInputAngle: \n\tThe wheelpos=%s is wrong! \n"+\
           "\tAborting... could not determine grism type\n\n"%(wheelpos)) 
       return   
       
@@ -6088,6 +6090,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
    if lfilter == 'uvw2' : ffile = indir+'/'+filestub+'uw2_sk.img'
    if lfilter == 'fk'   : ffile = indir+'/'+filestub+'ufk_sk.img'
 
+   if chatter > 3:
+      print (f"hf from lenticular ffile={ffile}+{lfext}\nhg from grism gfile={gfile}+{ext}")
    hf = fits.getheader(ffile,lfext)   
    hg = fits.getheader(gfile,ext)
 
@@ -6118,11 +6122,16 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        sys.stderr.write( 
        "\nWARNING: \n\tthe difference in the pointing from the header to the RA,DEC parameter is \n"+\
        "\tlarge delta-RA = %f deg, delta-Dec = %f deg\n\n"%(ra_diff,dec_diff))
+   
+   if chatter > 3: 
+      print (f"making the WCS transforms. Input are: header from {ffile}+{lfext}, RA={RA}, Dec={DEC}")
        
-   W1 = wcs.WCS(hf,)
+   W1 = wcs.WCS(hf,relax=True)
    xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
    W2 = wcs.WCS(hf,key='D',relax=True)    
    x1, y1 = W2.wcs_pix2world(xpix_,ypix_,0)    
+   if chatter > 3: 
+       print(f"after WCS transform x1, y1 ={x1},{y1}")
    
    RAs = repr(RA)
    DECs= repr(DEC)
