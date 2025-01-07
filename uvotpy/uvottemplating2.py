@@ -334,7 +334,7 @@ class withTemplateBackground(object):
               history='msg_S', 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
-              clobber=self.clobber ) 
+              clobber=True ) 
               
         outfile = "uvottemplating_templ.output"
         F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile,
@@ -347,7 +347,7 @@ class withTemplateBackground(object):
               history='msg_t', 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
-              clobber=self.clobber ) 
+              clobber=True ) 
 
         #xx = self.extract_spectrum(background_template=self.template,wr_outfile=True,
         #    interactive=True, plotit=True) does not work, requires whole image

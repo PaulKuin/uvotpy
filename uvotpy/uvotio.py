@@ -1855,7 +1855,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
 
    now = datetime.date.today()
    rnu = now.day*1.2+now.month*0.99+now.year*0.3
-   version = '120914'
+   version = '250107'
    h_planck = 6.626e-27  # erg/s
    lightspeed = 2.9979e10  # cm/sec
    h_c_ang = h_planck * lightspeed * 1e8 # ergs-Angstrom

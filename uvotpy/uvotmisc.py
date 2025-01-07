@@ -7,7 +7,6 @@ from __future__ import division
 from __future__ import print_function
 # Developed by N.P.M. Kuin (MSSL/UCL)
 from builtins import range
-#from past.utils import old_div
 __version__ = '20250107-0.7.0'
 
 import numpy as N
@@ -241,8 +240,8 @@ def bilinear1(x1,x2,x1a,x2a,f,chatter=0):
    y3 = f[ki+1,kj+1]
    y4 = f[ki  ,kj+1]
    # 
-   t = old_div((x1 - x1a[ki]),(x1a[ki+1]-x1a[ki]))
-   u = old_div((x2 - x2a[kj]),(x2a[kj+1]-x2a[kj]))
+   t = (x1 - x1a[ki])//(x1a[ki+1]-x1a[ki])
+   u = (x2 - x2a[kj])//(x2a[kj+1]-x2a[kj])
    #
    y = (1.-t)*(1.-u)*y1 + t*(1.-u)*y2 + t*u*y3 + (1.-t)*u*y4
    if chatter > 1: 
@@ -417,12 +416,12 @@ def GaussianHalfIntegralFraction(x):
    Abramowitz & Stegun, par. 26.2 
    '''
    import numpy as np    
-   Z_x = old_div(np.exp( -x*x/2.), np.sqrt(2.* np.pi))
+   Z_x = np.exp( -x*x/2.)// np.sqrt(2.* np.pi)
    p = .33267
    a1 =  .4361836
    a2 = -.1201676
    a3 =  .9372980
-   t = old_div(1.,(1.+p*x))
+   t = 1.//(1.+p*x)
    P_x = 1. - Z_x * t* (a1 + t*(a2 + a3*t) ) 
    A_x = 2.*P_x - 1
    return  A_x  
@@ -493,8 +492,8 @@ def swtime2JD(TSTART,useFtool=True,):
       # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
       swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
       gregorian = swzero_datetime + deltime
-      MJD = np.double(51910.0) + old_div(TSTART,(24.*3600))
-      JD = np.double(2451910.5) + old_div(TSTART,(24.*3600))
+      MJD = np.double(51910.0) + TSTART/(24.*3600)
+      JD = np.double(2451910.5) + TSTART/(24.*3600)
       outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 
@@ -516,10 +515,10 @@ def JD2swift(JD):
 def swift2JD(swifttime):
    delt, status = swclockcorr(swifttime) 
    if status: 
-      return old_div(swifttime+delt,86400.0)  + 2451910.5
+      return (swifttime+delt)/86400.0  + 2451910.5
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
-      return old_div(swifttime,86400.0)  + 2451910.5
+      return swifttime/86400.0  + 2451910.5
 
    
 def MJD2swift(MJD):   
@@ -540,10 +539,10 @@ def MJD2swift(MJD):
 def swift2MJD(swifttime):
    delt, status = swclockcorr(swifttime) 
    if status: 
-      return old_div(swifttime+delt,86400.0)  + 51910.0 
+      return (swifttime+delt)/86400.0  + 51910.0 
    else:   
       print ('WARNING: no correction made for UT-> SC clock time')
-      return old_div(swifttime,86400.0)  + 51910.0
+      return swifttime/86400.0  + 51910.0
    
 def UT2swift(year,month,day,hour,minute,second,millisecond,chatter=0):
    '''Convert time in UT to swift time in seconds.
@@ -656,7 +655,7 @@ def swclockcorr(met,met_tolerance=50,):
         else:   
            raise IOError('input MET not found in Swift SC clock file')
            #return np.polyval(np.array([4.92294757e-08,  -8.36992570]),met), result
-    t1 = old_div((met - x['tstart'][k]),86400.0)
+    t1 = (met - x['tstart'][k])/86400.0
     tcorr = x['toffset'][k] + ( x['C0'][k] + 
        x['C1'][k]*t1 + x['C2'][k]*t1*t1)*1.0e-6
     tcorr = -tcorr   # add tcorr to MET to get time in UT
@@ -876,7 +875,7 @@ def encircled_energy(uvotfilter, areapix):
    f = fits.getdata(reeffile,ext)
    r = f['radius'] # in arc sec
    E = f['reef'] 
-   x = sqrt(old_div(areapix,pi))*0.502 # lookup radius
+   x = (areapix/pi)*0.502 # lookup radius
    f = interp1d(r,E)
    return f(x)
    
@@ -926,7 +925,7 @@ def polyfit_with_fixed_points(n, x, y, xf, yf):
     idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
     mat[:n + 1, :n + 1] = np.take(x_n, idx)
     xf_n = xf**np.arange(n + 1)[:, None]
-    mat[:n + 1, n + 1:] = old_div(xf_n, 2)
+    mat[:n + 1, n + 1:] = xf_n// 2
     mat[n + 1:, :n + 1] = xf_n.T
     mat[n + 1:, n + 1:] = 0
     vec[:n + 1] = yx_n

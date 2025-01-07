@@ -17,7 +17,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from builtins import str
 from builtins import range
-from past.utils import old_div
+#from past.utils import old_div
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotio
 except:
@@ -50,29 +50,33 @@ def binplot(*args, **kwargs):
       print('uvotplot nargs = ',nargs)
       if nargs == 1:
          x = args[0]
-         m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         #m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         m = int( (len(x)+0.5*nbin)/nbin)+1
          print('uvotplot m = ', m)
          xx = 0.0*x[0:m].copy()
          for i in range(len(x)): 
-            j = int(old_div(i,nbin))
+            j = int(i/nbin)
             xx[j] = xx[j] + x[i]
          if xx[m-1] == 0.0: xx = xx[0:m-1]   
          args = (xx)
       else:
          x = args[0]
          y = args[1]
-         m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         #m = int( old_div((len(x)+0.5*nbin),nbin))+1
+         m = int( (len(x)+0.5*nbin)/nbin)+1
          print('uvotplot m = ', m,' len(x) = ',len(x))
          xx = 0.0*x[0:m].copy()
          yy = xx.copy()
          for i in range(len(x)): 
-            j = int(old_div(i,nbin))
+            #j = int(old_div(i,nbin))
+            j = int(i/nbin)
             xx[j] = xx[j] + x[i]
             yy[j] = yy[j] + y[i]
          if xx[m-1] == 0.0:
             xx = xx[0:m-1]
             yy = yy[0:m-1]   
-         xx = old_div(xx,nbin)   
+         #xx = old_div(xx,nbin)   
+         xx = xx/nbin   
          if nargs == 2: 
             args = xx, yy
          elif nargs == 3:
@@ -296,11 +300,13 @@ def maskEllipse(maskimg, x,y,a,b,theta, test=0, chatter=1):
    ----
     x and y , a and b are interchanged    
    '''
-   from numpy import sin, cos, abs, arange, ones, where, outer, asarray, pi, int
+   from numpy import sin, cos, abs, arange, ones, where, outer, asarray, pi
    
    maskimg = asarray(maskimg)
-   ca = old_div(1.,(a*a))
-   cb = old_div(1.,(b*b))
+   #ca = old_div(1.,(a*a))
+   #cb = old_div(1.,(b*b))
+   ca = 1./(a*a)
+   cb = 1./(b*b)
    th = theta / 180. * pi
    m11 = cos(th)
    m12 = sin(th)
@@ -434,8 +440,10 @@ def contourpk(x,y,f, levels=None,xb=None,xe=None,yb=None,ye=None,s=60,kx=1,ky=1,
    
 
 def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None, 
-    acc=None, order=None, wheelpos=200, figureno=1,legloc=[1,2]):
-   '''Plots of the accuracy of the wavelength solution from zemax compared to
+   acc=None, order=None, wheelpos=200, figureno=1,legloc=[1,2]):
+   
+   '''
+   Plots of the accuracy of the wavelength solution from zemax compared to
    the observed wavelengths.
      
    Parameters
@@ -477,7 +485,7 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
    *linear term in the dispersion*
    a linear term is fit to the wavelengths 
    
-      $\lambda_{lin}$ = coef[0]+coef[1]*pix
+      $\\lambda_{lin}$ = coef[0]+coef[1]*pix
    
    *Bottom panel only*
    
@@ -527,9 +535,11 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
       acc = (wave_off[q_in]).std()
       print(' after removing outliers: acc = ', acc) 
       print('accuracy of the fit = ',acc, ' angstrom')
-   stracc =    str(old_div(((10*acc+0.5).__int__()),10.)) +'$\AA$'
-   zero_offset = old_div(((10*zero_offset+0.5).__int__()),10.)
-   txt = '<$\Delta\lambda$> = '+str(zero_offset)+'$\AA\ \ \ \sigma_{observed-model}$ = '+stracc
+   #stracc =    str(old_div(((10*acc+0.5).__int__()),10.)) +'$\AA$'
+   #zero_offset = old_div(((10*zero_offset+0.5).__int__()),10.)
+   stracc =    str( int(10*acc+0.5)/10. ) +'$\\AA$'
+   zero_offset = int(10*zero_offset+0.5) / 10.
+   txt = '<$\\Delta\\lambda$> = '+str(zero_offset)+'$\\AA\ \ \  \\sigma_{observed-model}$ = '+stracc
 
    figure( num=figureno )
 
@@ -537,7 +547,7 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
    plot(pix, wavlin, '-')
    plot(pix_obs,w_obs,'ob')
    plot(pix_zmx,w_zmx,'+r')
-   ylabel('$\lambda$ - $\lambda_{linear}$  ($\AA$)')
+   ylabel('$\\lambda$ - $\\lambda_{linear}$  ($\\AA$)')
    xlabel('pixels')
    if order == 4: 
      sord = 'fourth '
@@ -566,8 +576,8 @@ def waveAccPlot(wave_obs,pix_obs, wave_zmx, pix_zmx, disp_coef, obsid=None,
    plot(wav,p0,'-r',label='_nolegend_')
    plot(wav, p1,'--b',label='1-$\sigma$ limits')
    plot(wav, p2,'--b',label='_nolegend_' )
-   ylabel('$\Delta\lambda$ ($\AA$)')
-   xlabel('$\lambda$ ($\AA$)')
+   ylabel('$\\Delta\\lambda$ ($\\AA$)')
+   xlabel('$\\lambda$ ($\\AA$)')
    a = gca()
    ylim = a.get_ylim()
    #if (ylim[0] > -16.0): ylim=(-16.0,ylim[1])
@@ -594,7 +604,8 @@ def make_spec_plot(nspec=10, parmfile='plotparm.par',wheelpos=160):
    plines = f.readlines()
    f.close()
    nfig = len(plines)
-   nplot = old_div((nfig+1),nspec)
+   #nplot = old_div((nfig+1),nspec)
+   nplot = (nfig+1)/nspec
    pwd = os.getcwd()
    NN = nspec*3000
    if wheelpos == 160: clocked = True
@@ -640,8 +651,9 @@ def make_spec_plot(nspec=10, parmfile='plotparm.par',wheelpos=160):
          wav = (polyval(C_1,dis[ll:ul]))
          spe = (spnet[ll:ul])
          speclen[kf] = len(wav)
-         figure(4+kp); plot(wav,old_div(spe,exposure)); xlim(1700,6500)
-         xsp[:speclen[kf],kf]  = old_div(spe,exposure) 
+         figure(4+kp); plot(wav,spe/exposure); xlim(1700,6500)
+         #xsp[:speclen[kf],kf]  = old_div(spe,exposure) 
+         xsp[:speclen[kf],kf]  = spe/exposure 
          xwa[:speclen[kf],kf]  = wav
          texp[kf] = exposure
          id[kf] = filestub+'['+str(ext1)+']'
