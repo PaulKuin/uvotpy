@@ -1463,7 +1463,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                p2, = plt.plot(wav1[qbad2],flux1[qbad2],
                      '+k',markersize=4,label=u'bad data')
                plt.legend([p1,p2],[u'curved',u'bad data'])
-            plt.ylabel(u'1st order flux $(erg cm^{-2} s^{-1} \AA^{-1)}$')
+            plt.ylabel(u'1st order flux $(erg cm^{-2} s^{-1} \\AA^{-1)}$')
             # find reasonable limits flux 
             qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
             if np.isnan(qf) | (qf > 2e-12): qf = 2e-12
@@ -1531,7 +1531,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             setylim = True
          if setylim: ax31.set_ylim(bottom=y31a,top=y31b)           
          #
-         plt.xlabel(u'$\\lambda(\AA)$',fontsize=16)
+         plt.xlabel(u'$\\lambda(\\AA)$',fontsize=16)
       
       
    # output parameter 

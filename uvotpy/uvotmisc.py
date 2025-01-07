@@ -7,8 +7,8 @@ from __future__ import division
 from __future__ import print_function
 # Developed by N.P.M. Kuin (MSSL/UCL)
 from builtins import range
-from past.utils import old_div
-__version__ = '20140501-0.5.0'
+#from past.utils import old_div
+__version__ = '20250107-0.7.0'
 
 import numpy as N
 

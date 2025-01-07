@@ -35,10 +35,10 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-from future.builtins import input
-from future.builtins import str
-from future.builtins import range
-__version__ = "1.7.0"
+#from future.builtins import input
+#from future.builtins import str
+#from future.builtins import range
+__version__ = "1.8.0"
 
 # version 1.0 9 Nov 2009
 # version 1.1 21 Jan 2010 : adjust range for V grism
@@ -65,7 +65,8 @@ __version__ = "1.7.0"
 #               for the old pyfits and older astropy versions, but "new_table" will be discontinued soon.
 #               Jan 2015 fixed a typo (bracket) in write_rmf_file
 # version 1.6.0 March 11 2016, update all the fits header.update statements to revised standard astropy
-# version 1.7.0 December 30, 2017, update to the sensitivity correction (provisional) affecting the 1700-3000A  
+# version 1.7.0 December 30, 2017, update to the sensitivity correction (provisional) affecting the 1700-3000A 
+# version 1.8.0 changes to comply with Python 3.12 Matplotlib 3.9  
 
 try:
   from uvotpy import uvotplot,uvotmisc,uvotwcs,rationalfit,mpfit,uvotgetspec
@@ -1840,7 +1841,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
     - 2012-09-14 added coi correction 
     - 2013-03-06 edited header
     - 2015-02-13 change quality flag in SPECTRUM extension to conform to XSPEC range
-  '''       
+   '''       
    try:
       from astropy.io import fits
    except:   
