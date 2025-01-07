@@ -39,11 +39,11 @@ from __future__ import absolute_import
 # uvotpy 
 # (c) 2009-2024, see Licence  
 
-from future.builtins import str
-from future.builtins import input
-from future.builtins import range
+#from future.builtins import str    # dropped 2025-01-07
+#from future.builtins import input  # ditto
+#from future.builtins import range  # ditto
 
-__version__ = '2.12.0 20250103'
+__version__ = '2.12.1 20250107'
 
  
 import sys
@@ -1463,7 +1463,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
                p2, = plt.plot(wav1[qbad2],flux1[qbad2],
                      '+k',markersize=4,label=u'bad data')
                plt.legend([p1,p2],[u'curved',u'bad data'])
-            plt.ylabel(u'1st order flux $(erg\ cm^{-2} s^{-1} \AA^{-1)}$')
+            plt.ylabel(u'1st order flux $(erg cm^{-2} s^{-1} \AA^{-1)}$')
             # find reasonable limits flux 
             qf = np.max(flux1[int(len(wav1)*0.3):int(len(wav1)*0.7)])
             if np.isnan(qf) | (qf > 2e-12): qf = 2e-12
@@ -1531,7 +1531,7 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             setylim = True
          if setylim: ax31.set_ylim(bottom=y31a,top=y31b)           
          #
-         plt.xlabel(u'$\lambda(\AA)$',fontsize=16)
+         plt.xlabel(u'$\\lambda(\AA)$',fontsize=16)
       
       
    # output parameter 
@@ -2866,7 +2866,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
       return 
    ra = np.asarray(ra,dtype=np.float64)
    dec = np.asarray(dec,dtype=np.float64)
-   b2mag = np.asarray(b2mag,dtype=np.float)
+   b2mag = np.asarray(b2mag,dtype=float)
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
@@ -4855,7 +4855,7 @@ def response21(wave, version='firstcal',wheelpos=160 ):
    elif version == 'firstcal':
       return response21_firstcal(wave)
    else:
-      print('\Fatal Error in call response21 function\n')
+      print('Fatal Error in call response21 function\n')
       raise IOError
       return      
    
@@ -6128,6 +6128,8 @@ def findInputAngle(RA,DEC,filestub, ext, wheelpos=200,
        
    W1 = wcs.WCS(hf,relax=True)
    xpix_, ypix_ = W1.wcs_world2pix(RA,DEC,0)    
+   if np.isnan(xpix_) | np.isnan(ypix_): 
+       raise IOError(f"the position seems to be off the detector. Check ra,dec.")
    W2 = wcs.WCS(hf,key='D',relax=True)    
    x1, y1 = W2.wcs_pix2world(xpix_,ypix_,0)    
    if chatter > 3: 
@@ -7807,7 +7809,7 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          legend.append(pha_file)
          plt.legend(legend)
          plt.title("images offset in flux by %10.3e"%(yshift))
-         plt.xlabel('uncorrected wavelength ($\AA$)')
+         plt.xlabel('uncorrected wavelength ($\\AA$)')
          plt.ylabel('flux + shift (erg cm-2 s-1 A-1')
          plt.figure(figno+1)
          plt.plot( img2[80:120,:].sum(0) )
@@ -8273,13 +8275,13 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                   ax1.set_title(phafiles[i]+' FLAGGING BAD PARTS ')
                   ax1.legend(loc=0)
                   ax1.set_ylim(ylim)
-                  ax1.set_xlabel('wavelength in $\AA$')
+                  ax1.set_xlabel('wavelength in $\\AA$')
                   
                   ax2 = fig.add_subplot(2,1,2)
                   ax2.plot(W[q],FL[q],drawstyle='steps',label='QUALITY FLAG')
                   if do_COI: ax2.plot(W[q],COI[q],drawstyle='steps',label='COI-FACTOR')
                   ax2.legend(loc=0)
-                  ax2.set_xlabel('wavelength in $\AA$')
+                  ax2.set_xlabel('wavelength in $\\AA$')
                   
                   
                   EXCL = True
@@ -8375,7 +8377,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                   ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum')                           
                   
                   ax.set_title('file %i applied shift of %e' % (i,sh))
-                  ax.set_xlabel('wavelength $\AA$')
+                  ax.set_xlabel('wavelength $\\AA$')
                   if len(ylim) == 2: ax.set_ylim(ylim)
                   ax.legend(loc=0)
                   try:
