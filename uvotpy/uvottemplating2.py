@@ -113,10 +113,13 @@ class withTemplateBackground(object):
         # process variables, parameters
         self.spResult=None
         self.tmplResult=None
+        self.spBackground = None
+        self.tmplBackground = None
         #self.summed_sp = False     # fit header is different for summed
         #self.summed_templ = False  # ditto, for spectrum, template
         self.specimg=None
         self.templimg=None
+        self.tximg2 = None # rolled image 
         self.tximg=None  # reduced specimg to overlap wrt anker
         self.sximg=None  # reduced templimg to overlap wrt anker
         self.spec_exp=50.
@@ -271,8 +274,40 @@ class withTemplateBackground(object):
 
         # now get the count rate spectra
         fitorder_S, cp2_S, (coef0_S,coef1_S,coef2_S,coef3_S), \
-        (bg_zeroth_S, bg_first_S, bg_second_S, bg_third_S), \
-        (borderup_S,borderdown_S), apercorr_S, expospec_S, msg_S, curved_S = self.Ysp 
+        (bg_zeroth, bg_first, bg_second, bg_third), \
+        (borderup_S,borderdown_S), apercorr, expospec, msg_S, curved_S = self.Ysp 
+        
+        (present0,present1,present2,present3),(q0,q1,q2,q3), (
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+              y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
+              x,xstart,xend,sp_all,quality,co_back)  = fitorder_S
+        
+        bg, bg1, bg2, bgsig, bgimg, bg_limits, (bg1_good, bg1_dis, bg1_dis_good, 
+        bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) = self.spBackground
+        
+        # define
+        spYfit={"coef0":coef0_S,"coef1":coef1_S,"coef2":coef2_S,"coef3":coef3_S} 
+       
+        self.spResult.update({"background_1":bg1,"background_2":bg2})
+
+        spYfit.update({
+      "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
+      "borderup":borderup_S,"borderdown":borderdown_S,
+      "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
+      "present0":present0,"present1":present1,"present2":present2,"present3":present3,
+      "q0":q0,"q1":q1,"q2":q2,"q3":q3,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,"co_zeroth":co_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first, "co_first": co_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
+      "apercorr":apercorr,"expospec":expospec})
+        
+        self.spResult.update({"Yfit":spYfit})          
+        
+        #===
         
         self.yloc_sp=fitorder_S[2][0][0]
         if self.chatter > 2: 
@@ -287,7 +322,7 @@ class withTemplateBackground(object):
         #  like borderup/down
         
         self.Ytmpl = uvotgetspec.curved_extraction(        # quick draft
-           self.tximg, 
+           self.tximg2, 
            self.ank_c_tximg, 
            self.spAnker, # anker position on det to retrieve coefficients for track
            self.tmplResult['wheelpos'], 
@@ -315,17 +350,46 @@ class withTemplateBackground(object):
            C_1=self.tmplResult['C_1'] ,C_2=None,dist12=None,
            dropout_mask=None)
         uvotgetspec.trackcentroiding = trcmem   
+                   
+        fitorder_t, cp2_t, (coef0_t,coef1_t,coef2_t,coef3_t), (bg_zeroth,bg_first, bg_second,bg_third), \
+        (borderup_t,borderdown_t), apercorr, expospec, msg_t, curved_t = self.Ytmpl   
+                
+        (present0,present1,present2,present3),(q0,q1,q2,q3), (
+              y0,dlim0L,dlim0U,sig0coef,sp_zeroth,co_zeroth),(
+              y1,dlim1L,dlim1U,sig1coef,sp_first,co_first),(
+              y2,dlim2L,dlim2U,sig2coef,sp_second,co_second),(
+              y3,dlim3L,dlim3U,sig3coef,sp_third,co_third),(
+              x,xstart,xend,sp_all,quality,co_back)  = fitorder_t
         
-           
-        fitorder_t, cp2_t, (coef0_t,coef1_t,coef2_t,coef3_t), (bg_zeroth_t,bg_first_t, bg_second_t,bg_third_t), \
-        (borderup_t,borderdown_t), apercorr_t, expospec_t, msg_t, curved_t = self.Ytmpl   
+        bg, bg1, bg2, bgsig, bgimg, bg_limits, (bg1_good, bg1_dis, bg1_dis_good, 
+        bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) = self.tmplBackground
+        
+        tmplYfit={"coef0":coef0_t,"coef1":coef1_t,"coef2":coef2_t,"coef3":coef3_t} 
+       
+        self.tmplResult.update({"background_1":bg1,"background_2":bg2})
+
+        tmplYfit.update({
+      "bg_zeroth":bg_zeroth,"bg_first":bg_first,"bg_second":bg_second,"bg_third":bg_third,
+      "borderup":borderup_t,"borderdown":borderdown_t,
+      "sig0coef":sig0coef,"sig1coef":sig1coef,"sig2coef":sig2coef,"sig3coef":sig3coef,
+      "present0":present0,"present1":present1,"present2":present2,"present3":present3,
+      "q0":q0,"q1":q1,"q2":q2,"q3":q3,
+      "y0":y0,"dlim0L":dlim0L,"dlim0U":dlim0U,"sp_zeroth":sp_zeroth,"bg_zeroth":bg_zeroth,"co_zeroth":co_zeroth,
+      "y1":y1,"dlim1L":dlim1L,"dlim1U":dlim1U,"sp_first": sp_first, "bg_first": bg_first, "co_first": co_first,
+      "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
+      "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
+      "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
+      "apercorr":apercorr,"expospec":expospec})
+        
+        self.tmplResult.update({"Yfit":tmplYfit})          
+    
         
         # write output
         # first update fitourder in "Yout, etc..." in spResult ,spResult['eff_area1'] should be populated.
         filestub=outfile = "uvottemplating_spect.output"
         use_lenticular_image=True
         F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,filestub,
-              self.extsp, self.Ysp,  
+              self.extsp, self.spResult,  
               fileoutstub=outfile, 
               arf1=None, arf2=None, 
               fit_second=False, 
@@ -338,7 +402,7 @@ class withTemplateBackground(object):
               
         outfile = "uvottemplating_templ.output"
         F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile,
-              self.exttempl, self.Ytmpl,  
+              self.exttempl, self.tmplResult,  
               fileoutstub=outfile, 
               arf1=None, arf2=None, 
               fit_second=False, 
@@ -485,8 +549,8 @@ class withTemplateBackground(object):
         self.dimsp = dimL,dimu = self.set_dims(xstart,xend)
         
         bg, bg1, bg2, bgsig, bgimg, bg_limits, \
-          (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
-           = uvotgetspec.findBackground(self.spimg,background_lower=[None,None], 
+          (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) =\
+        self.spBackground = uvotgetspec.findBackground(self.spimg,background_lower=[None,None], 
            background_upper=[None,None],yloc_spectrum=anky, chatter=0)
         self.spec_bkg  = bgimg
       
@@ -528,7 +592,7 @@ class withTemplateBackground(object):
         
         bg, bg1, bg2, bgsig, bgimg, bg_limits, \
           (bg1_good, bg1_dis, bg1_dis_good, bg2_good, bg2_dis, bg2_dis_good,  bgimg_lin) \
-           = uvotgetspec.findBackground(extimg,background_lower=[None,None], 
+        = self.tmplBackground = uvotgetspec.findBackground(extimg,background_lower=[None,None], 
            background_upper=[None,None],yloc_spectrum=anky, chatter=0)
         self.templ_bkg  = bgimg
             
@@ -609,7 +673,7 @@ class withTemplateBackground(object):
         if isinstance(self.templimg, np.ndarray): 
             tempimg=self.templimg[:,self.dimtempl[0]:self.dimtempl[1]]
         else:
-            templimg = tempimg1[:,self.dimtempl[0]:self.dimtempl[1]].copy()
+            tempimg = tempimg1[:,self.dimtempl[0]:self.dimtempl[1]].copy()
             
         fig = plt.figure(figno,figsize=[8,1.3])
         fig.clf()
@@ -680,6 +744,7 @@ class withTemplateBackground(object):
                  sp1 = ax1.imshow( np.log(spimg-np.median(spimg)+0.01),alpha=1.0,cmap='gist_rainbow'  ) # ax.imshow(spimg)
                  tempimg = np.roll(tempimg,-int(delx),axis=1)
                  tempimg = np.roll(tempimg,-int(dely),axis=0)
+                 self.tximg2 = tempimg
                  print (f"shifted template; now plottting contours")
                  self.c = ax1.contour( np.log(tempimg-np.median(tempimg)*2+0.01),alpha=0.7,colors='k')
                  ax1.set_title("--- with measured shift ---")
