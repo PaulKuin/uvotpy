@@ -32,13 +32,12 @@
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 from __future__ import division
-from past.utils import old_div
 import os, sys
 import optparse
 import numpy as np
 from astropy.io import fits
 
-__version__ = "0.2.0"
+__version__ = "0.9.0"
 
 
 
@@ -246,8 +245,8 @@ def swtime2JD(TSTART,useFtool=False):
       # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
       swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
       gregorian = swzero_datetime + delt
-      MJD = np.double(51910.0) + old_div(TSTART,(24.*3600))
-      JD = np.double(2451910.5) + old_div(TSTART,(24.*3600))
+      MJD = np.double(51910.0) + TSTART/(24.*3600)
+      JD = np.double(2451910.5) + TSTART/(24.*3600)
       outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 

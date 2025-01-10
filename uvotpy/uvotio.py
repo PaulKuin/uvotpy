@@ -1868,7 +1868,7 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
    wave3 = None
    quality = None
    qflags = uvotgetspec.quality_flags()
-   
+   templating = False
       
    ################# prepare data for writing to output file
    ############## main curved slit extraction #####################
@@ -1916,6 +1916,10 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       # if present background_template extimg is in Y['template']
       effarea1 = Y['effarea1']
       effarea2 = Y['effarea2']
+      try:
+          templating = Yfit['templating']
+      except: 
+          templating = False
 
    else:   
       # this will be removed soon in favor of the dictionary passing method
@@ -2245,6 +2249,8 @@ def writeSpectrum(ra,dec,filestub,ext, Y, fileoutstub=None,
       if chatter > 2: print("output file name base is now:",obsid)
    if used_lenticular: 
       lent='_f'
+   elif templating:
+      lent='_t'   
    else: 
       lent='_g'      
    if hdr['wheelpos'] == 200:

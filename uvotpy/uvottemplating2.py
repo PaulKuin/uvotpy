@@ -97,7 +97,7 @@ class withTemplateBackground(object):
     
     """
     def __init__(self, spectra=[], templates=[], pos=None, extsp=1, obsidsp="",
-        obsidtempl="", exttempl=1, redshift=0.0, chatter=1):
+        obsidtempl="", exttempl=1, redshift=0.0, outputfile_stub=None, chatter=1):
         # input parameters, note all spectra, templates to be PHA files
         self.spectra = spectra
         self.templates = templates
@@ -110,6 +110,7 @@ class withTemplateBackground(object):
         self.indir = "./"
         self.redshift = redshift
         self.chatter=chatter
+        self.outputfile_stub=outputfile_stub
         # process variables, parameters
         self.spResult=None
         self.tmplResult=None
@@ -159,6 +160,7 @@ class withTemplateBackground(object):
         self.stdx = 0
         self.stdy = 0
         #self.test_templ_shift=None
+        print ("for instruction see my youtube video (TBD)")
         
     def auto_template(self,):    
         """
@@ -195,18 +197,13 @@ class withTemplateBackground(object):
         4. determine alignment parameters from template to spectrum
         5. extract the template at the location corresponding to the spectrum 
            and scale template spectrum to the exposure time of the spectrum image
-        6. [future] if roll angles differ, flag parts of template spectrum which are 
+        6. [dropped ] if roll angles differ, flag parts of template spectrum which are 
            contaminated by first orders that rotated into the track we are 
            examining. Exclude first order parts unless it also contains a 
            zeroth order.   
-        7. subtract the scaled template spectrum, which contains the zeroth orders 
+        7. subtract the matched template and spectrum, which contains the zeroth orders 
            in the the background under the spectrum, from the spectrum
-        
-        obsolete methods: 
-        #6. embed to get correctly sized template
-        #7. extract spectrum using template (writes output)
-        #8. return template array and full output Y
-        
+                
         
         
         """
@@ -230,17 +227,23 @@ class withTemplateBackground(object):
         # the templimg slice has been rotated around its anker
         # find initial transform template => spectrum
         self.match_slice()
-        # find the overlap in the spectrum and templ images centred on ankers
-        
+        # find the overlap in the spectrum and templ images centred on ankers   
         self.SelectShift(spimg=self.sximg, tempimg1=self.tximg)
         # now that we got the offset between spectrum and template, we 
         # first extract the spectrum properly, and then extract the spectrum 
         # for the template at a location to match that of the original spectrum.
+        # the results are written to a _spectrum. and _template. pha file each.
+        self.process_and_write()
+        # the output file are 
+        
+        
+    def process_and_write(self,):
                 
         offsp = self.ank_c_sximg[0]
         bglo=[50-self.dely,90-self.dely]
         bghi=[50,90]        
         trcmem = uvotgetspec.trackcentroiding
+
         uvotgetspec.trackcentroiding = True        
         self.Ysp = uvotgetspec.curved_extraction(        # quick draft
            self.sximg, # from match_slice
@@ -303,20 +306,22 @@ class withTemplateBackground(object):
       "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
       "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
       "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
-      "apercorr":apercorr,"expospec":expospec})
+      "apercorr":apercorr,"expospec":expospec,"templating":True})
         
         self.spResult.update({"Yfit":spYfit})          
         
         #===
-        
+
         self.yloc_sp=fitorder_S[2][0][0]
         if self.chatter > 2: 
             print(f"from fitorder_S:yloc={self.yloc_sp}  \n from anchor ={self.ank_c_sximg}\n same ???") 
-        offsp = self.yloc_sp  # update      
+        offsp = self.ank_c_tximg[0]  # update   
+        print (f"offsp = {offsp} from {self.ank_c_tximg}") 
         # extract the template spectrum using the matched image tximg
         trcmem = uvotgetspec.trackcentroiding
         uvotgetspec.trackcentroiding = False
-        
+        new_ank_c=[self.ank_c_tximg[0],self.ank_c_tximg[1],self.tmplResult['ank_c'][2],self.tmplResult['ank_c'][3]]
+        self.tmplResult['ank_c']=new_ank_c
         #  We could now use the Ysp parameters to directly extract the counts for tximg
         #  but here we rerun curved_extraction which should have the same parameters 
         #  like borderup/down
@@ -379,36 +384,58 @@ class withTemplateBackground(object):
       "y2":y2,"dlim2L":dlim2L,"dlim2U":dlim2U,"sp_second":sp_second,"bg_second":bg_second,"co_second":co_second,
       "y3":y3,"dlim3L":dlim3L,"dlim3U":dlim3U,"sp_third": sp_third, "bg_third": bg_third, "co_third":co_third,
       "x":x,"xstart":xstart,"xend":xend,"sp_all":sp_all,"quality":quality,"co_back":co_back,
-      "apercorr":apercorr,"expospec":expospec})
+      "apercorr":apercorr,"expospec":expospec,"templating":True})
         
         self.tmplResult.update({"Yfit":tmplYfit})          
     
         
         # write output
+        
+        #h2=self.tmplResult['hdr']
+        #h2.add_history(f
+        proccessing_note=\
+        "The templating code has written out two files which match the template  "+\
+        "to the original, first by adjusting the roll anlge (PA_PNT) difference, "+\
+        "and next by shifting the template to match the sky area of the original "+\
+        "observation. Only the part of the image where these match will be "+\
+        "retained, be it with some wrapping at the bordes of the template image "+\
+        "due to the shifting needed. The spectrum extraction parameters of the "+\
+        "original are used on the adjusted template image to extract the spectrum"+\
+        "from the same region on the sky in both original and template. If the "+\
+        "roll angles differ much the first orders if causing overlap will not be"+\
+        "converted correctly. In that case no good solution can be found."
+        #self.tmplResult['hdr'] = h2
         # first update fitourder in "Yout, etc..." in spResult ,spResult['eff_area1'] should be populated.
-        filestub=outfile = "uvottemplating_spect.output"
+        
+        if self.outputfile_stub != None:
+            filestub = outfile1 = self.outputfile_stub+"_spectrum."
+        else:   
+            filestub = outfile1 = "uvottemplating_spect.output"
         use_lenticular_image=True
         F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,filestub,
               self.extsp, self.spResult,  
-              fileoutstub=outfile, 
+              fileoutstub=outfile1, 
               arf1=None, arf2=None, 
               fit_second=False, 
               write_rmffile=False, fileversion=2,
               used_lenticular=use_lenticular_image,
-              history='msg_S', 
+              history=msg_S, 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
               clobber=True ) 
               
-        outfile = "uvottemplating_templ.output"
+        if self.outputfile_stub != None:
+            filestub = outfile2 = self.outputfile_stub+"_template."
+        else:   
+            filestub = outfile2 = "uvottemplating_templ.output"
         F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile,
               self.exttempl, self.tmplResult,  
-              fileoutstub=outfile, 
+              fileoutstub=outfile2, 
               arf1=None, arf2=None, 
               fit_second=False, 
               write_rmffile=False, fileversion=2,
               used_lenticular=use_lenticular_image,
-              history='msg_t', 
+              history=msg_t, 
               calibration_mode=uvotgetspec.calmode, 
               chatter=self.chatter, 
               clobber=True ) 
@@ -420,7 +447,7 @@ class withTemplateBackground(object):
         import scipy.ndimage as ndimage
         import os
         
-        theta = self.tmpl_roll-self.spec_roll
+        theta = -1*(self.tmpl_roll-self.spec_roll)
         anker = self.anchor_templimg
         
         # backup the template input before changes are made
@@ -526,7 +553,7 @@ class withTemplateBackground(object):
         self.spResult=uvotgetspec.getSpec(self.pos.ra.deg,self.pos.dec.deg,self.obsidsp, self.extsp, 
           indir=self.indir+self.obsidsp+"/uvot/image/", wr_outfile=wr_outfile, 
           outfile=None, calfile=None, fluxcalfile=None, use_lenticular_image=True,
-          offsetlimit=self.offsetlimit, anchor_offset=None, anchor_position=[None,None],
+          offsetlimit=None, anchor_offset=None, anchor_position=[None,None],
           background_lower=self.background_lower, background_upper=self.background_upper, 
           background_template=background_template, fixed_angle=None, spextwidth=13, curved="update",
           fit_second=False, predict2nd=True, skip_field_src=False,      
@@ -690,6 +717,15 @@ class withTemplateBackground(object):
         delxs=[]
         delys=[]
         nover=9
+        print (f"= = = = = = = = = = = = = = = = = \nThe plot consists of the image of the spectrum and contours (black for the template)")
+        print ("First select the zoom button (not the shift/scale one)\n zoom to the region around the first order spectrum ")
+        print ("find a small zeroth order pair and click on the black contour center. The coordinates should appear in the terminal app.")
+        print ("You may have to do this slowly, and wait for the first cross to appear. Then click the blue couterpart zeroth order.")
+        print ("Now a second coordinate should be printer in the terminal, and a question if good (yes) not good (no, do again), or Q (quit)")
+        print ("answer, then do the next set of zeroth orders. The first (black) takes 3x clicking, the second only one time ")
+        print ("Once three points were selected, the offset will be applied to the template. If not happy, start over.")
+        print ("= = = = = = = = = = = = = = = = = \n")
+
         while (itry < 4) & (nover>1) : # collect three differences    
             nover -=1    
  #           itry += 1
