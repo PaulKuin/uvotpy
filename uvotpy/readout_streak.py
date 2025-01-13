@@ -714,8 +714,8 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
       # not interactive: a position on the (binned) image has been given 
       xloc, yloc = rawxy 
       img_coord = xloc, yloc # used for locating the source on the image array
-      xloc = np.int(xloc)*binx #+hdr['windowx0']
-      yloc = np.int(yloc)*binx #+hdr['windowy0']  
+      xloc = int(xloc)*binx #+hdr['windowx0']
+      yloc = int(yloc)*binx #+hdr['windowy0']  
    
    # now do the correction 
    if chatter > 0:
@@ -739,7 +739,7 @@ def _lss_corr(obs,interactive=False,maxcr=False,figno=None,
    f.close()
    try:
       f = fits.getdata(lssfile.split()[0],ext=int(lssfile.split()[1]))
-      lss = f[np.int(yloc),np.int(xloc)]
+      lss = f[int(yloc),int(xloc)]
    except:
       sys.stderr.write("cannot open lss file:  "+lssfile+" at position "+str(xloc)+','+str(yloc))   
    if chatter > 1:
@@ -1360,8 +1360,8 @@ def fix_hwwindow_header(file, fiximage_extension=True, chatter=0):
               y1 = y1img
               DW_X0=x0img/16
               DW_Y0=y0img/16
-              DW_XSIZ = np.int((x1-x0)/16)
-              DW_YSIZ = np.int((y1-y0)/16)
+              DW_XSIZ = int((x1-x0)/16)
+              DW_YSIZ = int((y1-y0)/16)
               #  now we need to compare the values found from scan_img with those from the header
               #
               if chatter > 0:

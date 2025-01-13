@@ -97,7 +97,8 @@ class withTemplateBackground(object):
     
     """
     def __init__(self, spectra=[], templates=[], pos=None, extsp=1, obsidsp="",
-        obsidtempl="", exttempl=1, redshift=0.0, outputfile_stub=None, chatter=1):
+        obsidtempl="", exttempl=1, redshift=0.0, outputfile_stub=None, 
+        rotate_and_shift=True,chatter=1):
         # input parameters, note all spectra, templates to be PHA files
         self.spectra = spectra
         self.templates = templates
@@ -159,6 +160,7 @@ class withTemplateBackground(object):
         self.dely = 0
         self.stdx = 0
         self.stdy = 0
+        self.rotate_and_shift = rotate_and_shift
         #self.test_templ_shift=None
         print ("for instruction see my youtube video (TBD)")
         
@@ -224,7 +226,9 @@ class withTemplateBackground(object):
         # now we got the img slice and anchor
         # find difference in roll angle and rotate template to spectrum 
         self.rotate_tmpl()
-        # the templimg slice has been rotated around its anker
+        # the templimg slice has been rotated around its anker and written to the file
+        # reextract the corrected template 
+        self.extract_template()
         # find initial transform template => spectrum
         self.match_slice()
         # find the overlap in the spectrum and templ images centred on ankers   
@@ -428,7 +432,7 @@ class withTemplateBackground(object):
             filestub = outfile2 = self.outputfile_stub+"_template."
         else:   
             filestub = outfile2 = "uvottemplating_templ.output"
-        F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile,
+        F = uvotio.writeSpectrum(self.pos.ra.deg,self.pos.dec.deg,outfile2,
               self.exttempl, self.tmplResult,  
               fileoutstub=outfile2, 
               arf1=None, arf2=None, 
@@ -443,77 +447,95 @@ class withTemplateBackground(object):
         #xx = self.extract_spectrum(background_template=self.template,wr_outfile=True,
         #    interactive=True, plotit=True) does not work, requires whole image
          
-    def rotate_tmpl(self,):
+    def rotate_tmpl(self,theta=None,extimg=None):
         import scipy.ndimage as ndimage
         import os
         
-        theta = -1*(self.tmpl_roll-self.spec_roll)
-        anker = self.anchor_templimg
+        if theta != None:    # use ext-image
+            revising = True
+            anker = self.anchor_templimg
+            cval = self.cval
+            img = extimg
+        else: 
+            revising = False  # use pha file
+            anker = self.tmplResult['anker']
+            theta = +1*(self.tmpl_roll-self.spec_roll)
+           
+            if self.chatter > 1: print (f"Rotating template image by {theta} deg over anchor.")   
         
         # backup the template input before changes are made
         # should check if this was already done
-        os.system(f"cp {self.templates[self.spectrum_number]} {self.templates[self.spectrum_number]}_ori")
-        if self.chatter > 2:
-           print (f"copied original {self.templates[self.spectrum_number]} to {self.templates[self.spectrum_number]}_ori")
-           print (f"opening {self.templates[self.spectrum_number]}")
+            os.system(f"cp {self.templates[self.spectrum_number]} {self.templates[self.spectrum_number]}_ori")
+            if self.chatter > 2:
+               print (f"copied original {self.templates[self.spectrum_number]} to {self.templates[self.spectrum_number]}_ori")
+               print (f"opening {self.templates[self.spectrum_number]}")
            
-        with fits.open(f"{self.templates[self.spectrum_number]}",update=True) as ft:
-        # check if updated roll angle difference already done earlier (pa_update)
-           hdr = ft[self.exttempl].header
-           cval = self.cval
-           try: 
-              pa_update = hdr['pa_updated'] 
-              if self.chatter > 1: print (f"pa_update read from header")
-           except:
-              pa_update = 0.
-              if self.chatter > 1: print (f"problem reading pa_update from header: set to zero")
+            with fits.open(f"{self.templates[self.spectrum_number]}",update=True) as ft:
+            # check if updated roll angle difference already done earlier (pa_update)
+               hdr = ft[self.exttempl].header
+               cval = self.cval
+               try: 
+                  pa_update = hdr['PA_UPDAT'] 
+                  if self.chatter > 1: print (f"pa_update read from header")
+               except:
+                  pa_update = 0.
+                  if self.chatter > 1: print (f"problem reading pa_update from header: set to zero")
+               img = ft[self.exttempl].data   
               
-           # rotate img
-           if self.chatter > 1: print (f"rotating template - pivot over anker")
-           img = ft[self.exttempl].data   
+        # rotate img
+        if self.chatter > 1: print (f"rotating template - pivot over anker")
         
-           s1 = 0.5*img.shape[0]
-           s2 = 0.5*img.shape[1]
+        s1 = 0.5*img.shape[0]
+        s2 = 0.5*img.shape[1]
 
-           d1 = -(s1 - anker[1])   # distance of anker to centre img 
-           d2 = -(s2 - anker[0])
-           n1 = 2.*abs(d1) + img.shape[0] + 400  # extend img with 2.x the distance of anchor 
-           n2 = 2.*abs(d2) + img.shape[1] + 400
+        d1 = -(s1 - anker[1])   # distance of anker to centre img 
+        d2 = -(s2 - anker[0])
+        n1 = 2.*abs(d1) + img.shape[0] + 400  # extend img with 2.x the distance of anchor 
+        n2 = 2.*abs(d2) + img.shape[1] + 400
 
-           if 2*int(n1/2) == int(n1): n1 = n1 + 1
-           if 2*int(n2/2) == int(n2): n2 = n2 + 1
-           c1 = n1 / 2 - anker[1] 
-           c2 = n2 / 2 - anker[0]
-           n1 = int(n1)
-           n2 = int(n2)
-           c1 = int(c1)
-           c2 = int(c2)
-           if self.chatter > 3: print('array info : ',img.shape,d1,d2,n1,n2,c1,c2)
+        if 2*int(n1/2) == int(n1): n1 = n1 + 1
+        if 2*int(n2/2) == int(n2): n2 = n2 + 1
+        c1 = n1 / 2 - anker[1] 
+        c2 = n2 / 2 - anker[0]
+        n1 = int(n1)
+        n2 = int(n2)
+        c1 = int(c1)
+        c2 = int(c2)
+        if self.chatter > 3: print('array info : ',img.shape,d1,d2,n1,n2,c1,c2)
    
-           #  the ankor is now centered in array a; initialize a with out_of_img_val
-           a  = np.zeros( (n1,n2), dtype=float) + cval
-           # load array in middle
-           a[c1:c1+img.shape[0],c2:c2+img.shape[1]] = img
+        #  the ankor is now centered in array a; initialize a with out_of_img_val
+        a  = np.zeros( (n1,n2), dtype=float) + cval
+        # load array in middle
+        a[c1:c1+img.shape[0],c2:c2+img.shape[1]] = img
       
-           # patch outer regions with something like mean to get rid of artifacts
-           mask = abs(a - cval) < 1.e-8
-           # Kludge:
-           # test image for bad data and make a fix by putting the image average in its place
-           dropouts = False
-           aanan = np.isnan(a)          # process further for flagging
-           aagood = np.isfinite(a)
-           aaave = a[np.where(aagood)].mean()
-           a[np.where(aanan)] = aaave
-           if len( np.where(aanan)[0]) > 0 :
-               dropouts = True
-           print("extractSpecImg WARNING: BAD IMAGE DATA fixed by setting to mean of good data whole image ") 
+        # patch outer regions with something like mean to get rid of artifacts
+        mask = abs(a - cval) < 1.e-8
+        # Kludge:
+        # test image for bad data and make a fix by putting the image average in its place
+        dropouts = False
+        aanan = np.isnan(a)          # process further for flagging
+        aagood = np.isfinite(a)
+        aaave = a[np.where(aagood)].mean()
+        a[np.where(aanan)] = aaave
+        if len( np.where(aanan)[0]) > 0 :
+            dropouts = True
+        print("extractSpecImg WARNING: BAD IMAGE DATA fixed by setting to mean of good data whole image ") 
         
-           img2 = ndimage.rotate(a,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
+        img2 = ndimage.rotate(a,theta,reshape = False,order = 1,mode = 'constant',cval = cval)
+        if not revising:
            # now revert to the original size
            ft[self.exttempl].data = img2[c1:c1+img.shape[0],c2:c2+img.shape[1]] 
            ft[self.exttempl].header["COMMENT"]=f"ROTATED by {theta}"
+           hdr["comment"] = f"rotated the image over an angle {theta} deg"
+           hdr["PA_UPDAT"] = pa_update+theta
+           ft[self.exttempl].header = hdr
            ft.close()
-           if self.chatter > 2: print ("rotation of template completed")
+        else:   # now we need to get the revised parameters 
+            self.templimg = img
+            self.tximg = img
+        if self.chatter > 2: print ("rotation of template completed")
+           
+           
            
 
     
@@ -683,6 +705,9 @@ class withTemplateBackground(object):
     
         The output gives the shift in pixels between the initial sp_img and 
         the template_img, and returns the aligned tempimg 
+        
+        if rotate_and_shift is True, then apply rotation if the selected points indicate 
+        the need for that
     
         """
         import matplotlib.pyplot as plt
@@ -717,6 +742,7 @@ class withTemplateBackground(object):
         delxs=[]
         delys=[]
         nover=9
+        pairs = []
         print (f"= = = = = = = = = = = = = = = = = \nThe plot consists of the image of the spectrum and contours (black for the template)")
         print ("First select the zoom button (not the shift/scale one)\n zoom to the region around the first order spectrum ")
         print ("find a small zeroth order pair and click on the black contour center. The coordinates should appear in the terminal app.")
@@ -758,13 +784,37 @@ class withTemplateBackground(object):
                        #print ("passed selection of a points")  
                        dx = pts[0][0]-pts[1][0]
                        dy = pts[0][1]-pts[1][1]
+                       pairs.append([(pts[0][0],pts[0][1],0),(pts[1][0],pts[1][1],0)])
                        delxs.append(dx)     
                        delys.append(dy)
                        print (f"dx={dx}, dy={dy}\n") 
                        break               
                 break
                 
-        print (f"three points collected delxs,delys: \n{delxs}\n{delys}")            
+        print (f"three points collected delxs,delys: \n{delxs}\n{delys}")
+        delxs=np.asarray(delxs)
+        delys=np.asarray(delys)
+        
+        if self.rotate_and_shift: 
+            pivot = list(self.tmplResult['anker'])
+            pivot.append(0)
+            print (f"pivot={pivot}\npairs=\n{pairs}\n")
+            
+            # split the delxs, delyx pais in rotation and shift
+            rot,angle = self.rotate_points_around_pivot(pairs, pivot)
+            # apply rotation template
+            print (f"TBD apply rotation with angle {angle}") 
+            ans = input("apply the angle and rotate the template ?")
+            if (ans.strip() != ""):
+                if (ans.upper().strip()[0] == "Y"): 
+                    print ("here we apply the rotation over angle[2]")
+                    self.rotate_tmpl(theta=angle[0],extimg=self.tempimg)
+                elif (ans.upper().strip() == 'N'):
+                    print ("no rotation over angle")
+                else:
+                    print ("your response has been ignored")  
+            
+                   
         if 1==1:    
                  delxs=np.asarray(delxs)
                  delys=np.asarray(delys)
@@ -806,94 +856,51 @@ class withTemplateBackground(object):
         # ... include 'self.' in the parameter name
         exec(f"self.{parametername} = {value}")
         
+    def rotate_points_around_pivot(self, pairs, pivot):
+        """
+        Rotate points around a pivot point based on three pairs of coordinates.
+
+        :param pairs: List of three pairs of coordinates. Each pair represents 
+                  [before_rotation, after_rotation] where before_rotation and 
+                  after_rotation are (x, y, z) tuples.
+        :param pivot: Tuple of (x, y, z) representing the pivot point around which 
+                  rotation occurs.
+        :return: Rotation object from scipy.spatial.transform which can be used to 
+             apply this rotation to other points.
+             and
+             angle in deg.
+        """
+        from scipy.spatial.transform import Rotation as R
+        vectors = []
+        for before, after in pairs:
+            # Convert to vectors from pivot
+            v1 = np.array(before) - pivot
+            v2 = np.array(after) - pivot
         
-    def embed_template(self,):   # obsoleted Aug 2024
-        sbgimg = self.spec_bkg
-        sanky,sankx,sxstart,sxend = self.spResult['ank_c']
-        tanky,tankx,txstart,txend = self.tmplResult['ank_c']
-        sdim = self.dimsp #should be same as:
-        tdim = self.dimtempl
-        # match anchors - this should have been done alraidy 
-        # da = sankx - tankx # how the anchers are shifted in spimg/bgimg and tmplimg
-        # find limits x1,x2 for drop-in
-        # so typically, x1 = sankx-sdim[0] for start embedding ,x2=tdim[1]-tdim[0]+x1 for length 
-        x1 = int(sdim[0]) # bed
-        a1 = int(0)       # templ
-        a2 = int( np.min([sdim[1]-sdim[0],sxend]) )  # crop temo, if extends too far
-        x2 = a2 - a1 +x1 # must match length and offset
-        print (f"x1={x1}, x2={x2} \n")
-        sbgimg[:,x1:x2] = self.template[:,a1:a2]  
-        # update template 
-        self.template=sbgimg  
-                
+            # Normalize vectors
+            v1 = v1 / np.linalg.norm(v1)
+            v2 = v2 / np.linalg.norm(v2)
         
-class DraggableContour(object):
-    """
-    Drag contour img1 on image img2 until correctly lined up 
-    return shifts in x, y
+            # Use vector rotation to find rotation axis and angle
+            axis = np.cross(v1, v2)
+            if np.linalg.norm(axis) == 0:  # If vectors are parallel
+                if np.all(v1 == v2):  # If vectors are the same direction
+                    continue  # No rotation needed
+                else:  # Vectors are opposite
+                    axis = np.array([1, 0, 0])  # Arbitrary perpendicular axis
+                    angle = np.pi
+            else:
+                angle = np.arccos(np.dot(v1, v2))
+
+            # Create rotation object
+            rot = R.from_rotvec(angle * axis / np.linalg.norm(axis))
+            vectors.append(rot)
     
-    """
-    import matplotlib.pyplot as mpl
-    #from uvotpy.uvotspec import DraggableSpectrum
-
-    
-    def __init__(self, ax, contour):
-        self.img1 = contour  # move contour over image
-        self.press = None
-        self.ax = ax
-        self.cidpress = None
-        self.cidkey = None
-
-    def connect(self):
-        'connect to all the events we need'
-        self.cidpress = self.img1.axes.figure.canvas.mpl_connect(
-            'button_press_event', self.on_press)
-        self.cidkey = self.img1.axes.figure.canvas.mpl_connect(
-            'key_press_event', self.on_key)
-        print("active")    
-
-    def on_press(self, event):
-        'on button press we will  store some data'
-        if event.inaxes != self.img1.axes: return
-        self.press = event.x, event.y, event.xdata, event.ydata #, self.img1.get_xdata(), self.img1.get_ydata()
-        print("on_press start position (%f,%e)"%(event.xdata,event.ydata))
-        self.startpos = [event.xdata,event.ydata]
-        return self.press  
-
-    def on_motion(self, event):
-        'on motion we will move the spectrum if the mouse is over us'
-        if self.press is None: return
-        if event.inaxes != self.img1.axes: return
-        #x0, y0, xpress, ypress, xdata = self.press
-        x0, y0, xpress, ypress = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
-        self.incx = dx
-        self.incy = dy
-        #self.img1.set_xdata(xdata+dx) 
-        self.ax.figure.canvas.draw()
-
-    def on_release(self, event):
-        'on release we reset the press data'
-        self.delx += self.incx
-        self.dely += self.incy
-        self.press = None
-        self.ax.figure.canvas.draw()
-        if event.inaxes == self.img1.axes:
-            print("on_release end position (%f,%e)"%(event.xdata,event.ydata))
-            self.endpos = [event.xdata,event.ydata]
+        # Combine all rotations (assuming they are around the same pivot)
+        if vectors:
+            combined_rotation = R.concatenate(vectors)
+            angle = combined_rotation.as_euler('xyz', degrees=True)[2] 
+            return combined_rotation, angle
+        else:
+            return R.identity(), 0.  # Return identity rotation if no valid rotations found
             
-    def on_key(self,event):
-        'on press outside canvas disconnect '       
-        print("you pushed the |%s| key"%event.key)
-        if event.inaxes != self.img1.axes: return
-
-    def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.img1.axes.figure.canvas.mpl_disconnect(self.cidpress)
-        self.img1.axes.figure.canvas.mpl_disconnect(self.cidkey)
-        print("disconnected")
-        
-    def out_pos(self):
-        return self.cidpress
-      

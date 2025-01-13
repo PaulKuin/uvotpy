@@ -90,9 +90,9 @@ def get(uvotfilter, time, timekind='swifttime',
    UTd,UTt = UT.split('T')
    yr,mon,day = UTd.split('-')
    hr,min,s = UTt.split(':')   
-   yr, mon, day = np.int(yr), np.int(mon), np.int(day)
-   hr, min, s = np.int(hr), np.int(min), np.int(float(s))
-   swtime = uvotmisc.UT2swift(yr,mon,day,hr,min,np.int(s),0)   
+   yr, mon, day = int(yr), int(mon), int(day)
+   hr, min, s = int(hr), int(min), int(float(s))
+   swtime = uvotmisc.UT2swift(yr,mon,day,hr,min,int(s),0)   
       
    # photometry:
    if uvotfilter.lower() in ['v','b','u','white','uvw1','uvm2','uvw2']: 
