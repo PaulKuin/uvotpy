@@ -1037,27 +1037,27 @@ def read_the_old_readout_streak_table(infile,comment='#',chatter=0): #obsolete
           else:
               if this[0] != '-1': # uvw2
                  obsid, ext = this[14].split('+')
-                 w2data.append({"mag":float(this[0]),"err":float(this[6]),"tstart":np.float64(this[12]),
+                 w2data.append({"mag":float(this[0]),"err":float(this[6]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})    
               if this[1] != '-1': # uvm2
                  obsid, ext = this[14].split('+')
-                 m2data.append({"mag":float(this[1]),"err":float(this[7]),"tstart":np.float64(this[12]),
+                 m2data.append({"mag":float(this[1]),"err":float(this[7]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})    
               if this[2] != '-1': # uvw1
                  obsid, ext = this[14].split('+')
-                 w1data.append({"mag":float(this[2]),"err":float(this[8]),"tstart":np.float64(this[12]),
+                 w1data.append({"mag":float(this[2]),"err":float(this[8]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})    
               if this[3] != '-1': # u
                  obsid, ext = this[14].split('+')
-                 uudata.append({"mag":float(this[3]),"err":float(this[9]),"tstart":np.float64(this[12]),
+                 uudata.append({"mag":float(this[3]),"err":float(this[9]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})    
               if this[4] != '-1': # b
                  obsid, ext = this[14].split('+')
-                 bbdata.append({"mag":float(this[4]),"err":float(this[10]),"tstart":np.float64(this[12]),
+                 bbdata.append({"mag":float(this[4]),"err":float(this[10]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})                     
               if this[5] != '-1': # v
                  obsid, ext = this[14].split('+')
-                 vvdata.append({"mag":float(this[5]),"err":float(this[11]),"tstart":np.float64(this[12]),
+                 vvdata.append({"mag":float(this[5]),"err":float(this[11]),"tstart":float64(this[12]),
                      "date":this[13],"obsid":obsid,"ext":int(ext)})
     f.close()
     if chatter > 0:
@@ -1108,16 +1108,16 @@ def _init_fitsoutput(file,nrow=512,chatter=0):
    col = [
    fits.Column(name="MJDstart", format= "D", unit="d" ,disp="F14.5", ascii=False, array=np.ones(nrow,dtype=np.double)),
    fits.Column(name="filter", format= "A5", disp="A5", ascii=False, array=np.empty(nrow,dtype='S5')),
-   fits.Column(name="mag", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.zeros(nrow,dtype=np.float)),
-   fits.Column(name="mag_err", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.zeros(nrow,dtype=np.float)),
-   fits.Column(name="sys_err", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.ones(nrow,dtype=np.float)),
+   fits.Column(name="mag", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.zeros(nrow,dtype=float)),
+   fits.Column(name="mag_err", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.zeros(nrow,dtype=float)),
+   fits.Column(name="sys_err", format= "E", unit="mag" ,disp="F7.3", ascii=False, array=np.ones(nrow,dtype=float)),
    fits.Column(name="tstart", format= "D", unit="s" ,null="",disp="F15.3", ascii=False, array=np.ones(nrow,dtype=np.double)),
    fits.Column(name="date-obs", format= "A30", unit="UT" ,ascii=False, array=np.empty(nrow,dtype='S30')),
    fits.Column(name="obsid", format= "A11", ascii=False, array=np.empty(nrow,dtype='S11')),
    fits.Column(name="ext", format= "I",disp="I3", ascii=False, array=np.zeros(nrow,dtype=int)),
    fits.Column(name="extname", format= "A30",  ascii=False, array=np.empty(nrow,dtype='S30')),
-   fits.Column(name="maglim", format= "E",unit='mag',ascii=False,array=np.zeros(nrow,dtype=np.float)),
-   fits.Column(name="lss", format= "E", disp="F5.3", ascii=False,array=np.ones(nrow,dtype=np.float)),
+   fits.Column(name="maglim", format= "E",unit='mag',ascii=False,array=np.zeros(nrow,dtype=float)),
+   fits.Column(name="lss", format= "E", disp="F5.3", ascii=False,array=np.ones(nrow,dtype=float)),
    #fits.Column(name="", format= "", unit="" ,null="",disp="", ascii=False)
    ]
    b = fits.BinTableHDU.from_columns(columns=col,header=hdr,)
@@ -1413,7 +1413,7 @@ def read_a_maghist_file(infile,chatter=0):
     """read the fits output from running uvotsource or uvotmaghist into a structure """
     f = fits.open(infile)
     band = f[1].data['filter']
-    tstart = np.array(f[1].data['tstart'],dtype=np.float64)
+    tstart = np.array(f[1].data['tstart'],dtype=float64)
     tstop = f[1].data['tstop']
     mag = f[1].data['mag']
     err = f[1].data['mag_err']
@@ -1513,7 +1513,7 @@ def merge_data(from_readout1,from_readout2=None,from_maghist=None,
     m2_ = []
     w1_ = []
     if timezero == None:
-        timezero = np.float64(-51910.0)*86400.
+        timezero = float64(-51910.0)*86400.
     if from_readout2 != None: 
          if from_readout1["w2"] != None:
              xx = from_readout1["w2"]
