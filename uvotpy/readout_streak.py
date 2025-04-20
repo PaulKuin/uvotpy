@@ -343,7 +343,7 @@ def photometry(obsid,
          else: 
             from uvotpy import ros as ros_py
             matros = ros_py.ros(infile=md,outfile=resfile,chatter=chatter)
-            matresult = matros.process()  
+            matresult = matros.process()         
          
      # process the output from readout_streak ; obtain raw coordinates for each extension
      hdu = fits.open(md)
@@ -795,6 +795,9 @@ def _read_readout_streak_output(obses,inp='results.txt',
    ext_meta=[]
    ext_data=[]
    ext = 0
+   if len(recs) == 0:
+      print (f"WARNING: file {inp} is empty ")
+      return obses,(n_ext,ext_meta,ext_data)
    if (chatter > 4): print("\nreading results file\n")
    for r in recs:
       if (chatter > 4): print (r)
