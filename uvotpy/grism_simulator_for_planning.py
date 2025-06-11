@@ -100,17 +100,17 @@ class SimGrism():
        
        X1 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=roll,
           offset=[offset[0],offset[1]],
-          datetime=t0,blim=blim,storeDSS=None,chatter=0,)
+          datetime=t0,blim=blim,storeDSS=None,chatter=chatter,)
        # now we have the range of roll ; plot extreme cases
        roll_range = X1.rolldata
        min_roll = float(roll_range["min_roll"])
        max_roll = float(roll_range["max_roll"])
        X0 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=min_roll,
           offset=[offset[0],offset[1]],
-          datetime=t0,blim=blim,storeDSS=None,chatter=0,)
+          datetime=t0,blim=blim,storeDSS=None,chatter=chatter,)
        X2 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=max_roll,
           offset=[offset[0],offset[1]],
-          datetime=t0,blim=blim,storeDSS=None,chatter=0,)
+          datetime=t0,blim=blim,storeDSS=None,chatter=chatter,)
 
        fig0 = figure(figno,figsize=(12.5,4.5))
        fig0.clf()
@@ -138,6 +138,7 @@ class SimGrism():
            fig1 = figure(figno+1)
            fig1.clf()
            X1.plot_catalog_on_det(fig1,title2="optimum roll")
+     
         
    def update_roll():
        x=1
@@ -334,20 +335,19 @@ class SimGrism_sub1(SimGrism):
        
        # get UB1 _source list_ of stars 
        self.blim = blim 
+       
        if self.chatter > 4: 
           print (f" input types to generate_USNOB1_cat:",type(self.ra.deg), type(self.dec.deg) )
        if self.wheelpos == 160: radius = 24.*units.arcmin
        elif self.wheelpos == 200 : radius = 30.*units.arcmin
        else: radius = 26*units.arcmin 
-       if generate_USNOB1_cat.get_usnob1_cat(self.ra.deg, self.dec.deg, self.blim,
-           radius=radius ) == "success":           
-           tab = ascii.read('search.ub1',format='no_header')
-           self.ub1ra    = tab['col2']
-           self.ub1dec   = tab['col3']   # these are astropy.table.column.Column objects
-           #self.ub1b2mag = tab['col6']
-           #self.ub1r2mag = tab['col7']
-       else:
-           raise RuntimeError('unable to retrieve USNO B1 catalog table')    
+       
+       tab = generate_USNOB1_cat.get_usnob1_cat( self.ra.deg, self.dec.deg, self.blim, radius=radius ,tableout=True, chatter=self.chatter)
+       usnob1 = tab
+       
+       self.ub1ra    = tab['_RAJ2000']
+       self.ub1dec   = tab['_DEJ2000']   # these are astropy.table.column.Column objects
+           
        # sort by distance to target (to force numbering of nearby sources for plot)
        dist2target = []
        for p1,p2 in zip(self.ub1ra, self.ub1dec):
@@ -357,20 +357,25 @@ class SimGrism_sub1(SimGrism):
               ) 
        tab.add_column(dist2target,name="dist2t")
        tab.sort(["dist2t"])
-       self.ub1ra    = tab['col2']
-       self.ub1dec   = tab['col3']   # these are astropy.table.column.Column objects
-       self.ub1b2mag = tab['col6']
-       self.ub1r2mag = tab['col7']
-       
-       # get wcs of the DSS image 
-       #  like, Wcss = wcs.WCS (header=hdr,key='S',relax=True,)                 
+       self.ub1ra    = tab['_RAJ2000']
+       self.ub1dec   = tab['_DEJ2000']   # these are astropy.table.column.Column objects
+       self.ub1b2mag = tab['B2mag']
+       self.ub1r2mag = tab['R2mag']
+       if self.chatter >3: print ("read in the usnob1 catalogue ")
+
+       # WCS: 
+       #    get wcs of the DSS image 
+       #    like, Wcss = wcs.WCS (header=hdr,key='S',relax=True,)                 
        self.dssWcs = wcs.WCS (header=self.dsshdr,)    # ,key='S',relax=True,)  DSS file 
+       
        # other WCS instances
        # sky to grism zeroth order anchor coordinates
        self.detWcs = wcs.WCS (header=self._det_header(),key='S') # IMG coordinate grisms
+       
        # first order anchor is more complicated and mimics 
        #    the uvotgetspec.findInputAngle():
        # first convert from sky to an intermediary between RAW and DET (lenticular) 
+       
        self.lenticularWcs = wcs.WCS (header=self._lenticular_header()) # IMG coordinate lenticular 
        # convert from the intermediate system to GRISM DET (mm) coordinates using x,y
        #wcsd={"CRVAL1":0,"CRVAL2":0,"CRPIX1":993.0,"CRPIX2":1022.5,"CTYPE1":'DETX',
@@ -383,6 +388,7 @@ class SimGrism_sub1(SimGrism):
           "CTYPE2":'DETY',"CUNIT1":'mm',"CUNIT2":'mm',
        "CDELT1":0.009075,"CDELT2":0.009075,"NAXIS1":1987,"NAXIS2":2046}
        self.DETWCS = wcs.WCS(wcsd)
+       
        # after this, convert the DET (mm) to DET(pix) offset to be supplied to calfiles:
        # DX,DY = (xD,yD)/0.009075 + (1100.5,1100.5)
        # using x,y in a combined offssetwcs to get DX,DY would probably be:
@@ -396,6 +402,8 @@ class SimGrism_sub1(SimGrism):
 
        # compute the source positions in img coordinates on the DSS image  
        #self.ub1_dssx, self.ub1_dssy = self.dssWcs.wcs_world2pix(self.ub1ra, self.ub1dec,0)   
+       if self.chatter > 3: print(" done WCS conversions")
+
        
        if type(datetime) == type(None):
           datetime = Time.now()
@@ -408,6 +416,8 @@ class SimGrism_sub1(SimGrism):
           #utime = datetime.unix  # <- wrong time
           #self.roll= swiftroll.optimum_roll(self.dtor*self.ra.deg, self.dtor*self.dec.deg, 
           #      utime )/self.dtor * units.deg
+          if self.chatter > 3 : print (" times done ")
+          
           self.rolldata = swiftroll.forday(self.ra.deg,self.dec.deg,
                 day=self.doy,year=self.year) 
           if self.set_roll:      
@@ -425,6 +435,7 @@ class SimGrism_sub1(SimGrism):
        self.anchor = None
        self.dss_footprint = None
        self.rotated_img = None
+       if self.chatter > 3: print ("init done")
        
 # # # # # # # # # 
        
@@ -474,6 +485,9 @@ class SimGrism_sub1(SimGrism):
        import numpy as np
        from astropy import coordinates, units  
        import matplotlib
+       
+       if self.chatter > 2: print(f"defining figure axis ")
+       
        if type(fighandle) == matplotlib.figure.Figure :
           ax = fighandle.add_subplot(111)
           do_colorbar = True
@@ -487,7 +501,8 @@ class SimGrism_sub1(SimGrism):
        B2mR2 = np.array( B2mR2 )   
        
        #  det wcs positions of zeroth orders [IMG coord]
-       detcat = np.array(self.detWcs.all_world2pix(self.ub1ra,self.ub1dec,0 ))
+       detcat = np.array(self.detWcs.all_world2pix(self.ub1ra,self.ub1dec,0,adaptive=True))
+       if self.chatter > 3: print(f"504 plot_catalog_on_det zeroth orders done")
        
        # zeroth order target position (image coordinate) [IMG coord] using 
        #   distortion correction for zeroth orders in WCS-S
@@ -503,11 +518,13 @@ class SimGrism_sub1(SimGrism):
        # write table stars in field
        src_table = self.make_source_table(self.ub1ra[q1], self.ub1dec[q1],
            detcat[0][q1], detcat[1][q1], self.ub1b2mag[q1], B2mR2[2:][q1])
+       if self.chatter > 3: print(f"521 plot_catalog_on_det field stars done")
        
        # treat target
        chatter = self.chatter
        self.chatter = 0
        xank,yank,theta = self.sky2det(self.ra.deg,self.dec.deg)
+       
        self.chatter = chatter
        # slit points first order [input target coordinate in DET coord]
        if type(xank) != type(None):
@@ -515,8 +532,9 @@ class SimGrism_sub1(SimGrism):
            xd,yd = self.rotate_slit(x,y,pivot=[xank-104,yank-78],theta=theta)  
        else: 
            print (f"WARNING: Target not on detector ? ")    
-       if self.chatter > 2:
-           print (f"target at {xank-104},{yank-78} with first order slope of {theta}.")
+       if self.chatter > 3:
+           print (f"536 plot_catalog_on_det target at {xank-104},{yank-78} with first order slope of {theta}.")
+           
        # plot zeroth orders! 
        ax.scatter(detcat[0],detcat[1],   # plot all zeroth order near field sources
                  s=(20.-self.ub1b2mag)*2.,
@@ -537,7 +555,8 @@ class SimGrism_sub1(SimGrism):
        if xank < 1750:
            ax.plot(xxm[q],yym[q],'m-',lw=1)
            ax.plot(xxp[q],yyp[q],'m-',lw=1)
-
+       if self.chatter > 3: print(f"558 plot_catalog_on_det plotted zeroth orders")
+    
        # colorbar
        if annotate:
           if do_colorbar:
@@ -562,7 +581,8 @@ class SimGrism_sub1(SimGrism):
        for k in src_table[:]:
            xank = k["FO-Ximg"]
            if (type(xank) == type(None)) or (xank == -99) or (xank > 1800):
-               continue
+                if self.chatter > 3: print(f"584 plot_catalog_on_det problem type xank {type(xank)}")
+                continue
            yank = k["FO-Yimg"]
            theta = k["theta"]
            zde1 = k["ZO-Ximg"]
@@ -585,11 +605,12 @@ class SimGrism_sub1(SimGrism):
        ax.set_ylim(-500,2150)
        grism = {160:"uv-clocked ",200:"uv-nominal ",955:"vis-clocked",1000:"vis-nominal"}
        if annotate: ax.legend(title=
-           f"{grism[self.wheelpos]}  roll={np.int(self.roll.value)}  B < {self.blim}",
+           f"{grism[self.wheelpos]}  roll={int(self.roll.value)}  B < {self.blim}",
            fontsize=8,
            bbox_to_anchor=(0.05,1.02,1.3,0.15),loc=3,ncol=3) 
+       if self.chatter > 3: print(f"562 plot_catalog_on_det done")
        if not do_colorbar: return R
-           
+
 
    def slit_at_offset(self,xank,yank,theta):
        """
@@ -1996,8 +2017,8 @@ corresponding WCS of detector image needed
         wcs2 = self.detWcs
         nx,ny = dssimg.shape
 # scale intensity DSS image
-        xr = np.int(nx*0.3), np.int(nx*0.7)
-        yr = np.int(ny*0.3), np.int(ny*0.7)
+        xr = int(nx*0.3), int(nx*0.7)
+        yr = int(ny*0.3), int(ny*0.7)
         subimg = dssimg[xr[0]:xr[1],yr[0]:yr[1]]
         top = dssimg[xr[0]:xr[1],yr[0]:yr[1]].mean()+5.*dssimg[xr[0]:xr[1],yr[0]:yr[1]].std()
         # clip
