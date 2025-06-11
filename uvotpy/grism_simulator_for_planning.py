@@ -328,7 +328,8 @@ class SimGrism_sub1(SimGrism):
        #self.veil = self.make_fademask( xaxis=1987, yaxis=2046, )
        
        # get initial DSS image at pointing position (not target, unless no offset)
-       if chatter > 4: print ("storeDSS:",type(storeDSS),' = ',storeDSS)
+       if chatter > 4: 
+           print ("storeDSS:",type(storeDSS),' = ',storeDSS)
        self.dsshdr, self.dssimg = query_DSS(self.pointing, ImSize=27.0, server="STSCI",
                       version = "3", output=storeDSS, chatter=0)
        #self.rotimg = self.dssimg # initialise rotated dss                 
@@ -337,7 +338,7 @@ class SimGrism_sub1(SimGrism):
        self.blim = blim 
        
        if self.chatter > 4: 
-          print (f" input types to generate_USNOB1_cat:",type(self.ra.deg), type(self.dec.deg) )
+          print (f" input types to generate_USNOB1_cat:", type(self.ra.deg), type(self.dec.deg) )
        if self.wheelpos == 160: radius = 24.*units.arcmin
        elif self.wheelpos == 200 : radius = 30.*units.arcmin
        else: radius = 26*units.arcmin 
@@ -591,7 +592,7 @@ class SimGrism_sub1(SimGrism):
            lw=0.5  # adapt line width to the source brightness > 13
            if B < 13: lw += 0.70*(13.-B)
            nn = k["nr"]
-           if self.chatter == 5: print (f"\n src table = \n{k}")
+           if self.chatter == 5: print (f"594 src table = \n{k}")
            xxm,yym,xxp,yyp = self.slit_at_offset(xank,yank, theta*units.deg) 
            q = (xxm > 0) & (xxm < 1970) & (yym < 2050) & (yym > 0)
            if xank < 1750:
@@ -608,7 +609,8 @@ class SimGrism_sub1(SimGrism):
            f"{grism[self.wheelpos]}  roll={int(self.roll.value)}  B < {self.blim}",
            fontsize=8,
            bbox_to_anchor=(0.05,1.02,1.3,0.15),loc=3,ncol=3) 
-       if self.chatter > 3: print(f"562 plot_catalog_on_det done")
+       if self.chatter > 3: 
+           print(f"612 plot_catalog_on_det done")
        if not do_colorbar: return R
 
 
@@ -648,7 +650,7 @@ class SimGrism_sub1(SimGrism):
        
        #theta = self.cal.theta(offsetdelta=[0,0]) 
        if not np.isscalar(ra):
-          raise RuntimeError(f"sky2det parameter ra is not a scalar: ra={ra}\n")
+          raise RuntimeError(f"651 sky2det parameter ra is not a scalar: ra={ra}\n")
        # position x,y on uvw2 image:   
        x, y = self.lenticularWcs.all_world2pix(ra*units.deg, dec*units.deg,1, )
        
@@ -662,9 +664,11 @@ class SimGrism_sub1(SimGrism):
        chatter = self.chatter
        self.chatter = 0
        xank_det, yank_det = self.cal.anchor(offsetdelta=[dx,dy],sporder=1)
-       theta = self.cal.theta(offsetdelta=[dx,dy])
        self.chatter =  chatter
+       theta = self.cal.theta(offsetdelta=[dx,dy])
        # if no solution, anxk_det and yank_det are None's
+       if theta == np.nan: 
+          print (f"669 sky2det ERROR x={xank_det} y={yank_det} theta={theta} ")
        return xank_det,yank_det, theta
 
    def _screen_stars(self,x,y,order=0,f=1.0):
