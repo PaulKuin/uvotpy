@@ -32,12 +32,13 @@
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 from __future__ import division
+from past.utils import old_div
 import os, sys
 import optparse
 import numpy as np
 from astropy.io import fits
 
-__version__ = "0.9.0"
+__version__ = "0.2.0"
 
 
 
@@ -245,14 +246,14 @@ def swtime2JD(TSTART,useFtool=False):
       # delt[0] # days;   delt[1] # seconds;  delt[2] # microseconds
       swzero_datetime = datetime.datetime(2001,1,1,0,0,0)
       gregorian = swzero_datetime + delt
-      MJD = np.double(51910.0) + TSTART/(24.*3600)
-      JD = np.double(2451910.5) + TSTART/(24.*3600)
+      MJD = np.double(51910.0) + old_div(TSTART,(24.*3600))
+      JD = np.double(2451910.5) + old_div(TSTART,(24.*3600))
       outdate = gregorian.isoformat()
    return JD, MJD, gregorian, outdate
 
 
 
-def _write(out,fmt,path,include_zip=False,chatter=0):
+def _write(out,fmt,path,include_zip=False):
    # assumes an uvot image file header 
    f = fits.open(path)
    N = len(f)
@@ -262,7 +263,7 @@ def _write(out,fmt,path,include_zip=False,chatter=0):
       tstart = x['tstart']
       xx = swtime2JD(tstart)
       mjd = xx[1]
-      if chatter > 3 : print ("xx mjd ",xx, mjd)
+      print ("xx mjd ",xx, mjd)
       out.append( fmt%( x['dateobs'],      
          mjd,x['expo'],x['filt'], 
          x['aspcorr'],filen,x['datamode'],
