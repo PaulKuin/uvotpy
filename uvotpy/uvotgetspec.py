@@ -825,11 +825,15 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
       catspec= 'catalog.spec'
    
    if (not skip_field_src):
-      Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
-      pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
-      Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,
+      if ZOpos == None: 
+         print (f"WARNING: failure of ZO field star positions code!")
+         skip_field_src = True
+      else:     
+         Xim,Yim,Xa,Yb,Thet,b2mag,matched,ondetector = ZOpos
+         pivot_ori=np.array([(ankerimg)[0],(ankerimg)[1]])
+         Y_ZOpos={"Xim":Xim,"Yim":Yim,"Xa":Xa,"Yb":Yb,"Thet":Thet,"b2mag":b2mag,
                "matched":matched,"ondetector":ondetector}
-      Yout.update({"ZOpos":Y_ZOpos})
+         Yout.update({"ZOpos":Y_ZOpos})
    else:
       Yout.update({"ZOpos":None})       
 
@@ -2711,6 +2715,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    import datetime
    from . import uvotwcs
    from astropy import wcs
+   from astropy.table import Table
 
    if chatter > 0: 
        print("find_zeroth_orders: determining positions zeroth orders from USNO-B1")
@@ -2747,7 +2752,7 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
 
    tt = os.system(command)
    if tt != 0:
-      raise('find_zeroth_orders: uvotdetect had a problem with this image\nIs HEASOFT initialised?')
+      print('find_zeroth_orders: uvotdetect call returned non-zero status code, perhaps nothing, but Is HEASOFT initialised?')
       
    if not os.access(outfile,os.F_OK):  
       # so you can provide it another way
@@ -2847,26 +2852,41 @@ def find_zeroth_orders(filestub, ext, wheelpos, region=False,indir='./',
    # generate a new catspecfile
    _write_catspecfile()
    
-   # remove reliance on astropy tables as it fails on debian linux
-   searchf = open('search.ub1')
-   stab = searchf.readlines()
-   searchf.close()
-   M = len(stab)  
-   ra    = []
-   dec   = []
-   b2mag = []
-   for row in stab:
-      row_values = row.split()
-      if len(row_values) > 6:
-          ra.append(row_values[1])
-          dec.append(row_values[2])
-          b2mag.append(row_values[5])
+   # try reading it as an astropy Table
+   try:
+      usno_table = Table.read('search.ub1',format='ascii')
+      ra = usno_table['_RAJ2000']
+      dec = usno_table['_DEJ2000']
+      b2mag = usno_table['B2mag']
+      if chatter > 1: print (f"usno table read using astropy.table")
+      
+   except:  
+       # remove reliance on astropy tables as it fails on debian linux
+       searchf = open('search.ub1')
+       stab = searchf.readlines()
+       searchf.close()
+       M = len(stab)  
+       ra    = []
+       dec   = []
+       b2mag = []
+       iad = [1,2,5]
+       for row in stab:
+          row_values = row.split()
+          if type(row_values[1]) == str:
+              # header present 
+              iad = [0,1,4]
+          else:
+             if len(row_values) > 6:
+                 ra.append(   float(row_values[iad[0]] ))
+                 dec.append(  float(row_values[iad[1]] ))
+                 b2mag.append(float(row_values[iad[2]] )) 
    M = len(ra) 
    if M == 0:
       return 
-   ra = np.asarray(ra,dtype=np.float64)
-   dec = np.asarray(dec,dtype=np.float64)
+   ra    = np.asarray(ra,dtype=np.float64)
+   dec   = np.asarray(dec,dtype=np.float64)
    b2mag = np.asarray(b2mag,dtype=float)
+   
    Xa  = zeros(M)
    Yb  = zeros(M)
    Thet= zeros(M)
@@ -5048,7 +5068,8 @@ def predict_second_order(dis,spnet,C_1,C_2,d12,qual,dismin,dismax,wheelpos):
    # now interpolate  projflux2bin to find the counts/bin in the second order
    # the interpolation is needed since the array size is based on the first order 
    flux2 = interpol(dis2, dis2cut, projflux2bin) 
-   qual2 = np.array( interpol(dis2, dis2cut, qua1cut) + 0.5 , dtype=int )
+   dis_val9 = interpol(dis2, dis2cut, qua1cut) + 0.5 
+   qual2 = np.array( dis_val9 , dtype=int )
    
    # remove NaN values from output
    
