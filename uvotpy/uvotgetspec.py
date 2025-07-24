@@ -3466,8 +3466,9 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
    sig3coef=array([0.0059,1.5])
    
 # override coefficients y(x):
-   print ("DEBUG 3431 type coef1 is ", type(coef1) )
-   print ("DEBUG 3432 type poly_1 is ",type(poly_1))
+   if chatter > 2:
+       print ("DEBUG 3431 type coef1 is ", type(coef1) )
+       print ("DEBUG 3432 type poly_1 is ",type(poly_1))
    if (type(poly_1) != typeNone): coef1 = poly_1   
    if (type(poly_2) != typeNone): coef2 = poly_2   
    if (type(poly_3) != typeNone): coef3 = poly_3   
@@ -3690,7 +3691,7 @@ def curved_extraction(extimg,ank_c,anchor1, wheelpos, expmap=None, offset=0., \
               
           # update the anchor y-coordinate   
           print (f"3670 ank_c ={ank_c} and y1 = {y1}")         
-          ank_c[0] = y1[ank_c[1]]             
+          ank_c[0] = y1[int(ank_c[1])]             
         #except:
         #  msg += "WARNING: fit order curvature update has failed\n"
         #  curved = "curve"
@@ -7830,8 +7831,8 @@ def sum_Extimage( pha_file_list, sum_file_name='extracted_image_sum.fit', mode='
          legend.append(pha_file)
          plt.legend(legend)
          plt.title("images offset in flux by %10.3e"%(yshift))
-         plt.xlabel('uncorrected wavelength ($\\AA$)')
-         plt.ylabel('flux + shift (erg cm-2 s-1 A-1')
+         plt.xlabel(f'uncorrected wavelength ($\AA$)')
+         plt.ylabel(f'flux + shift (erg cm-2 s-1 A-1')
          plt.figure(figno+1)
          plt.plot( img2[80:120,:].sum(0) )
          plt.grid()
@@ -8296,13 +8297,13 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                   ax1.set_title(phafiles[i]+' FLAGGING BAD PARTS ')
                   ax1.legend(loc=0)
                   ax1.set_ylim(ylim)
-                  ax1.set_xlabel('wavelength in $\\AA$')
+                  ax1.set_xlabel(f'wavelength in $\AA$')
                   
                   ax2 = fig.add_subplot(2,1,2)
                   ax2.plot(W[q],FL[q],drawstyle='steps',label='QUALITY FLAG')
                   if do_COI: ax2.plot(W[q],COI[q],drawstyle='steps',label='COI-FACTOR')
                   ax2.legend(loc=0)
-                  ax2.set_xlabel('wavelength in $\\AA$')
+                  ax2.set_xlabel(f'wavelength in $\AA$')
                   
                   
                   EXCL = True
@@ -8398,7 +8399,7 @@ def sum_PHAspectra(phafiles, wave_shifts=[], exclude_wave=[],
                   ax.plot(W[p],F[p],'r--',alpha=0.6,lw=1.5,label='original unshifted spectrum')                           
                   
                   ax.set_title('file %i applied shift of %e' % (i,sh))
-                  ax.set_xlabel('wavelength $\\AA$')
+                  ax.set_xlabel(f'wavelength $\AA$')
                   if len(ylim) == 2: ax.set_ylim(ylim)
                   ax.legend(loc=0)
                   try:
