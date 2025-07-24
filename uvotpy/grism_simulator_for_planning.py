@@ -47,9 +47,9 @@ def maketime(t,format=None):
 
 class SimGrism():
 
-   def __init__(self,target_position_or_name, wheelpos=160, roll=None, 
+   def __init__(self,target_position_or_name, wheelpos=160, roll=100., 
         offset=[0,0], datetime=None, blim=16.0, figno=16,
-        timeformat=None, chatter=0):
+        timeformat=None, uvotmode=None, chatter=0):
        """ 
        input parameters:
           target: name, astropy coordinate, or (ra,dec) in degrees
@@ -95,16 +95,38 @@ class SimGrism():
           t0 = maketime(datetime,format=timeformat)
        else: t0 = None   
        
-       if type(roll) == type(None): extra_plot = False 
-       else: extra_plot = True
+       if type(roll) == list:
+           rolls=np.array( roll.copy(), dtype=float) 
+           nrolls = len(rolls)
+           if len(rolls)>1 : 
+              roll = roll[1]
+           extra_plot = True
+       else: 
+           rolls = [roll,]   
+           nrolls = 1
+           extra_plot = True
+           
+       print (f"input parameters rolls={rolls}; nrolls={nrolls}\n")      
        
        X1 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=roll,
           offset=[offset[0],offset[1]],
           datetime=t0,blim=blim,storeDSS=None,chatter=chatter,)
        # now we have the range of roll ; plot extreme cases
        roll_range = X1.rolldata
-       min_roll = float(roll_range["min_roll"])
-       max_roll = float(roll_range["max_roll"])
+       
+       miro = min_roll = float(roll_range["min_roll"])
+       maro = max_roll = float(roll_range["max_roll"])
+       if (roll < miro) | (roll > maro): 
+           print ("WARNING: chosen roll angle is not in range for this day!")
+       #print (f"allowed range roll angles is {min_roll:.1f}-{max_roll:.1f} deg")
+       
+       if (nrolls > 1) &(rolls[0] > min_roll) & (rolls[0] < max_roll): 
+          min_roll = float(rolls[0])
+       if (nrolls > 1) and (rolls[2] > miro) and (rolls[2] < maro): 
+          max_roll = float(rolls[2])
+       print (f"making plots now for rolls {min_roll:.1f},{roll:.1f},{max_roll:.1f} deg\n")
+       #print (f"with types {type(min_roll)}, {type(roll)}, {type(max_roll)}" )  
+          
        X0 = SimGrism_sub1(target_position_or_name,wheelpos=wheelpos,roll=min_roll,
           offset=[offset[0],offset[1]],
           datetime=t0,blim=blim,storeDSS=None,chatter=chatter,)
@@ -116,22 +138,29 @@ class SimGrism():
        fig0.clf()
        ax0 = fig0.add_subplot(121)
        ax1 = fig0.add_subplot(122)
-       R = X0.plot_catalog_on_det(ax0,title2="minimum roll")
-       R = X2.plot_catalog_on_det(ax1,title2="maximum roll")
+       R = X0.plot_catalog_on_det(ax0,title2="lower roll")
+       R = X2.plot_catalog_on_det(ax1,title2="higher roll")
        fig0.colorbar(R,fraction=0.05,pad=0.05,label="blue=hot      yellow=cool")
        #ax0.text(-50,750,f"{target_name_or_position}",rotation='vertical',va='center')
        ax1.set_ylabel("")
        
        # print out details
+       filter_name = {160:"UV Clocked",200:"UV Nominal",955:"Vis Clocked",1000:"Vis Nominal"}
+       obs_time = t0
+
        # use ranew,decnew = self.decsex(raoff.value,decoff.value) to get sexagesimal 
        targ_ra_hms, targ_dec_dms  = X1.decsex(X1.target.ra.deg,X1.target.dec.deg)
        point_ra_hms,point_dec_dms = X1.decsex(X1.pointing.ra.deg,X1.pointing.dec.deg)
        print (80*"=")
+       print (f"Plan for filter {filter_name[wheelpos]} observation on {obs_time}\nUsed limiting mag={blim} ")
+       #print (f"... allowed roll range for {obs_time} is {miro:.1f}-{maro:.1f} deg")
        print (f"\ntarget=({target_position_or_name}) -- report for roll:{X1.roll} has\n")
        print (f"   target position: {X1.target} = {targ_ra_hms}, {targ_dec_dms}")
-       print (f"   at offset: {X1.offset} \n")
+       print (f"   at offset: {X1.offset} must use plan pointing position \n")
        print (f"   plan pointing position: {X1.pointing}  = {point_ra_hms}, {point_dec_dms}")
        print (f"   with roll = {X1.roll}\n ")
+       if uvotmode != None:
+          print (f"suggested UVOT mode is {uvotmode}")
        print (80*"=")
        # 
        if extra_plot:
