@@ -52,7 +52,7 @@ from astropy.io import ascii,fits
 from astropy import units
 
 
-__version__ = '0.4 2023-10-27'  
+__version__ = '0.5 2025-06-09'  
 
 typeNone = type(None)
 
@@ -189,6 +189,9 @@ class Caldb(object):
                    raise RuntimeError("spectral order not 1 or 2 - no effective area available")
                 
                self.calfilepath= UVOTPY+"/calfiles/"+calfile
+               # verify the file can be found
+               if not os.access(self.calfilepath,os.F_OK): 
+                   raise RuntimeError(f"ERROR calfiles 194: calfilepath ({self.calfilepath}) is not valid")
                 
         if what.lower() == "wave":                    
             self.msg += "wavecal file : %s\n"%(self.calfilepath.split('/')[-1])                       
@@ -235,7 +238,7 @@ class WaveCal(Caldb):
 
     def __init__(self, grismmode=None, wheelpos=None, msg="", 
          use_caldb=False,
-         mode = 'bilinear', #'bisplines',
+         mode = 'interp2d', #'bilinear', #'bisplines',
          _flimit=0.19, # do not change unless you know what you do
          _fail_or_report=True,
          chatter=0 ):
@@ -479,11 +482,11 @@ class WaveCal(Caldb):
            if rx < np.min(xfp): 
                ix = ix_ = 0
                if self.chatter > 0: 
-                   print("WARNING: point has xfield lower than calfile provides")
+                   print("WARNING: 485 point has xfield lower than calfile provides")
            if rx > np.max(xfp): 
                ix = ix_ = N1-1   
                if self.chatter > 0:
-                   print("WARNING: point has xfield higher than calfile provides")
+                   print("WARNING: 489 point has xfield higher than calfile provides")
         if inYfp :   
             iy  = np.max( np.where( ry >= yf[:,0] )[0] ) 
             iy_ = np.min( np.where( ry <= yf[:,0] )[0] ) 
@@ -491,11 +494,11 @@ class WaveCal(Caldb):
             if ry < np.min(yfp): 
                 iy = iy_ = 0
                 if self.chatter > 0:
-                    print ("WARNING: point has yfield lower than calfile provides")
+                    print ("WARNING: 497 point has yfield lower than calfile provides")
             if ry > np.max(yfp): 
                 iy = iy_ = 27   
                 if self.chatter > 0:
-                    print("WARNING: point has yfield higher than calfile provides")
+                    print("WARNING: 501 point has yfield higher than calfile provides")
         if inYfp & inXfp & (self.chatter > 3): 
            print('getCalData.                             rx,         ry,     Xank,        Yank ')
            print(ix, ix_, iy, iy_)
@@ -1010,6 +1013,13 @@ class WaveCal(Caldb):
        if self.chatter > 3: print (f"1009 data indices k1s={k1s}, k1r={k1r}, k2s={k2s}, k2r={k2r}")
        if not ((k1r == n1) ^ (k1s == 0) ^ (k2s == 0) ^ (k2r == n2)): 
 
+         # Map indices to original array
+         ki = x1a_ind[k1s]
+         kip1 = x1a_ind[k1r]
+         kj = x2a_ind[k2s]
+         kjp1 = x2a_ind[k2r]
+
+
        #  exception when point outside boundaries, return is either 0,0 or N,N
          try:
            if k1r == n1: 
@@ -1038,7 +1048,7 @@ class WaveCal(Caldb):
                kjp1 = x2a_ind[k2r]
                
            if self.chatter > 3:
-              print (f"array indices ki={ki}, kip1={kip1}, kj={kj}, kjp1={kjp1}")
+              print (f"1044 array indices ki={ki}, kip1={kip1}, kj={kj}, kjp1={kjp1}")
               print('FIND solution in (x,y) = (',x1,x2,')')
               #print('array x1a[k-5 .. k+5] ',x1a[ki-5:ki+5])
               #print('array x2a[k-5 .. k+5] ',x2a[kj-5:kj+5])
@@ -1064,6 +1074,10 @@ class WaveCal(Caldb):
        y3 = f[kjp1,kip1]
        y4 = f[kjp1,ki  ]
     
+       # Check for zero division
+       if x1a[kip1] == x1a[ki] or x2a[kjp1] == x2a[kj]:
+           raise ValueError("Duplicate grid points detected, causing division by zero")
+ 
        t = (x1 - x1a[ki])/(x1a[kip1]-x1a[ki])
        u = (x2 - x2a[kj])/(x2a[kjp1]-x2a[kj])
    
@@ -1136,7 +1150,7 @@ class FluxCal(Caldb):
           
        n3     = 28*28
        print (modelhdu.header['NAXIS2'])
-       n2     = np.int( modelhdu.header['NAXIS2'] /n3)
+       n2     = int( modelhdu.header['NAXIS2'] /n3)
        if not ((n2 == 12) | (n2 == 16)):
           raise IOError("getZmxFlux: size of array in MODEL not correct; perhaps file corrupt?") 
    

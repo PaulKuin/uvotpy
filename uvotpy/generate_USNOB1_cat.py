@@ -7,8 +7,8 @@ import astropy
 
 
 usnob_cat = Vizier.find_catalogs('USNO-B1.0')
-
-def get_usnob1_cat(ra, dec, blim,radius=15.0*u.arcmin):
+radius = 15.0*u.arcmin
+def get_usnob1_cat(ra, dec, blim,radius=radius,tableout=False,chatter=0):
     """
     Assume that the ra,dec are given as float parameters in units of deg
     
@@ -32,7 +32,7 @@ def get_usnob1_cat(ra, dec, blim,radius=15.0*u.arcmin):
     v = Vizier(columns=['USNO-B1.0', '_RAJ2000', '_DEJ2000', 
                         'B1mag', 'R1mag', 'B2mag', 'R2mag', 
                         'pmRA', 'pmDE', 'Imag', 'B1s/g', '_r'],
-                row_limit=500000,
+                row_limit=10000,
                column_filters={"B2mag":">6", 'B2mag':'<{}'.format(blim)}) #B2mag fainter than 6, brighter than blim
     new_table_list = v.query_region(coords, 
                                  radius=radius, #Search 900 arcseconds
@@ -58,12 +58,16 @@ def get_usnob1_cat(ra, dec, blim,radius=15.0*u.arcmin):
     new_table['pmRA'].fill_value = 99.99
     new_table['pmDE'].fill_value = 99.99
     filled_table = new_table.filled()
-    filled_table.write('search.ub1', overwrite=True, format='ascii.fixed_width_no_header', delimiter=' ')
+    filled_table.write('search.ub1', overwrite=True, format='ascii', delimiter=' ')
     
     searchcenter_ofile = open('searchcenter.ub1', 'w')
     searchcenter_ofile.write('{},{}'.format(ra, dec))
     searchcenter_ofile.close()
-    return 'success'
+    if chatter>3: print ("usnob1 table read ; tableout={tableout}")
+    if tableout:
+       return filled_table
+    else:
+       return 'success'
     
         
 gaia_dr2 = u'I/345' 

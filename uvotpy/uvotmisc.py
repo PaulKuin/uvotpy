@@ -32,7 +32,7 @@ def boxcarsmooth(data, filterthing, cval=0.0, mode="symm"):
        if nx > 1: 
           boxcar = np.ones(nx)/nx 
        else: 
-          ny = filterthing[1]
+          ny = filterthing[0]
           boxcar = np.ones(ny)/ny
        out = signal.convolve(data,boxcar, mode='same', method='direct')
        return out

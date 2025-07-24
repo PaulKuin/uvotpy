@@ -687,3 +687,176 @@ def make_spec_plot(nspec=10, parmfile='plotparm.par',wheelpos=160):
    return None
        
 #####################################################################################
+   # application to grism spectra which have been extracted, and wavelength corrected
+   
+   
+
+def pixelplot(list_of_spectra='4grismplot.txt', wavelengths=[1700,5300],delta=1.0,
+        flux_range=[1e-14,4e-13],
+        zapzeros=True, 
+        smooth=3, smooth_range=[38,66], 
+        skippha=[]):
+        
+    """  create an image from a list of aligned PHA spectra
+    
+    inputs:
+    
+    - the list of spectra are for the pha files in the current directory
+    
+    - the wavelength range is the limits for the pixel plot
+    
+    - delta is the resolution in A per pixel
+    
+    - flux_range is the mapped flux range. Values outside the range a mapped to the limits.
+    
+    - zapzeros=False will not zet fluxes < 0 to lowe bound, nor make a log10 flux image
+    
+    - smooth set over how many bins to smooth
+    
+    - smooth_range sets the range in image numbers to smooth flux (noise reduction)
+    
+    hence, an array of length of the list will be generated and corresponding 
+    width of the wavelengths/delta
+    
+    Each spectrum will be linearly interpolated on the center of the 
+    pixels
+    
+    The flux will be mapped to 0-255 logarithmically. Values below the lower 
+    range are set to 0, those over the upper range to 255.
+    
+    returns: img, tab, phafiles, wgrid, mjdtimes
+
+             tab columns are : 
+    		 date-obs MJD phase phasebin exposr filter aspcorr filename+ext M roll
+    
+  changes:
+  
+    return flux image scaled by 1e14
+    		 plan:
+    keep negative fluxes in img		 
+    check against photometry to id first order overlaps instead of jumps
+    remove first order overlaps
+    plot sideways Y axis flux in lines, ratio SiIII]/CIII], orbital phase,
+    MJD indication in y-Axis labels
+    filter noise out by smoothing low flux observations during the dip
+        		 
+    """ 
+    from astropy.io import fits
+    from astropy.table import Table
+    from scipy.interpolate import interp1d
+    import os
+    import numpy as np
+    from uvotpy.uvotmisc import boxcarsmooth
+    
+    # read list of spectra from the summary+phase input (edited) 
+    taba = Table.read(list_of_spectra,format='ascii')
+    taba.sort('MJD')
+    # remove duplicates
+    tab = np.unique(taba)
+
+    # columns:
+    # date-obs MJD phase phasebin exposr filter aspcorr filename+ext M roll
+    
+    # create list of pha filenames 
+    a = tab['filename+ext']
+    
+    # remove the skipped pha files from tab
+    for s in skippha:
+        for j,pha in enumerate(a):
+            if s in pha:
+                tab.remove_row[j]            
+                  
+    # recreate list of pha filenames 
+    a = tab['filename+ext']
+            
+    phafiles = []
+    mjdtimes = []
+    found=os.listdir()
+    
+    for pha in a:
+        # skip the following pha
+        if pha in skippha:
+               continue
+        for x in found: 
+            if pha[:17] in x: 
+                phafiles.append(x)
+                
+    # initialise img array    
+    #img = np.zeros([wavelengths[1]-wavelengths[0],len(phafiles)],dtype=np.int8)
+    nx=int((wavelengths[1]-wavelengths[0])/delta)
+    img = np.zeros([ nx,len(phafiles)],)
+    
+    # define wavelength grid
+    wgrid = np.arange(wavelengths[0]+0.5*delta,wavelengths[1]+0.5*delta,delta)
+    if len(wgrid) > nx: 
+        wgrid = wgrid[:nx]
+    if len(wgrid) < nx:
+        print(f"error img nx = {nx} but wgrid length = {len(wgrid)}") 
+        
+    flux_range = np.asarray(flux_range) * 1e14
+    mm1,mm2 = np.log10(flux_range)
+    stats = np.array([ 0,0])
+    k = 0 
+    for file in phafiles:
+        # for each phafiles read the wavelengths+flux arrays
+        with fits.open(file) as sp:
+            print (f"processing {file} number:{k}")
+            w = sp[2].data['LAMBDA']
+            flx = sp[2].data['FLUX'] * 1e14
+            mjdtimes.append(sp[2].header["MJDREFI"]+sp[2].header["MJDREFF"]+sp[2].header["TSTART"]/86400.)
+        
+        if zapzeros:    
+           if (np.min(flx) < stats[0]) & (np.min(flx) > 0): stats[0] = np.min(flx)
+           if np.max(flx) > stats[1]: stats[1] = np.max(flx)
+            
+           flx[flx<0] = flux_range[0]
+           lflx = np.log10(flx.data) 
+           bitvalue = np.array(255*(lflx - mm1)/(mm2-mm1),dtype=np.int8)
+           print (f"spectrum range is {stats}\n")
+        else:
+           print (f"image is linear, not log, zeros kept; flux scale is 10^-14 erg/cm2/s/A ") 
+                 
+        # interpolate the wavelengths     
+        #flx_int = interp1d(w,bitvalue,kind='linear',bounds_error=None,fill_value=0,assume_sorted=True)
+        if (k > smooth_range[0]) & (k < smooth_range[1]) :
+            # smooth flux
+            print (f"smoothing for MJD={mjdtimes[-1]} ")
+            flx = boxcarsmooth (flx, (3,), cval=0.0, mode="symm")
+            
+        flx_int = interp1d(w,flx,kind='linear',bounds_error=None,fill_value=0,assume_sorted=True)
+        fgrid = flx_int(wgrid) 
+        #fgrid[fgrid<0] = 0
+        #fgrid[fgrid>255] = 255
+        #img[:,k] = fgrid
+        img[:,k] = fgrid
+        k += 1
+        
+    print (f"spectrum range is {stats}\n")    
+    
+    print (f"returns: img, tab, phafiles, \n tab columns are : date-obs MJD phase phasebin exposr filter aspcorr filename+ext M roll")    
+    return img, tab, phafiles, wgrid, mjdtimes #, phase   
+
+def makexlabel1(xp, pixr=[0,1080],realr=[1820,2900]):
+    # return physical coordinate value for pixel value xp
+    val1 = realr[0]+(realr[1]-realr[0])*xp/(pixr[1]-pixr[0])
+    return val1
+    
+def makexlabel(xp, wgrid):
+    # return physical coordinate value for pixel value xp
+    return wgrid[xp]
+    
+def makeylabel(yp,mjdtimes):
+    return mjdtimes[yp]   
+ 
+#  fig,ax = subplot(111)    
+#  ax.yaxis.set_major_formatter(makeylabel) 
+#  ax.xaxis.set_major_formatter(makexlabel)
+#  im1 = ax.imshow(transpose(log10(img)),cmap='winter')
+#  lines:
+# mgii=img[478:500,:].sum(0)/22. - (img[466:473,:].sum(0)/7. + img[102:106,:].sum(0)/4)*0.5
+# bg2200=img[185:195,:].sum(0)/10
+# bg1900= 0.5*(img[43:50,:].sum()/7. + (img[20:30,:]/10+img[60:70,:].sum(0)/10))
+# ciii =img[42:56,:].sum(0)/14- 0.5*(bg1900 +img[60:70,:].sum(0)/10)
+# siiii=img[31:42,:].sum(0)/11- 0.5*(img[20:30,:].sum(0)/10. + bg1900 )
+
+#     
