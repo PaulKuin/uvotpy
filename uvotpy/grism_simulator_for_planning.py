@@ -43,13 +43,89 @@ def maketime(t,format=None):
     print (time)
     return time
 
+def get_visibility(pos=None,target=None, tbegin=None, tend=None, mode=None):
+    """
+    input parameters:
+    
+        pos : astropy.coordinates type
+        target : name of target (resolves)
+        tbegin, tend : datetime objects or astropy.time objects
+        mode : None or 'high'
+           'high' will work for one day and list all the windows 
+           which is useful to check if they are long enough for
+           a grism exposure of 1ks+
+        
+    """
+    from swifttools.swift_too import VisQuery
+    from datetime import datetime, timedelta
+    from time import sleep
+    import astropy
+
+    query = VisQuery()
+    
+    # check input
+    
+    if pos == None and target != None:
+       query.name = target
+       query.resolve
+       pos = query.skycoord
+    elif pos != None:
+       query.ra = pos.ra.deg
+       query.dec= pos.dec.deg
+    else:
+       raise RuntimeError("you need to specify either target name or position (as SkyCoord)")   
+
+    if type (tbegin) == astropy.time.core.Time :
+           tbegin = tbegin.datetime
+    elif type(tbegin) != datetime:    
+           raise RuntimeError("tbegin must be of type datetime or astropy.time")
+    if type (tend) == astropy.time.core.Time :
+           tend = tend.datetime
+    elif type(tend) != datetime:    
+           raise RuntimeError("tend must be of type datetime or astropy.time")
+           
+    if mode == 'high':
+       tend = tbegin + timedelta(days=1)
+
+       hvq = VisQuery(
+            ra   = pos.ra.deg,
+            dec  = pos.dec.deg,
+            begin=tbegin,
+            end=tend,
+            hires=True,
+       )
+       if hvq.status.status == "Accepted":
+           #print("All Good!")
+       else:
+           print(f"get_visibility problem Not good: {hvq.status}")
+           
+       print (hvq)    
+
+    else:
+        query.submit()
+        query[0].begin = tbegin
+        query[0].end = tend
+   
+        if query.queue():
+            while not query.complete:
+                print(f"Waiting for job #{query.status.jobnumber} to be processed ...")
+                sleep(2)
+            #print(f"Done. Job #{query.status.jobnumber} complete")
+        else:
+            print(f"Request rejected. Error: {query.status.errors}")
+    
+        print (query)
+   
+#        print(f"MJD Visibility Periods for RA/Dec(J2000) = {query.ra}, {query.dec}:\n")
+#        for i in range(len(tbegins)):
+#             print(f"MJD {tbegins.mjd:.3f} - MJD {tends.mjd:.3f}")
 
 
 class SimGrism():
 
    def __init__(self,target_position_or_name, wheelpos=160, roll=100., 
         offset=[0,0], datetime=None, blim=16.0, figno=16,
-        timeformat=None, uvotmode=None, chatter=0):
+        timeformat=None, uvotmode=None, highvis=False, chatter=0):
        """ 
        input parameters:
           target: name, astropy coordinate, or (ra,dec) in degrees
@@ -67,6 +143,8 @@ class SimGrism():
           timeformat: string
              if datetime is given in an alternative format besides above 
              (from astropy.time.Time)
+          uvotmode: if given will print in output (e.g., 0x122f for uv clocked)   
+          highvis: True or False - visibility output   
           chatter: 0..5 
              verbosity   
        old plan was: draw the plot:
@@ -79,6 +157,7 @@ class SimGrism():
        """
        from pylab import figure
        import warnings
+       from datetime import timedelta
        #import matplotlib
        
        warnings.filterwarnings('ignore') # ignore all
@@ -163,6 +242,19 @@ class SimGrism():
           print (f"suggested UVOT mode is {uvotmode}")
        print (80*"=")
        # 
+       # sky position target (input parameter)
+       target = target_position_or_name
+       if hasattr(target, 'ra'):
+           pos=target 
+       elif type(target) == list:
+           pos = coordinates.Skycoord(target[0],target[1],unit=[units.deg,units.deg])
+       elif type(target) == str:
+           pos = coordinates.SkyCoord.from_name(target,frame=coordinates.ICRS)
+
+       get_visibility(pos=pos,target=None, tbegin=t0.datetime-timedelta(days=2), 
+          tend=t0.datetime-timedelta(days=-2), mode=highvis)
+       #print (f"when having a date selected, to get more visibility detail try:\nget_visibility(target=<name> or pos=<skycoord>,tbegin=t0,mode='high')")
+       #print (f"position is pos = {pos}")
        if extra_plot:
            fig1 = figure(figno+1)
            fig1.clf()
