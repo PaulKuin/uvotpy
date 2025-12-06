@@ -2376,9 +2376,15 @@ def sum_PHAspectra(phafiles, outfile=None,
       scale=None,
       chatter=1, clobber=True,
       ):
+      
+      
    '''
+   
+   
    Read a list of phafiles. Sum the spectra after applying optional wave_shifts.
    The sum is weighted by the errors.  
+   
+   Warning, with Python3.x x>5 the interactive figure no longer works. Needs to be fixed!
    
    Parameters
    ----------
