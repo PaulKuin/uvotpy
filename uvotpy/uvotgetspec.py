@@ -1590,6 +1590,20 @@ def getSpec(RA,DEC,obsid, ext, indir='./', wr_outfile=True,
             quality=quality, interactive=False,fileout=outfile,
             updateRMF=write_rmffile, \
             history=msg, chatter=5, clobber=clobber)
+
+      ######## Added by Hao Zhou
+      try:
+        with open('spec_name.txt', 'r') as _f:
+          specName = _f.readline()
+          from .cluvotpy import CleanExtractor
+          cl_extractor = CleanExtractor(specName)
+          cl_extractor.print_par()
+          cl_extractor.extract_cl_spec()
+          cl_extractor.write_cl_spec()
+        os.remove('spec_name.txt')
+      except FileNotFoundError:
+        pass
+      ######## Added by Hao Zhou
                   
    #except (RuntimeError, IOError, ValueError):
    #   print "ERROR writing output files. Try to call uvotio.wr_spec."  

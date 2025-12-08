@@ -2681,6 +2681,11 @@ def writeSpectrum_ (ra,dec,obsid,ext,hdr,anker,phx,phy,offset, ank_c, exposure,
       hdulist.append(hdu4)
    try:   
      hdulist.writeto(outfile1,overwrite=clobber)
+
+     ########   Added by Hao Zhou
+     with open('spec_name.txt', 'w') as _f:
+        _f.write(outfile1)
+     ########   Added by Hao Zhou
    except:
       print("WARNING : NO OUTPUT FILE CREATED.  "+outfile1+" EXISTS and CLOBBER not set") 
       pass  
