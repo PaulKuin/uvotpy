@@ -1200,7 +1200,7 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
        print (f"new colsused parameter = {magff[1].header['COLSUSED']}\n")
     except:
        print (f"1202 WARNING: skipped output for this data ")
-       Pass
+       pass
     
     magff.flush()
     return magff    
