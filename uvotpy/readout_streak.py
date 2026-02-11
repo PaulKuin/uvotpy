@@ -1172,30 +1172,36 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
        print (f"inputs _mag_to_fitsout : {band} {mag} {err} \n "+
        f"tstart {tstart} {dateobs} \n {obsid} {ext} {extname} MJD {MJD} {lss} \n")
        print (f"colused parameter = {n}\n")
-    t['tstart'][n] = tstart
-    t['MJDstart'][n] = MJD
-    t['date-obs'][n] = dateobs
-    t['obsid'][n] = obsid
-    t['ext'][n] = ext
-    t['extname'][n] = extname
-    t['filter'][n] = band
-    t['lss'][n] = lss
-    t['sys_err'][n] = syserr
-    if err > 0 :
+    try:   
+     t['tstart'][n] = tstart
+     t['MJDstart'][n] = MJD
+     t['date-obs'][n] = dateobs
+     t['obsid'][n] = obsid
+     t['ext'][n] = ext
+     t['extname'][n] = extname
+     t['filter'][n] = band
+     t['lss'][n] = lss
+     t['sys_err'][n] = syserr
+     if err > 0 :
        # not a limit
        t["mag"][n] = mag
        t["mag_err"][n] = err
        t['maglim'][n] = 0
-    else:
+     else:
        # limit   
        t["mag"][n] = mag
        t["mag_err"][n] = 0
        t['maglim'][n] = mag+3*err
-    magff[1].data = t
-    magff[1].header['COLSUSED'] = n+1
-    if chatter > 3:
+       
+     magff[1].data = t
+     magff[1].header['COLSUSED'] = n+1
+     if chatter > 3:
        print #(f"new data={Table(t[:n+2])}")
        print (f"new colsused parameter = {magff[1].header['COLSUSED']}\n")
+    except:
+       print (f"1202 WARNING: skipped output for this data ")
+       Pass
+    
     magff.flush()
     return magff    
 
