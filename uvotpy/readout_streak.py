@@ -1152,6 +1152,14 @@ def _mag_to_fitsout(magff,band,mag,err,tstart,dateobs,obsid,ext,extname,MJD,lss,
        raise CodeError("the file should be opened with mode update")
     if magff[1].header['COLSUSED'] == magff[1].header['naxis2']: 
         fitsBinTable_add_nrows(magff[1])   
+    else:
+        if chatter > 3: 
+            print (f"1157 WARNING keyword COLUSED not eq to naxis2 - skipping ")
+            print (f"inputs _mag_to_fitsout : {band} {mag} {err} \n "+
+       f"tstart {tstart} {dateobs} \n {obsid} {ext} {extname} MJD {MJD} {lss} \n")
+            print (f"colused parameter = {n}\n")
+        return magff    
+        
     # fill a row of data, update COLSUSED record +1
     t = magff[1].data
     n = magff[1].header['COLSUSED']
@@ -1755,6 +1763,8 @@ def _binit(time,dur,mag,err,timedel,mode='log',chatter=0):
         out.append({'t':stime/n,'d':dd,'m':mm,'e':ee})
     return out    
 ####################### end readout streak subs
+
+status = 0
 
 if __name__ == '__main__':
    #in case of called from the OS
