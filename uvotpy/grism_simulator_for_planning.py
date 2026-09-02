@@ -95,6 +95,7 @@ def get_visibility(pos=None,target=None, tbegin=None, tend=None, mode=None):
             hires=True,
        )
        if hvq.status.status == "Accepted":
+           print (" ")
            #print("All Good!")
        else:
            print(f"get_visibility problem Not good: {hvq.status}")
@@ -103,9 +104,15 @@ def get_visibility(pos=None,target=None, tbegin=None, tend=None, mode=None):
 
     else:
         query.submit()
-        query[0].begin = tbegin
-        query[0].end = tend
-   
+        print ("query: ",query, type(query))
+        
+        if len(query.entries) == 0: 
+            query.begin = tbegin   
+            query.end = tend
+        else:    
+            query[0].begin = tbegin   
+            query[0].end = tend
+           
         if query.queue():
             while not query.complete:
                 print(f"Waiting for job #{query.status.jobnumber} to be processed ...")
@@ -114,12 +121,8 @@ def get_visibility(pos=None,target=None, tbegin=None, tend=None, mode=None):
         else:
             print(f"Request rejected. Error: {query.status.errors}")
     
-        print (query)
+        print ("VisQuery visibility windows: \n",query,"\n no data means no windows found ?")
    
-#        print(f"MJD Visibility Periods for RA/Dec(J2000) = {query.ra}, {query.dec}:\n")
-#        for i in range(len(tbegins)):
-#             print(f"MJD {tbegins.mjd:.3f} - MJD {tends.mjd:.3f}")
-
 
 class SimGrism():
 
@@ -251,8 +254,13 @@ class SimGrism():
        elif type(target) == str:
            pos = coordinates.SkyCoord.from_name(target,frame=coordinates.ICRS)
 
-       get_visibility(pos=pos,target=None, tbegin=t0.datetime-timedelta(days=2), 
-          tend=t0.datetime-timedelta(days=-2), mode=highvis)
+       try:
+           get_visibility(pos=pos,target=None, tbegin=t0.datetime-timedelta(days=2), 
+             tend=t0.datetime-timedelta(days=-2), mode=highvis)
+       except:
+           print (f"WARNING: getting visibility failed") 
+           pass
+                 
        #print (f"when having a date selected, to get more visibility detail try:\nget_visibility(target=<name> or pos=<skycoord>,tbegin=t0,mode='high')")
        #print (f"position is pos = {pos}")
        if extra_plot:
@@ -369,7 +377,7 @@ class SimGrism_sub1(SimGrism):
        from astropy.time import Time 
        from uvotpy import roll as swiftroll
        from uvotpy import generate_USNOB1_cat
-       from grism_utilities import query_DSS
+       from uvotpy.grism_utilities import query_DSS
        from scipy import ndimage 
        
        self.pixelscale = 0.54 
