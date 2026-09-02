@@ -121,7 +121,10 @@ def query_DSS(target, ImSize=10, server="STSCI",
     Equinox='j2000' 
     if type(target) == astropy.coordinates.sky_coordinate.SkyCoord:
         ra =  target.ra.deg
-        dec = target.dec.deg      
+        dec = target.dec.deg
+    elif type(target) = list:
+        ra =  target[0].ra.deg
+        dec = target[1].dec.deg  
     elif hasattr(target, 'name'):
         ra =  target.ra.deg
         dec = target.dec.deg
