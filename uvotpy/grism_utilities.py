@@ -124,7 +124,7 @@ def query_DSS(target, ImSize=10, server="STSCI",
         dec = target.dec.deg
     elif type(target) = list:
         ra =  target[0].ra.deg
-        dec = target[1].dec.deg  
+        dec = target[0].dec.deg  
     elif hasattr(target, 'name'):
         ra =  target.ra.deg
         dec = target.dec.deg
